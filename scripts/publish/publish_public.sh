@@ -18,7 +18,8 @@
 #       Sync the export into a checkout of the public repo (default
 #       ../common-root, override with PUBLIC_DIR), commit "Release <version>"
 #       with that version's CHANGELOG section as the body, tag v<version>, and
-#       push. Refuses on a -SNAPSHOT version or a dirty private tree: run it at
+#       push. Compiles the export first (mvn -o) and refuses if it does not
+#       build. Refuses on a -SNAPSHOT version or a dirty private tree: run it at
 #       the release commit, after the tag, before the bump (CHANGELOG step 2b).
 #
 #   scripts/publish/publish_public.sh check [OUTDIR]
@@ -141,6 +142,17 @@ case "$MODE" in
     TMP="$(mktemp -d)/export"
     build "$TMP"
     sweep "$TMP" || { echo "refusing: sweep found something — fix, or run 'check' to inspect" >&2; exit 2; }
+    # the public tree must build from a clean clone — compile both modules
+    # from the export (offline, tests already ran on the private tree) and
+    # refuse to publish something that would not compile for a stranger
+    echo "compiling the export (mvn -o compile) …"
+    # prefer the project JDK when the machine has several (macOS)
+    if [ -x /usr/libexec/java_home ] && /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
+      export JAVA_HOME; JAVA_HOME="$(/usr/libexec/java_home -v 21)"; fi
+    if ! (cd "$TMP" && mvn -q -o -DskipTests compile >"$TMP.build.log" 2>&1); then
+      echo "refusing: the export does not compile — see $TMP.build.log" >&2; exit 3
+    fi
+    rm -rf "$TMP"/target "$TMP"/*/target
     # mirror the tree: everything except .git is replaced by the export
     rsync -a --delete --exclude .git "$TMP/" "$PUB/"
     # release body = this version's CHANGELOG section

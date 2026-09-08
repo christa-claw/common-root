@@ -70,6 +70,31 @@ in the reader toolbar and About-page nav.
 
 ---
 
+## [0.8.4] — 2026-09-08
+
+### Added
+- **Current location.** A signed-in reader's position is now recorded from
+  the first chapter they read — no visit to Preferences needed — and the reader
+  opens there on the next bare `/reader`. Preferences shows it under "Current
+  location", one line per column with localised book names ("KJV · Genesis
+  12:3", "Q-AR · Surah 2:255"), an *Open* link that replays it and a *Forget*
+  button for starting a new read-through. Unticking "Continue where I left off"
+  still stops the recording and forgets the position. Preferences also gained a
+  *Profile* button — there was no way back.
+- `CONTRIBUTING.md` in the public mirror: PRs are applied to the working
+  repository and appear in the next release commit; issues are the backlog.
+- Public issue tracker at github.com/christa-claw/common-root/issues, seeded
+  with the open items from the engineering notes and design documents, plus
+  one "Verify … texts" issue per interface language.
+
+### Changed
+- `publish_public.sh` compiles the export (`mvn -o compile`, both modules)
+  before pushing and refuses a tree that would not build from a clean clone.
+- Public repository settings: Actions, Wiki and Projects off (nothing is built
+  there), Dependabot alerts on, head branches deleted on merge, and a ruleset
+  that blocks deleting or moving `v*` tags. Dependabot alerts on for the
+  working repository too.
+
 ## [0.8.3] — 2026-09-08
 
 ### Changed

@@ -50,8 +50,11 @@ public class UserPreferences {
     @Column(name = "muted_voices", columnDefinition = "TEXT")
     private String mutedVoices;
 
+    /** On by default for new rows (0.8.4): a signed-in reader's position is
+     *  recorded from the first chapter they read; unticking it in Preferences
+     *  stops the recording and forgets the position. */
     @Column(name = "resume_enabled", nullable = false)
-    private boolean resumeEnabled;
+    private boolean resumeEnabled = true;
 
     @Column(name = "last_position", length = 2000)
     private String lastPosition;

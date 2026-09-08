@@ -60,19 +60,26 @@ public class UserPreferencesService {
     }
 
     /** Update the saved reading position — a targeted write on the hot path
-     *  (fires as the reader scrolls chapter to chapter), so it touches nothing
-     *  unless a preferences row exists AND resume is enabled. Bulk JPQL bypasses
-     *  the entity's @PreUpdate, hence the explicit updatedAt. */
+     *  (fires as the reader scrolls chapter to chapter): one bulk update that
+     *  touches nothing when resume is off. A reader with no preferences row yet
+     *  gets one, resume on (the entity default) — the position is recorded from
+     *  the first chapter, without a visit to Preferences. Bulk JPQL bypasses the
+     *  entity's @PreUpdate, hence the explicit updatedAt. */
     @Transactional
     public void savePosition(final String anEmail, final String aPosition) {
         if (anEmail == null || anEmail.isBlank() || aPosition == null) return;
-        em.createQuery(
+        final String pos = aPosition.length() > 2000 ? aPosition.substring(0, 2000) : aPosition;
+        final int updated = em.createQuery(
                 "UPDATE UserPreferences p SET p.lastPosition = :pos, p.updatedAt = :now "
               + "WHERE p.resumeEnabled = true AND p.userId = "
               + "(SELECT u.id FROM User u WHERE u.email = :email)")
-            .setParameter("pos", aPosition.length() > 2000 ? aPosition.substring(0, 2000) : aPosition)
+            .setParameter("pos", pos)
             .setParameter("now", LocalDateTime.now())
             .setParameter("email", anEmail)
             .executeUpdate();
+        if (updated == 0 && find(anEmail).isEmpty()) {
+            try { save(anEmail, p -> p.setLastPosition(pos)); }
+            catch (final IllegalStateException ignored) { /* no such user — nothing to record */ }
+        }
     }
 }

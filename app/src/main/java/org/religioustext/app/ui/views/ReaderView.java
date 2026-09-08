@@ -949,10 +949,12 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     /** Persist the current position (the Copy-link query string) for "continue
-     *  where I left off". Rate-limited; a no-op unless the user's preferences
-     *  row exists with resume enabled (the service guards the write too). */
+     *  where I left off". Rate-limited; runs for every signed-in reader except
+     *  one who has switched resume off (a reader with no preferences row yet
+     *  gets one, see UserPreferencesService.savePosition). */
     private void maybeSavePosition() {
-        if (prefs == null || !prefs.isResumeEnabled()) return;
+        if (!authContext.isAuthenticated()) return;
+        if (prefs != null && !prefs.isResumeEnabled()) return;
         final long now = System.currentTimeMillis();
         if (now - lastPositionSaveMs < 5000) return;
         final String path = buildCurrentLinkPath();

@@ -7,8 +7,11 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -115,15 +118,57 @@ public class PreferencesView extends VerticalLayout {
         final Checkbox markersBox = new Checkbox(t("prefs.showMarkers"),
             existing != null && existing.isShowCommentMarkers());
         final Checkbox resumeBox = new Checkbox(t("prefs.resume"),
-            existing != null && existing.isResumeEnabled());
+            existing == null || existing.isResumeEnabled());      // on until switched off
         resumeBox.setTooltipText(t("prefs.resume.helper"));
+
+        // ── Current location ──────────────────────────────────────────
+        // The saved position, spelled out per column ("KJV · Genesis 12:3"), with
+        // a link that replays it and a way to forget it. It fills in by itself as
+        // a signed-in reader reads; this is where they can see what the reader
+        // will open at, and reset it when they start a new read-through.
+        final VerticalLayout locationBlock = new VerticalLayout();
+        locationBlock.setPadding(false);
+        locationBlock.setSpacing(false);
+        locationBlock.setWidth("320px");
+        locationBlock.setAlignItems(Alignment.START);
+        final Span locationLabel = new Span(t("prefs.location"));
+        locationLabel.getStyle().set("font-size", "var(--lumo-font-size-s)")
+            .set("color", "var(--lumo-secondary-text-color)").set("font-weight", "500");
+        final Paragraph locationHelp = new Paragraph(t("prefs.location.helper"));
+        locationHelp.getStyle().set("font-size", "var(--lumo-font-size-xs)")
+            .set("color", "var(--lumo-secondary-text-color)").set("margin", "2px 0 0 0");
+        locationBlock.add(locationLabel);
+        final String position = existing == null ? null : existing.getLastPosition();
+        final List<String> where = describePosition(position);
+        if (where.isEmpty()) {
+            final Span none = new Span(t("prefs.location.none"));
+            none.getStyle().set("font-size", "var(--lumo-font-size-s)");
+            locationBlock.add(none);
+        } else {
+            for (final String line : where) {
+                final Span s = new Span(line);
+                s.getStyle().set("font-size", "var(--lumo-font-size-m)");
+                locationBlock.add(s);
+            }
+            final Anchor open = new Anchor("/reader?" + position, t("prefs.location.open"));
+            final Button forget = new Button(t("prefs.location.forget"), e -> {
+                aPrefsService.save(email, p -> p.setLastPosition(null));
+                getUI().ifPresent(ui -> ui.getPage().reload());
+            });
+            forget.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_SMALL);
+            final HorizontalLayout actions = new HorizontalLayout(open, forget);
+            actions.setAlignItems(Alignment.BASELINE);
+            actions.setSpacing(true);
+            locationBlock.add(actions);
+        }
+        locationBlock.add(locationHelp);
 
         // A Checkbox auto-sizes to its label, so under the parent's center
         // alignment each would centre on a different width and stair-step. Hold
         // them in a fixed 320px, left-aligned column so they share the same left
         // edge as the 320px selects above.
         final VerticalLayout boolGroup =
-            new VerticalLayout(panelBox, markersBox, resumeBox);
+            new VerticalLayout(panelBox, markersBox, resumeBox, locationBlock);
         boolGroup.setPadding(false);
         boolGroup.setSpacing(false);
         boolGroup.setWidth("320px");
@@ -195,9 +240,50 @@ public class PreferencesView extends VerticalLayout {
         final Button back = new Button(t("prefs.backToReader"),
             e -> getUI().ifPresent(ui -> ui.navigate("reader")));
         back.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        final Button profile = new Button(t("prefs.profile"),
+            e -> getUI().ifPresent(ui -> ui.navigate("profile")));
+        profile.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
         add(title, intro, bibleBox, modeSel, orderSel,
-            boolGroup, mutedBox, langSel, save, back, aBuildInfo.pinned());
+            boolGroup, mutedBox, langSel, save, profile, back, aBuildInfo.pinned());
+    }
+
+    /** The saved position as one line per column — "KJV · Genesis 12:3",
+     *  "Q-AR · Surah 2:255" — book names in the UI language via the booknames
+     *  bundle. Empty when nothing is saved or nothing in it parses. */
+    static List<String> describePosition(final String aQueryString) {
+        if (aQueryString == null || aQueryString.isBlank()) return List.of();
+        final java.util.Map<String, String> flat = new java.util.HashMap<>();
+        for (final String kv : aQueryString.split("&")) {
+            final int eq = kv.indexOf('=');
+            if (eq <= 0) continue;
+            try {
+                flat.put(java.net.URLDecoder.decode(kv.substring(0, eq), java.nio.charset.StandardCharsets.UTF_8),
+                         java.net.URLDecoder.decode(kv.substring(eq + 1), java.nio.charset.StandardCharsets.UTF_8));
+            } catch (final IllegalArgumentException ignored) { /* malformed pair */ }
+        }
+        java.util.ResourceBundle names = null;
+        try { names = java.util.ResourceBundle.getBundle("i18n/booknames", LocaleUtil.currentLocale()); }
+        catch (final Exception ignored) { /* no bundle — codes will do */ }
+        final List<String> out = new java.util.ArrayList<>();
+        for (final ReaderLink.ColSpec c : ReaderLink.parse(flat).cols) {
+            final StringBuilder sb = new StringBuilder();
+            if (c.src != null && !c.src.isBlank()) sb.append(c.src.toUpperCase(Locale.ROOT));
+            if (c.ref != null) {
+                if (sb.length() > 0) sb.append(" \u00b7 ");
+                if (c.ref.quran()) {
+                    sb.append("Surah ").append(c.ref.a());
+                    if (c.ref.b() > 0) sb.append(':').append(c.ref.b());
+                } else {
+                    String book = c.ref.unit();
+                    if (names != null && names.containsKey(book)) book = names.getString(book);
+                    sb.append(book).append(' ').append(c.ref.a());
+                    if (c.ref.b() > 0) sb.append(':').append(c.ref.b());
+                }
+            }
+            if (sb.length() > 0) out.add(sb.toString());
+        }
+        return out;
     }
 
     private static DisplayOptions.DisplayMode modeFromPref(final UserPreferences aPreferences) {
