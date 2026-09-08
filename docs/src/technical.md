@@ -4,7 +4,7 @@
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.2 |
+| Version | 0.8.3 |
 | Generated | 2026-09-08 |
 <!-- /AUTOGEN:meta -->
 

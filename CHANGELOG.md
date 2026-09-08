@@ -70,6 +70,13 @@ in the reader toolbar and About-page nav.
 
 ---
 
+## [0.8.3] — 2026-09-08
+
+### Changed
+- **Edition information pages dual-licensed** AGPL-3.0-or-later / CC BY-SA 4.0
+  (`i18n/editions/LICENSE.md`, `NOTICE`), so the prose can be reused the way
+  encyclopaedic text is, with attribution and share-alike.
+
 ## [0.8.2] — 2026-09-08
 
 ### Changed

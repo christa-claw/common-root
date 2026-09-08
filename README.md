@@ -123,5 +123,6 @@ repository (`docs/access-control.md`, `docs/search.md`, `docs/groups.md`,
 the migrations and `CHANGELOG.md`.
 
 **Licence:** GNU Affero General Public License v3.0 or later — see `LICENSE`
-and `NOTICE`. Release 0.8.1 was published under Apache-2.0 for a few hours on
+and `NOTICE`. The edition information pages (`i18n/editions/`) are dual-licensed
+AGPL-3.0-or-later / CC BY-SA 4.0. Release 0.8.1 was published under Apache-2.0 for a few hours on
 2026-09-08; from 0.8.2 the licence is AGPL-3.0-or-later.

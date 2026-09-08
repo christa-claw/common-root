@@ -8,6 +8,14 @@ later version. See LICENSE. If you run a modified version of this program as a
 network service, section 13 of the licence requires you to offer its source to
 the users of that service.
 
+The edition information pages — everything under
+app/src/main/resources/i18n/editions/ (the "About this edition" prose in all
+interface languages) — are additionally licensed under the Creative Commons
+Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0,
+https://creativecommons.org/licenses/by-sa/4.0/). You may use those pages
+under either the AGPL-3.0-or-later or CC BY-SA 4.0, at your option.
+Attribution: "Christa Claw / Common Root? (common-root.org)".
+
 This product includes software developed by third parties:
 
   docker/basex-dba/ — the BaseX DBA web application,
