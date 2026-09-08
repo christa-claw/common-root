@@ -7,6 +7,7 @@ import org.religioustext.app.model.DisplayOptions;
 import org.religioustext.app.model.VerseRef;
 import org.religioustext.app.ui.views.reader.SourceCatalog;
 import org.religioustext.app.ui.views.reader.SourceRow;
+import org.religioustext.app.web.CorpusDownloadController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -192,6 +193,20 @@ public class ApiCorpusService {
             + "return if (empty($src)) then () else "
             + "copy $c := $src[1] modify (" + deletes + ") return $c";
         final String xml = fetch(xquery);
+        return xml == null || xml.isBlank() ? null : xml;
+    }
+
+    /**
+     * The whole corpus document for an edition with the site's sequence
+     * attributes removed — the same authentic copy the retired {@code /download}
+     * route served, now behind the API key. Roughly 5–12 MB for a Bible.
+     *
+     * @param aSourceId the edition document id
+     * @return the serialised document, or {@code null} when it cannot be read
+     */
+    public String document(final String aSourceId) {
+        if (aSourceId == null || !SAFE_KEY.matcher(aSourceId).matches()) return null;
+        final String xml = fetch(CorpusDownloadController.authenticCopyQuery(baseX.database(), aSourceId));
         return xml == null || xml.isBlank() ? null : xml;
     }
 

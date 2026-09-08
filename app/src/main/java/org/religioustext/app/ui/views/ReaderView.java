@@ -1752,7 +1752,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         // Build the display-name map. Priority: a localised name for the book's
         // standard code in the SOURCE'S OWN language (a Swedish Bible shows
         // Swedish book names regardless of UI locale — book names belong to the
-        // text, like the edition name; Christa 2026-07-04); else the Arabic
+        // text, like the edition name; maintainer 2026-07-04); else the Arabic
         // surah name for a right-to-left edition (the Arabic Qur'an); else the
         // English name. Languages without a booknames bundle fall back to the
         // English base — NoFallbackControl prevents the JVM default locale from

@@ -12,6 +12,10 @@
     {
       "key": "apiKey",
       "value": "crk_REPLACE_WITH_YOUR_KEY"
+    },
+    {
+      "key": "kjvEtag",
+      "value": ""
     }
   ],
   "item": [
@@ -207,6 +211,133 @@
             "exec": [
               "pm.test('200', () => pm.response.to.have.status(200));",
               "pm.test('token', () => pm.expect(pm.response.json().token).to.eql('kjv'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "D1 Download KJV — whole edition XML, bytes metered",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/download",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 XML', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('xml'); });",
+              "pm.test('attachment named after the token', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('kjv.xml'));",
+              "pm.test('strong ETag names edition@corpus', () => pm.expect(pm.response.headers.get('ETag')).to.match(/^\"bible-kjv[^\"]*@[^\"]+\"$/));",
+              "pm.test('corpus header', () => pm.expect(pm.response.headers.get('X-CommonRoot-Corpus')).to.be.a('string'));",
+              "pm.test('is the authentic document, no site sequences', () => { const b = pm.response.text(); pm.expect(b).to.include('<text'); pm.expect(b).to.not.include('globalCanonicalSeq'); });",
+              "pm.collectionVariables.set('kjvEtag', pm.response.headers.get('ETag'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "D2 Download again with If-None-Match → 304, counts nothing",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/download",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          },
+          {
+            "key": "If-None-Match",
+            "value": "{{kjvEtag}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('304', () => pm.response.to.have.status(304));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "D3 Download NIV → 403 not_redistributable",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/niv/download",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403', () => pm.response.to.have.status(403));",
+              "pm.test('slug', () => pm.expect(pm.response.json().error).to.eql('not_redistributable'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "D4 Download as JSON → 400 format_not_available",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/download?format=json",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400', () => pm.response.to.have.status(400));",
+              "pm.test('slug', () => pm.expect(pm.response.json().error).to.eql('format_not_available'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "D5 Old /download/KJV → 410 Gone with pointer",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/download/KJV",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('410', () => pm.response.to.have.status(410));",
+              "pm.test('points at the API', () => pm.expect(pm.response.text()).to.include('/api/v1/texts/kjv/download'));"
             ]
           }
         }

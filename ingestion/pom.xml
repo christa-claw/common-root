@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.religioustext</groupId>
         <artifactId>religious-texts-parent</artifactId>
-        <version>0.8.4</version>
+        <version>0.8.5</version>
     </parent>
 
     <artifactId>ingestion</artifactId>
@@ -47,13 +47,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- XML processing -->
-        <dependency>
-            <groupId>org.springframework.ws</groupId>
-            <artifactId>spring-xml</artifactId>
-            <version>4.0.10</version>
         </dependency>
 
         <!-- eXist-db XML:DB API client -->

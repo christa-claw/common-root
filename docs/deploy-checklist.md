@@ -24,7 +24,7 @@ updates the app — it does NOT carry scripture or arguments. Check each at depl
 
 ## PENDING (as of 2026-07-22)
 - [ ] **YTC Turkish Bible** — BaseX image already built + pushed to GHCR. Pull to
-  prod on the NEXT app push or next arguments refresh (Christa's call — batched,
+  prod on the NEXT app push or next arguments refresh (maintainer's call — batched,
   not a standalone restart). Confirm YTC is selectable in the picker afterward;
   if not, the app-side source registration isn't deployed yet.
 - [ ] YTC licence is **CC BY-ND 4.0** — confirm side-by-side display is

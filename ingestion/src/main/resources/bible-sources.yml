@@ -260,3 +260,15 @@ translations:
     license: Public Domain
     sourceUrl: https://www.bible.com/bible/156/GEN.1
     region: Protestant
+
+  - id: bible-grc-patriarchal-1904
+    translation: Patriarchal Greek New Testament 1904 (with later corrections)
+    abbreviation: BYZ1904
+    apiBibleId: 901dcd9744e1bf69-01
+    bcp47Language: grc
+    iso639_3: grc
+    direction: ltr
+    year: 1904
+    license: Public Domain
+    sourceUrl: https://scripture.api.bible/
+    region: Orthodox

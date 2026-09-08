@@ -932,7 +932,6 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
                 .set("width", "100%").set("align-items", "stretch");
             open.getStyle().set("flex", "1 1 auto");
             wrapper.add(open);
-            if (isPublicDomain) wrapper.add(downloadCorner(anAbbr));
             if (editionInfo != null) wrapper.add(infoCorner(anAbbr));
             aContainer.add(wrapper);
         } else {
@@ -975,44 +974,6 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("background", "#f2f6fa");
         info.addClassName("text-card-info");
         return info;
-    }
-
-    /**
-     * The corner download affordance, shown only on public-domain cards.
-     *
-     * <p>The visibility test compares against {@code t("about.license.publicDomain")}
-     * — the same call the card label was built from — so it is locale-safe without
-     * parsing display text. It is NOT the security boundary: the card label is
-     * hand-written in Java while {@code CorpusDownloadController} reads the
-     * edition's own {@code @license} out of the corpus on every request. If the two
-     * ever disagree the link is simply refused with a 403, which is the right way
-     * round for a mistake to land.
-     *
-     * @param anAbbr the edition abbreviation, resolved server-side to its document
-     * @return an anchor to the download endpoint
-     */
-    private Anchor downloadCorner(final String anAbbr) {
-        // "XML" rather than a file-type illustration: a picture small enough to sit in
-        // a card corner is unreadable, and this page's vocabulary is chips and glyphs,
-        // not iconography. The word also sets the expectation the bare arrow could
-        // not — what arrives is a structured data file, not something to curl up with.
-        // Untranslated: XML is a format name, the same in every locale.
-        final Anchor dl = new Anchor("/download/" + anAbbr, "\u2913 XML");
-        dl.getElement().setAttribute("download", true);
-        dl.getElement().setAttribute("title", t("about.texts.downloadThis"));
-        dl.getElement().setAttribute("aria-label", t("about.texts.downloadThis"));
-        dl.getStyle()
-            .set("position", "absolute").set("top", "7px").set("right", "8px")
-            .set("font-size", "11px").set("font-weight", "700")
-            .set("letter-spacing", "0.4px").set("line-height", "1")
-            .set("padding", "4px 7px").set("border-radius", "5px")
-            // Mid-navy on a faint tint: reads as a button at a glance, holds ~7:1
-            // contrast for a glyph with no text label, and stays quieter than the
-            // card title so it does not compete with the card's own link.
-            .set("color", "#3f6285").set("text-decoration", "none")
-            .set("background", "#f2f6fa");
-        dl.addClassName("text-card-download");
-        return dl;
     }
 
     // ── Full-text search ───────────────────────────────────
@@ -1073,7 +1034,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("line-height", "1.8").set("margin", "0 0 10px 0").set("max-width", "720px");
         s.add(downloadNote);
 
-        final Anchor downloadLink = new Anchor("/download", "common-root.org/download");
+        final Anchor downloadLink = new Anchor("/api/docs#downloads", "common-root.org/api/docs");
         downloadLink.getStyle().set("font-family", "ui-monospace, SFMono-Regular, Menlo, monospace")
             .set("font-size", "13px").set("color", "#1a5c8a");
         s.add(downloadLink);

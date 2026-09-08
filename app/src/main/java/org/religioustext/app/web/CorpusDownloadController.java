@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -126,7 +128,9 @@ public class CorpusDownloadController {
         final List<String> rows = query(xquery);
         final StringBuilder out = new StringBuilder();
         out.append("# Public-domain texts, as the XML the reader itself queries.\n")
-           .append("# GET /download/{id} returns the document; see schema/religious-text.xsd.\n")
+           .append("# Downloads moved behind the API (0.8.5): GET /api/v1/texts/{token}/download\n")
+           .append("# with an API key (free \u2014 create one on your account page). Docs: /api/docs\n")
+           .append("# Schema: schema/religious-text.xsd.\n")
            .append("# This site's reading-order attributes (global*Seq) are stripped on the way\n")
            .append("# out: you get the edition, not our numbering.\n")
            .append("# Licensed and CC-licensed editions are not served here — see /about.\n#\n")
@@ -136,65 +140,25 @@ public class CorpusDownloadController {
     }
 
     /**
-     * The corpus document for one edition, if and only if it is public domain.
+     * {@code GET /download/<key>} — gone (0.8.5). Whole editions are served through
+     * the API, behind a key, with the byte allowance metered:
+     * {@code GET /api/v1/texts/<token>/download}. A 410 rather than a redirect, so
+     * no unmetered path silently reopens; the index above stays because it is
+     * bookmarked and now points the right way.
      *
-     * @param aKey the edition id ({@code bible-web}) or its abbreviation ({@code WEB});
-     *             the About page's cards know only the latter
-     * @return the corpus XML as an attachment, minus this site's {@code global*Seq}
-     *         attributes; 404 if unknown, 403 if not public domain
+     * @param aKey whatever was asked for — echoed, never resolved
+     * @return 410 with the pointer, as plain text
      */
     @GetMapping("/{key}")
     public ResponseEntity<String> download(@PathVariable("key") final String aKey) {
-        if (aKey == null || !SAFE_KEY.matcher(aKey).matches()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // Accepts either the document id (bible-asv-1901) or the abbreviation the
-        // About page shows on the card (ASV, Q-AR). The cards only know the
-        // abbreviation, and threading ids through thirty call sites to avoid one
-        // lookup would be the worse trade.
-        final List<String> row = query(NS_DECL
-            + "let $k := '" + aKey.replace("'", "''") + "' "
-            + "for $t in db:open('" + baseX.database() + "')//rt:text "
-            + "where string($t/@id) = $k "
-            + "   or upper-case(string($t/@abbreviation)) = upper-case($k) "
-            + "return string-join((string($t/@id), string($t/@license)), '|')");
-
-        if (row.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body("No such text: " + aKey + "\nSee /download for the list.\n");
-        }
-
-        final String[] parts = row.get(0).split("\\|", -1);
-        final String resolvedId = parts[0];
-        final String licence = parts.length > 1 ? parts[1] : "";
-
-        if (!isPublicDomain(licence)) {
-            log.info("Refused download of non-public-domain text {} (licence: {})",
-                     resolvedId, licence);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body("\"" + resolvedId + "\" is not public domain (licence: " + licence
-                    + ").\nOnly public-domain texts may be redistributed from here."
-                    + "\nSee /download for what is available.\n");
-        }
-
-        final String document = fetchDocument(resolvedId);
-        if (document == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body("Could not read " + resolvedId + " from the corpus.\n");
-        }
-
-        final HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_XML);
-        headers.set(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"" + resolvedId + ".xml\"");
-        // Corpus documents change only on re-ingestion; a day is a fair compromise
-        // between a 10 MB file and a text that has not moved in months.
-        headers.setCacheControl("public, max-age=86400");
-        return new ResponseEntity<>(document, headers, HttpStatus.OK);
+        final String safe = aKey != null && SAFE_KEY.matcher(aKey).matches() ? aKey.toLowerCase() : "<token>";
+        return ResponseEntity.status(HttpStatus.GONE)
+            .contentType(MediaType.TEXT_PLAIN)
+            .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
+            .body("Gone. Editions are downloaded through the API now:\n"
+                + "  GET https://common-root.org/api/v1/texts/" + safe + "/download\n"
+                + "  Authorization: Bearer crk_...   (keys are free: create one on your account page)\n"
+                + "Documentation: https://common-root.org/api/docs#downloads\n");
     }
 
     /**
@@ -242,7 +206,7 @@ public class CorpusDownloadController {
      * @param anId      the resolved document id, already known to the corpus
      * @return an XQuery returning the document node
      */
-    static String authenticCopyQuery(final String aDatabase, final String anId) {
+    public static String authenticCopyQuery(final String aDatabase, final String anId) {
         final String targets = SEQUENCE_ATTRIBUTES.stream()
             .map(a -> "$doc//@" + a)
             .collect(Collectors.joining(", "));
@@ -252,23 +216,6 @@ public class CorpusDownloadController {
              + anId.replace("'", "''") + ".xml') "
              + "modify delete node (" + targets + ") "
              + "return $doc";
-    }
-
-    private String fetchDocument(final String anId) {
-        try {
-            final URI uri = UriComponentsBuilder
-                .fromHttpUrl(baseX.uri() + "/" + baseX.database())
-                .queryParam("query", authenticCopyQuery(baseX.database(), anId))
-                .build(false)
-                .encode(StandardCharsets.UTF_8)
-                .toUri();
-            final ResponseEntity<String> response = restTemplate.exchange(
-                uri, HttpMethod.GET, new HttpEntity<>(authHeaders("application/xml")), String.class);
-            return response.getBody();
-        } catch (final RuntimeException e) {
-            log.error("Failed reading corpus document {}", anId, e);
-            return null;
-        }
     }
 
     private List<String> query(final String anXquery) {

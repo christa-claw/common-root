@@ -50,7 +50,7 @@ import java.util.Map;
  * the cleaning first.
  *
  * <p>Sits behind the API key like every other route for now; the spec
- * recommends making this one keyless (§10.8) and that remains Christa's call.
+ * recommends making this one keyless (§10.8) and that remains the maintainer's call.
  *
  * @author Christa Claw
  * @version 0.8.0-SNAPSHOT

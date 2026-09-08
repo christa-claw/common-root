@@ -46,7 +46,7 @@ final class ColState {
     // from. Rungs align by the reference axis, NOT canonical seq — seqs are
     // stamped per-edition and don't agree between two Bibles.
     //
-    // ONE SIGNED AXIS, ONE PAIR OF CHEVRONS (Christa, 2026-08-21). rungDepth
+    // ONE SIGNED AXIS, ONE PAIR OF CHEVRONS (design decision, 2026-08-21). rungDepth
     // runs from -totalDescendantRungs() to +totalRungs(): positive opens
     // ancestors BENEATH each verse, negative opens descendants ABOVE it, and
     // zero is the selected edition alone. ▾ increments and ▴ decrements, so ▴
@@ -66,7 +66,7 @@ final class ColState {
     Select<OrderMode> orderSelect;
     Button          syncBtn;
     /** The first {@code aCount} rungs of a ladder, generation by generation and
-     *  main line first within each — one click, one rung (Christa's read of "a
+     *  main line first within each — one click, one rung (the maintainer's read of "a
      *  rung at a time"), even where a generation holds several parents. */
     private static java.util.List<SourceCatalog.Rung> take(
             final java.util.List<java.util.List<SourceCatalog.Rung>> aLadder, final int aCount) {

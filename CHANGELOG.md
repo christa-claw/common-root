@@ -70,6 +70,34 @@ in the reader toolbar and About-page nav.
 
 ---
 
+## [0.8.5] — 2026-09-08
+
+### Added
+- **Downloads through the API** (#1): `GET /api/v1/texts/{token}/download`
+  serves a whole edition as the authentic corpus XML — the same document the
+  old route served — behind the key, metered against the key's monthly byte
+  allowance (429 `bytes_quota_exceeded`), licence-gated like every text route,
+  with a strong ETag `"{id}@{corpusHash}"` so a repeat pull with
+  `If-None-Match` is a 304 that counts nothing. XML only; whole editions carry
+  no attestation tag (a 31,000-verse bundle cannot be verified under the
+  `/verify` caps — chapters and passages remain the attested surface).
+  Documented on `/api/docs#downloads`; five Postman requests (D1–D5).
+
+### Removed
+- **The anonymous download** (#2): `/download/{key}` answers 410 Gone with a
+  pointer to the API; the `/download` index stays as a plain-text pointer
+  because it is bookmarked. The ⤓ XML buttons are gone from the About-page
+  cards and the "Take the texts with you" paragraph now describes the keyed
+  route, in all 13 bundles in the same release. Reading the site still needs
+  no account; only taking the corpus away does.
+
+### Changed
+- `docs/api-spec.md` §0 records the download as built; deliberation phrasing
+  in the public documents replaced by "the maintainer", and the export sweep
+  now flags it.
+
+Closes #1, closes #2.
+
 ## [0.8.4] — 2026-09-08
 
 ### Added

@@ -4,6 +4,8 @@ package org.religioustext.app.api;
 
 import org.religioustext.app.model.VerseRef;
 import org.religioustext.app.service.ApiCorpusService;
+import org.religioustext.app.service.ApiKeyService.ResolvedKey;
+import org.religioustext.app.service.ApiQuotaService;
 import org.religioustext.app.service.AttestationService;
 import org.religioustext.app.service.AttestationService.Attestation;
 import org.religioustext.app.ui.views.ReaderLink;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -61,11 +65,79 @@ public class ApiTextController {
 
     private final ApiCorpusService   corpus;
     private final AttestationService attest;
+    private final ApiQuotaService    quota;
 
     public ApiTextController(final ApiCorpusService anApiCorpusService,
-                             final AttestationService anAttestationService) {
+                             final AttestationService anAttestationService,
+                             final ApiQuotaService anApiQuotaService) {
         this.corpus = anApiCorpusService;
         this.attest = anAttestationService;
+        this.quota  = anApiQuotaService;
+    }
+
+    // ── /texts/{src}/download ────────────────────────────────────────────
+
+    /**
+     * {@code GET /api/v1/texts/{token}/download} — the whole edition as the
+     * authentic corpus document (sequence attributes removed), XML only, metered
+     * against the key's monthly byte allowance. The licence gate is the same one
+     * the passage routes use. A strong ETag names the corpus version and the
+     * edition, so a repeat pull with {@code If-None-Match} is a 304 that counts
+     * nothing. Whole editions carry no attestation tag: a 31,000-verse bundle
+     * cannot be posted to {@code /verify}; chapters and passages are the
+     * attested surface.
+     *
+     * @param aSrc        edition token
+     * @param aFormat     optional; anything but {@code xml} is 400
+     * @param anIfNoneMatch the client's ETag, if any
+     * @param aRequest    carries the resolved key for metering
+     * @return the document, 304, or an {@link ApiError}
+     */
+    @GetMapping("/texts/{src}/download")
+    public ResponseEntity<Object> download(@PathVariable("src") final String aSrc,
+                                           @RequestParam(value = "format", required = false) final String aFormat,
+                                           @RequestHeader(value = "If-None-Match", required = false) final String anIfNoneMatch,
+                                           final HttpServletRequest aRequest) {
+        final SourceRow row = corpus.resolve(aSrc);
+        if (row == null) return unknownSource(aSrc);
+        if (!redistributable(row)) return notRedistributable(row);
+        if (aFormat != null && !aFormat.isBlank() && !"xml".equalsIgnoreCase(aFormat.trim())) {
+            return ResponseEntity.badRequest().body(ApiError.of(400, "format_not_available",
+                "Whole editions are served as XML only. For JSON use the passage routes: "
+              + "/api/v1/texts/" + token(row) + "/{ref}?format=json.", "downloads"));
+        }
+        final String etag = "\"" + row.id() + "@" + attest.corpusHash() + "\"";
+        if (anIfNoneMatch != null && anIfNoneMatch.trim().equals(etag)) {
+            return ResponseEntity.status(304).eTag(etag).build();       // counts no bytes
+        }
+        final String xml = corpus.document(row.id());
+        if (xml == null) {
+            return ResponseEntity.status(502).body(ApiError.of(502, "corpus_unavailable",
+                "The corpus could not be read for " + token(row) + "; try again shortly.", "errors"));
+        }
+        final byte[] bytes = xml.getBytes(StandardCharsets.UTF_8);
+        final ResolvedKey key = (ResolvedKey) aRequest.getAttribute(ApiAuthFilter.ATTR_KEY);
+        if (key != null && quota != null) {
+            final ApiQuotaService.Decision d = quota.wouldExceedBytes(key.key().getId(), bytes.length);
+            if (!d.allowed()) {
+                return ResponseEntity.status(429)
+                    .header("X-RateLimit-Bytes-Limit", Long.toString(d.limit()))
+                    .header("X-RateLimit-Bytes-Remaining", Long.toString(Math.max(0, d.remaining())))
+                    .header("X-RateLimit-Bytes-Reset", Long.toString(d.resetEpoch()))
+                    .header("Retry-After", Long.toString(Math.max(1, d.retryAfter())))
+                    .body(ApiError.of(429, "bytes_quota_exceeded",
+                        "This download (" + bytes.length + " bytes) would exceed the key's monthly byte allowance; "
+                      + "it resets at the start of next month (UTC).", "quotas"));
+            }
+            quota.countBytes(key.key().getId(), bytes.length);
+        }
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_XML)
+            .eTag(etag)
+            .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePrivate())
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + token(row) + ".xml\"")
+            .header("X-CommonRoot-Corpus", attest.corpusHash())
+            .body(bytes);
     }
 
     // ── /texts ────────────────────────────────────────────────────────────

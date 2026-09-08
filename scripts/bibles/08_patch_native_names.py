@@ -4,14 +4,14 @@
 """
 patch_native_names.py — set each edition's stamped @translation to the
 edition's OWN language ("the name should be in the same language as the body
-of text it represents" — Christa, 2026-07-03).
+of text it represents" — maintainer, 2026-07-03).
 
 Principle:
   * Proper-noun editions keep their names (King James Version, Textus
     Receptus, Biblia Sacra Vulgata — the last two already ARE body-language).
   * Translated-scripture editions lead with their native self-designation;
     IF AND ONLY IF the currently stored name is English, it is kept in
-    parentheses after the native name (Christa's rule, 2026-07-03 refinement).
+    parentheses after the native name (the maintainer's rule, 2026-07-03 refinement).
     Editions never stored in English gain no artificial parenthetical.
 
 Usage:

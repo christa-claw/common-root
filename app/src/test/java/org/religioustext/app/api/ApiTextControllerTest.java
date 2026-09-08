@@ -5,6 +5,10 @@ package org.religioustext.app.api;
 import org.junit.jupiter.api.Test;
 import org.religioustext.app.api.ApiTextController.Span;
 import org.religioustext.app.service.ApiCorpusService;
+import org.religioustext.app.service.ApiKeyService.ResolvedKey;
+import org.religioustext.app.service.ApiQuotaService;
+import org.religioustext.app.model.user.ApiKey;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.religioustext.app.service.AttestationService;
 import org.religioustext.app.ui.views.reader.SourceRow;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,7 +100,7 @@ class ApiTextControllerTest {
     void licensedEditionsAreNotServedByTheTextRoutes() {
         final ApiCorpusService corpus = mock(ApiCorpusService.class);
         final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
-        final ApiTextController controller = new ApiTextController(corpus, attest);
+        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class));
         // listSources() row layout: id | translation | abbreviation | direction | license | source | type | lang
         final SourceRow niv = SourceRow.of(new String[] {
             "bible-niv", "New International Version", "NIV", "ltr", "Licensed", "", "bible", "en" });
@@ -122,5 +127,85 @@ class ApiTextControllerTest {
         final ResponseEntity<Object> record = controller.text("niv");
         assertThat(record.getStatusCode().value()).isEqualTo(200);
         assertThat(((Map<String, Object>) record.getBody())).containsEntry("downloadable", false);
+    }
+
+    // ── /texts/{token}/download (issue #1): whole edition behind the key ──
+
+    private static SourceRow kjvRow() {
+        return SourceRow.of(new String[] {
+            "bible-kjv-1611", "King James Version", "KJV", "ltr", "Public Domain", "", "bible", "en" });
+    }
+
+    private static MockHttpServletRequest keyed(final String aRowId) {
+        final ApiKey key = mock(ApiKey.class);
+        when(key.getId()).thenReturn(aRowId);
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        req.setAttribute(ApiAuthFilter.ATTR_KEY, new ResolvedKey(key, null));
+        return req;
+    }
+
+    @Test
+    void downloadServesTheAuthenticDocumentAndMetersBytes() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final ApiQuotaService quota = mock(ApiQuotaService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "corpus-7", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+        when(corpus.document("bible-kjv-1611")).thenReturn("<text id=\"bible-kjv-1611\"/>");
+        when(quota.wouldExceedBytes(anyString(), anyLong()))
+            .thenReturn(new ApiQuotaService.Decision(true, 100, 50, 0, 0));
+
+        final ResponseEntity<Object> r = controller.download("kjv", null, null, keyed("key-1"));
+
+        assertThat(r.getStatusCode().value()).isEqualTo(200);
+        assertThat(r.getHeaders().getETag()).isEqualTo("\"bible-kjv-1611@corpus-7\"");
+        assertThat(r.getHeaders().getFirst("Content-Disposition")).contains("kjv.xml");
+        assertThat(r.getHeaders().getFirst("X-CommonRoot-Corpus")).isEqualTo("corpus-7");
+        assertThat(new String((byte[]) r.getBody(), java.nio.charset.StandardCharsets.UTF_8)).startsWith("<text");
+        verify(quota).countBytes("key-1", "<text id=\"bible-kjv-1611\"/>".getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+    }
+
+    @Test
+    void downloadRepeatPullIs304AndCountsNothing() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final ApiQuotaService quota = mock(ApiQuotaService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "corpus-7", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+
+        final ResponseEntity<Object> r = controller.download("kjv", null, "\"bible-kjv-1611@corpus-7\"", keyed("key-1"));
+
+        assertThat(r.getStatusCode().value()).isEqualTo(304);
+        verify(corpus, never()).document(anyString());
+        verify(quota, never()).countBytes(anyString(), anyLong());
+    }
+
+    @Test
+    void downloadRefusesLicensedEditionsJsonAndExhaustedAllowance() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final ApiQuotaService quota = mock(ApiQuotaService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+        when(corpus.resolve("niv")).thenReturn(SourceRow.of(new String[] {
+            "bible-niv", "New International Version", "NIV", "ltr", "Licensed", "", "bible", "en" }));
+        when(corpus.document("bible-kjv-1611")).thenReturn("<text/>");
+
+        final ResponseEntity<Object> niv = controller.download("niv", null, null, keyed("key-1"));
+        assertThat(niv.getStatusCode().value()).isEqualTo(403);
+        assertThat(((ApiError) niv.getBody()).error()).isEqualTo("not_redistributable");
+        verify(corpus, never()).document(anyString());
+
+        final ResponseEntity<Object> json = controller.download("kjv", "json", null, keyed("key-1"));
+        assertThat(json.getStatusCode().value()).isEqualTo(400);
+        assertThat(((ApiError) json.getBody()).error()).isEqualTo("format_not_available");
+
+        when(quota.wouldExceedBytes(anyString(), anyLong()))
+            .thenReturn(new ApiQuotaService.Decision(false, 100, 0, 1_900_000_000L, 3600));
+        final ResponseEntity<Object> full = controller.download("kjv", null, null, keyed("key-1"));
+        assertThat(full.getStatusCode().value()).isEqualTo(429);
+        assertThat(((ApiError) full.getBody()).error()).isEqualTo("bytes_quota_exceeded");
+        assertThat(full.getHeaders().getFirst("Retry-After")).isEqualTo("3600");
+        verify(quota, never()).countBytes(anyString(), anyLong());
     }
 }

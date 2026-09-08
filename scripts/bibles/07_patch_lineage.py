@@ -4,7 +4,7 @@
 """
 patch_lineage.py — stamp @basedOn (antecedent-translation lineage) onto the
 corpus editions. The reader's rung controls walk these chains to show, beneath
-each verse, the translations an edition stands on (Christa's ladder idea,
+each verse, the translations an edition stands on (the maintainer's ladder idea,
 2026-07-24 — the Qur'an-companion mechanism generalised to lineage).
 
 Keyed by ABBREVIATION and resolved to doc ids at run time, so it never guesses
@@ -64,7 +64,7 @@ LINEAGE = {
                                        # line), Luther open on the table
     # Agricola triangulated: Luther's German, Erasmus' Greek (TR witness) and
     # the Vulgate (the Swedish NT too, but that's not in the corpus). Decided
-    # with Christa 2026-08-10 — the 08-05 plan deferred Luther only because
+    # with the maintainer 2026-08-10 — the 08-05 plan deferred Luther only because
     # the corpus didn't hold LUT1545 yet.
     "AGR1548": ["LUT1545", "TR", "VUL"],
     "LUT1545": ["TR", "WLC"],      # Luther: Erasmus' Greek (TR witness) + Hebrew

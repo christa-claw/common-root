@@ -1,7 +1,7 @@
 # Common Root API v1 — draft specification
 
 Drafted 2026-09-02, expanding `api-design.md` (2026-08-27) into a buildable
-shape. Revised same week after Christa's review: added scattered-reference
+shape. Revised same week after the maintainer's review: added scattered-reference
 retrieval (§3.5) and content attestation with a verify method (§3.7) — both at
 her request, so their *existence* is settled; their mechanics are this draft's
 proposals like everything else. **Status: phases 0, 1, 3, 4 built (see §0); phase 2 pending. Nothing here is ratified beyond what
@@ -51,9 +51,18 @@ the served page `GET /api/docs` (source: `app/src/main/resources/api-docs.html`)
   same tag; an XML consumer cleans before verifying.
 - **Verify accepts both shapes:** `{text, ref, verses}` or
   `{passages:[{text, ref, verses}]}`, plus `attestation`. Still behind the key
-  (§10.8 remains Christa's call).
-- **Not yet built:** `…/download` behind the key (phase 2), plain-text display
-  modes (501 today), comments, the account-page key UI, `/download` retirement
+  (§10.8 remains the maintainer's call).
+- **Built 2026-09-08 (0.8.5):** `GET /texts/{token}/download` — XML only,
+  bytes metered (429 `bytes_quota_exceeded`), strong ETag `"{id}@{corpusHash}"`
+  with 304 counting nothing, `X-CommonRoot-Corpus` header, no attestation tag on
+  whole editions (unverifiable under the verify caps; chapters and passages are
+  the attested surface). Served live from BaseX through the same authentic-copy
+  XQuery as the old route; publish-time precomputation (§6) deferred. The
+  anonymous `/download/{key}` answers 410 with a pointer; the `/download` index
+  stays as a plain-text pointer. About page: card buttons gone, download
+  sentence rewritten in 13 bundles.
+- **Not yet built:** plain-text display
+  modes (501 today), comments
   and the About copy flip. Licensed editions are still served by the read
   routes; per the 2026-09-06 decision (the API is not a reading surface) they
   will 403 like downloads when phase 2 lands.
@@ -225,7 +234,7 @@ The core read. Parameters:
 
 ### 3.5 `GET /api/v1/passages` — scattered references
 
-The use case that shaped it (Christa, review of this draft): *sometimes you
+The use case that shaped it (maintainer, review of this draft): *sometimes you
 just want a couple of verses scattered from throughout the Bible.* One
 edition, many places:
 
@@ -303,7 +312,7 @@ Response shape (JSON only, per the §10 recommendation):
 
 ### 3.7 Attestation and `POST /api/v1/verify`
 
-Christa's proposal, adopted: responses carry a tag computed from **the texts
+The maintainer's proposal, adopted: responses carry a tag computed from **the texts
 plus a secret held server-side**, and a verify method accepts content claimed
 to be from here and says whether it is.
 
@@ -339,7 +348,7 @@ this endpoint.
   secret's handling. Server-side env/file, never in the repo, rotated on any
   suspicion (rotation is cheap *because* of `kid`).
 
-**Plain text carries the tag too** (Christa, review): because the tag is over
+**Plain text carries the tag too** (maintainer, review): because the tag is over
 the canonical form, attaching it to a text response cannot invalidate it. Two
 carriers: every `format=text` response gets an
 `X-CommonRoot-Attestation: kid=…; canon=…; corpus=…; tag=…` header; and
@@ -372,7 +381,7 @@ say) — enough for any honest quote bundle, no use as a free hashing service.
 **Auth tension, flagged not decided (§10):** the natural verifier is a skeptic
 *without* an account — someone checking a quote in a video. That argues for
 verify being **keyless with a per-IP cap**, but "API access needs an account"
-is Decided ⚖, so the exception is Christa's to grant.
+is Decided ⚖, so the exception is the maintainer's to grant.
 
 **Later, not now:** if embeds want client-side verification without calling
 home, the upgrade path is an **Ed25519 signature with a published public
@@ -399,7 +408,7 @@ it sits behind the same health/uptime gate as everything else (§9).
 the honest maximal use (whole-corpus researcher) so abuse looks like 100×,
 not 2×.
 
-**Numbers — placeholders until Christa ratifies (§10):**
+**Numbers — placeholders until the maintainer ratifies (§10):**
 
 | Counter | Default allowance | Sized against |
 |---|---|---|
@@ -494,7 +503,7 @@ someone else's site keeps working.
 
 ## 10. Recommendations on the open questions
 
-Each is a recommendation with its reason; none is settled until Christa says so.
+Each is a recommendation with its reason; none is settled until the maintainer says so.
 
 1. **Quota numbers:** 5 GB + 20 000 requests + 60/min burst (§5). Sized so the
    honest whole-corpus researcher never notices the meter exists.
@@ -503,7 +512,7 @@ Each is a recommendation with its reason; none is settled until Christa says so.
    the 1st) is benign at these allowances.
 3. **Key-required vs open-but-metered downloads:** the dissent stays recorded
    in `api-design.md` and is not re-argued here; this spec is written
-   key-required as Christa is leaning. One observation for the decision, not an
+   key-required as the maintainer is leaning. One observation for the decision, not an
    argument: §8's sequencing means the open-door About sentence is replaced,
    never briefly false — which answers the strongest practical objection.
 4. **Comments in XML:** **JSON-only.** The one-schema promise ("a chapter from
@@ -524,7 +533,7 @@ Each is a recommendation with its reason; none is settled until Christa says so.
 8. **Is `verify` keyless?** Recommend **yes** — keyless, per-IP capped, body
    capped. The verifier the feature exists for has no account and should not
    need one to distrust a quote. This is a one-route exception to the Decided
-   key requirement, so it is explicitly Christa's call (§3.7).
+   key requirement, so it is explicitly the maintainer's call (§3.7).
 9. **Scattered-refs cap:** 20 per call (`hl`'s 12, loosened). A number to
    ratify, not a principle.
 10. **HMAC now, signature later:** HMAC-SHA256 with `kid` rotation for v1;
@@ -550,5 +559,5 @@ trail by weeks without anything on the About page being untrue.
 
 *Not covered here, deliberately: write access of any kind, key management via
 API, search over the API, webhooks. Each is a scope door best opened by a
-consumer who exists. (Verse-range retrieval was on this list; Christa's review
+consumer who exists. (Verse-range retrieval was on this list; the maintainer's review
 pulled it into scope as §3.5.)*

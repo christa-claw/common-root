@@ -27,7 +27,7 @@
 <p class="muted">Read-only access to the corpus: editions, their contents, passages, and a way to prove a quote came from here. Base URL <code>/api/v1</code>. Everything is JSON unless you ask for XML.</p>
 
 <nav>
-  <a href="#start">Start here</a><a href="#auth">Keys</a><a href="#texts">Editions</a><a href="#refs">References</a><a href="#passages">Passages</a><a href="#formats">Formats</a><a href="#attest">Attestation</a><a href="#verify">Verify</a><a href="#quotas">Quotas</a><a href="#errors">Errors</a>
+  <a href="#start">Start here</a><a href="#auth">Keys</a><a href="#texts">Editions</a><a href="#refs">References</a><a href="#passages">Passages</a><a href="#formats">Formats</a><a href="#downloads">Downloads</a><a href="#attest">Attestation</a><a href="#verify">Verify</a><a href="#quotas">Quotas</a><a href="#errors">Errors</a>
 </nav>
 
 <h2 id="start">Start here: following a token</h2>
@@ -96,6 +96,12 @@ GET /passages?src=kjv,web&amp;refs=GEN.1.1,GEN.1.2</code></pre>
 <h2 id="formats">Formats</h2>
 <p><code>?format=json</code> (default) or <code>?format=xml</code>; the query parameter wins, otherwise an <code>Accept: application/xml</code> header is honoured. XML is the corpus's own <code>&lt;chapter&gt;</code> element under <code>http://religioustext.org/schema/1.0</code> — a valid subtree of <code>religious-text.xsd</code>, the same bytes you would cut out of the bulk download, with this site's reading-order attributes removed. It is available for single passages only; <code>/passages</code> and <code>/texts</code> are JSON. The attestation rides inside the document as a processing instruction before the element — <code>&lt;?common-root-attestation alg="…" kid="…" canon="…" corpus="…" minted="…" app="…" tag="…"?&gt;</code> — so a saved file is self-validating; validators ignore it and the element stays a pure schema subtree. Plain text answers 501 until the display modes ship.</p>
 
+<h2 id="downloads">Downloads</h2>
+<p>A whole edition as the authentic corpus document — every book, chapter and verse against <code>religious-text.xsd</code>, with this site's reading-order attributes removed: <code>GET /api/v1/texts/{token}/download</code>. XML only (<code>?format=json</code> is 400 with a pointer to the passage routes); 5–12 MB for a Bible, so it is metered against the key's <em>byte</em> allowance rather than the request count, and refused with 429 <code>bytes_quota_exceeded</code> when a pull would exceed it. Licensed editions are 403 like everywhere else; <code>/texts</code> tells you in advance with <code>downloadable</code>.</p>
+<pre><code>curl -H "Authorization: Bearer crk_…" -o kjv.xml \
+     https://common-root.org/api/v1/texts/kjv/download</code></pre>
+<p>The response carries a strong <code>ETag</code> that names the edition and the corpus version (<code>"bible-kjv-1611@…"</code>) and <code>X-CommonRoot-Corpus</code> with the version alone. Send the ETag back as <code>If-None-Match</code> on the next pull: a 304 means the corpus has not been republished since, and it counts nothing. Whole editions carry no attestation tag — a 31,000-verse bundle cannot be posted to <code>/verify</code> — so quote from chapters and passages when you need the tag. The anonymous <code>/download/&lt;id&gt;</code> route of earlier releases answers 410 with the same pointer.</p>
+
 <h2 id="attest">Attestation</h2>
 <p>Every passage response carries a tag that lets anyone later confirm the text came from here, unmodified, for a given corpus version. JSON responses carry it as <code>attestation</code>; every response also carries it as a header:</p>
 <pre><code>X-CommonRoot-Attestation: alg=HMAC-SHA256; kid=k1; canon=v1; corpus=…; minted=2026-09-06T14:02:11Z; app=0.8.0; tag=…</code></pre>
@@ -138,11 +144,12 @@ X-RateLimit-Reset: 1790812800        epoch seconds</code></pre>
   "docs": "https://common-root.org/api/docs#texts" }</code></pre>
 <table>
 <tr><th>Status</th><th><code>error</code></th><th>When</th></tr>
-<tr><td>400</td><td><code>bad_ref</code>, <code>bad_format</code>, <code>too_many_refs</code>, <code>missing_source</code></td><td>the request cannot be honoured as written; nothing partial is served</td></tr>
+<tr><td>400</td><td><code>bad_ref</code>, <code>bad_format</code>, <code>format_not_available</code>, <code>too_many_refs</code>, <code>missing_source</code></td><td>the request cannot be honoured as written; nothing partial is served</td></tr>
 <tr><td>401</td><td><code>missing_key</code>, <code>invalid_key</code>, <code>key_in_query_string</code></td><td>no usable key in the <code>Authorization</code> header</td></tr>
 <tr><td>403</td><td><code>not_redistributable</code></td><td>a licensed edition, whatever key is presented</td></tr>
 <tr><td>404</td><td><code>unknown_source</code>, <code>no_such_passage</code></td><td>no such edition, or the reference is not in it</td></tr>
-<tr><td>429</td><td><code>quota_exceeded</code></td><td>allowance or burst limit; see <code>Retry-After</code></td></tr>
+<tr><td>429</td><td><code>quota_exceeded</code>, <code>bytes_quota_exceeded</code></td><td>request allowance or burst limit; byte allowance on downloads — see <code>Retry-After</code></td></tr>
+<tr><td>502</td><td><code>corpus_unavailable</code></td><td>the corpus could not be read; try again shortly</td></tr>
 <tr><td>501</td><td><code>not_implemented</code></td><td>plain-text format, for now</td></tr>
 </table>
 <p>Switch on <code>error</code>, never on <code>message</code>: the slug is stable, the sentence is not.</p>

@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.religioustext</groupId>
         <artifactId>religious-texts-parent</artifactId>
-        <version>0.8.4</version>
+        <version>0.8.5</version>
     </parent>
 
     <artifactId>app</artifactId>

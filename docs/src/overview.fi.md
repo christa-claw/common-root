@@ -6,7 +6,7 @@ _Tutki tekstejä, jotka muovaavat maailmaamme._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.4 |
+| Version | 0.8.5 |
 | Generated | 2026-09-08 |
 <!-- /AUTOGEN:meta -->
 
@@ -87,6 +87,7 @@ avautuu oikein toisessa.
 | `bible-asv-1901` |  | 66 | 31102 |
 | `bible-bes` |  | 66 | 31103 |
 | `bible-bsb` |  | 66 | 31086 |
+| `bible-byz1904-1904` |  | 27 | 7958 |
 | `bible-de-1545` |  | 66 | 31170 |
 | `bible-de-elberfelder` |  | 66 | 31102 |
 | `bible-diaglott-il-1864` |  | 27 | 7955 |
@@ -148,7 +149,7 @@ avautuu oikein toisessa.
 | `quran-en-yusufali` | en | 114 | 6236 |
 | `quran-ru-sablukov` | ru | 114 | 6236 |
 
-_64 translations, 1,227,312 verses total._
+_65 translations, 1,235,270 verses total._
 <!-- /AUTOGEN:translations -->
 
 Lisää käännöksiä ja perinteitä — mukaan lukien Koraani, hadith-kokoelmat ja muita

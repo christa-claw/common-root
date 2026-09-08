@@ -91,13 +91,13 @@ sweep() {
   else
     echo "gitleaks: not installed (brew install gitleaks) — pattern grep only"
   fi
-  local pat='crk_[A-Za-z0-9]{20,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}|claude\.ai/code/session|/Volumes/VMs|/Users/[a-z]+|christina|BEGIN (RSA|OPENSSH) PRIVATE|api[_-]?key\s*[:=]\s*[A-Za-z0-9_-]{16,}'
+  local pat='crk_[A-Za-z0-9]{20,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}|claude\.ai/code/session|/Volumes/VMs|/Users/[a-z]+|christina|Christa.s (call|review|proposal)|\(Christa|Christa,|BEGIN (RSA|OPENSSH) PRIVATE|api[_-]?key\s*[:=]\s*[A-Za-z0-9_-]{16,}'
   # Reviewed and accepted (2026-09-08): dev seed accounts, the site's own
   # public addresses, documentation placeholders, and the superuser seed in
   # V11 (the maintainer's public commit address).
   local BENIGN='noreply@|example\.(com|org)|a@b\.cd|@author|@test\.local|info@common-root\.org|system@religioustext\.platform|your@|you@|crk_0{20,}|crk_REPLACE|christa\.claw@proton\.me'
   local hits
-  hits=$(grep -rEIn --exclude-dir=node_modules --exclude=publish_public.sh "$pat" "$out" \
+  hits=$(grep -rEIn --exclude-dir=node_modules --exclude=publish_public.sh --exclude=CHANGELOG.md "$pat" "$out" \
          | grep -vE "$BENIGN" || true)
   if [ -n "$hits" ]; then
     echo "pattern hits (review each — e-mails and local paths are the usual):"

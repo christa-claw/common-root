@@ -6,7 +6,7 @@ _研读塑造我们世界的文本。_
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.4 |
+| Version | 0.8.5 |
 | Generated | 2026-09-08 |
 <!-- /AUTOGEN:meta -->
 
@@ -67,6 +67,7 @@ Common Root? 是一款免费、开放的阅读工具，用于并排探索亚伯�
 | `bible-asv-1901` |  | 66 | 31102 |
 | `bible-bes` |  | 66 | 31103 |
 | `bible-bsb` |  | 66 | 31086 |
+| `bible-byz1904-1904` |  | 27 | 7958 |
 | `bible-de-1545` |  | 66 | 31170 |
 | `bible-de-elberfelder` |  | 66 | 31102 |
 | `bible-diaglott-il-1864` |  | 27 | 7955 |
@@ -128,7 +129,7 @@ Common Root? 是一款免费、开放的阅读工具，用于并排探索亚伯�
 | `quran-en-yusufali` | en | 114 | 6236 |
 | `quran-ru-sablukov` | ru | 114 | 6236 |
 
-_64 translations, 1,227,312 verses total._
+_65 translations, 1,235,270 verses total._
 <!-- /AUTOGEN:translations -->
 
 更多译本与传统——包括《古兰经》、各圣训集，以及多种语言的更多圣经版本——正在持续添加。

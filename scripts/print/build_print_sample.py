@@ -27,7 +27,7 @@ WHAT IT SHOWS, AND WHY THESE PASSAGES
    in any case the most visually striking page in the sample.
 
    NOTE ON THE COVER (2026-07-30). It read "three Bibles you cannot buy" until
-   Christa questioned it. Two of the three are sold: chronological Bibles are a
+   The maintainer questioned it. Two of the three are sold: chronological Bibles are a
    retail CATEGORY (Lifeway, who are on our own target list, have a shop section
    for them; Thomas Nelson and Tyndale both publish one), and reader's editions
    without chapter and verse numbers are a mainstream line (Crossway's ESV
@@ -104,7 +104,7 @@ FOOTNOTE_TAIL = re.compile(r"\s*\b\d+\.\d+\s+\S[^:]{0,40}:.*$")
 
 
 # The KJV's own paragraph marks, carried through from 1611. Removed from the
-# sample on Christa's call (2026-07-31): "nothing in the text is altered" is a
+# sample on the maintainer's call (2026-07-31): "nothing in the text is altered" is a
 # claim about the WORDS, and a pilcrow is editorial marking, not text. They also
 # stop dead at Acts 20:36 — the 1611 markup was never finished — so in a full run
 # they peter out, which reads as a data fault to anyone who does not know the
