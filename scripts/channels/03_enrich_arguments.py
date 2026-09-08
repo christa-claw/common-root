@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 enrich_arguments.py — add video_id / video_url / per-verse-ref timecodes to
 transcripts/arguments.json, in place (with a .bak backup).

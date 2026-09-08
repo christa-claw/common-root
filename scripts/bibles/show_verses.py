@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 show_verses.py — print a verse range from one or more editions, for eyeballing
 alignment questions (omission vs merge vs renumbering).

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 # publish_public.sh — export the public part of this repository.
 #
 # The private repository (religious-texts) is the working repo: code, design

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 patch_lineage.py — stamp @basedOn (antecedent-translation lineage) onto the
 corpus editions. The reader's rung controls walk these chains to show, beneath

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 extract_esword_bible.py — pull verse text out of an e-Sword Bible module
 (.bblx / .bbli, which are SQLite databases) into flat import JSON.

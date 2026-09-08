@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """Deterministic comment ids for arguments.json entries.
 
 Shared by the Ollama extractor (mints an id when it CREATES an entry) and the

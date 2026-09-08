@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 reindex_search.py — populate the Meilisearch full-text index from the two
 authoritative sources, per docs/search.md (step 1 of §8).

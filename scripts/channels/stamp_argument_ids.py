@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """One-time backfill: stamp every arguments.json entry with a deterministic
 cmt_ id (see comment_id.py). Idempotent — entries that already carry an `id`
 are left untouched, so re-running is a no-op. Writes a .bak first.

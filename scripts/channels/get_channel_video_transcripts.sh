@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 yt-dlp --write-auto-sub --skip-download --sub-lang --sleep-requests 2 --sleep-subtitles 2 en \
   --output "transcripts/%(channel)s/videos/%(upload_date)s_%(title)s" \
   "https://www.youtube.com/@DUSDawah/videos"

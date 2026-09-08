@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 inspect_basex.py — diagnostic tool to inspect a translation's book data in BaseX.
 Usage: python3 scripts/bibles/inspect_basex.py [translation-id]

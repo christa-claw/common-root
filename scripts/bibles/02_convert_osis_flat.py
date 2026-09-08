@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """Convert an OSIS XML Bible (e.g. github.com/gratis-bible/bible) into the
 flat-JSON shape accepted by 03_import_json_bible.py --format flat.
 

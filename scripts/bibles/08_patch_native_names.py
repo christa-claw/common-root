@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 patch_native_names.py — set each edition's stamped @translation to the
 edition's OWN language ("the name should be in the same language as the body

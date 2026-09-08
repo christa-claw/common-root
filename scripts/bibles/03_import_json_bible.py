@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """Import a flat-JSON Bible into the Common Root? BaseX schema.
 
 Handles two public-domain JSON shapes and PUTs a <text> document straight into

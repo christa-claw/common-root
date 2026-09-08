@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 stamp_chronological.py — stamps globalChronologicalSeq on every verse in BaseX
 for all translations, following the order defined in orderings/chronological.yml.

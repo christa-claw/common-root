@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """Convert the Kotus VKS Biblia 1642 corpus (saved kaino.kotus.fi HTML pages)
 into the flat-JSON shape accepted by 03_import_json_bible.py --format flat.
 

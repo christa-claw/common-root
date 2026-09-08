@@ -6,7 +6,7 @@ _Изучайте тексты, которые формируют наш мир.
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.1 |
+| Version | 0.8.2 |
 | Generated | 2026-09-08 |
 <!-- /AUTOGEN:meta -->
 

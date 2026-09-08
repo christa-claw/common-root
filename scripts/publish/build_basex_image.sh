@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 set -euo pipefail
 #
 # build_basex_image.sh — snapshot the local BaseX corpus, bake it into an

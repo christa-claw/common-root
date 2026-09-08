@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 Detect arguments whose source video is gone from YouTube, and produce the SQL
 that removes them from the site.

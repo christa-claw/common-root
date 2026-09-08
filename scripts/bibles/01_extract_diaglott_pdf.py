@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 extract_diaglott_pdf.py — pull Wilson's ENGLISH TRANSLATION column out of the
 scanned Emphatic Diaglott PDF and emit flat import JSON.

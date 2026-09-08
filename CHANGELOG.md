@@ -70,6 +70,17 @@ in the reader toolbar and About-page nav.
 
 ---
 
+## [0.8.2] — 2026-09-08
+
+### Changed
+- **Licence: GNU Affero General Public License v3.0 or later.** The public
+  mirror's first export (0.8.1, 2026-09-08) went out under Apache-2.0 and was
+  relicensed the same morning; that one release stays available under the
+  terms it carried, everything from 0.8.2 is AGPL-3.0-or-later. Every Java,
+  Python and shell source now opens with an SPDX line and copyright notice;
+  `pom.xml` declares the licence; `NOTICE` spells out the section-13
+  obligation for anyone running a modified instance as a service.
+
 ## [0.8.1] — 2026-09-08
 
 ### Added

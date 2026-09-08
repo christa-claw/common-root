@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 ingest_bom.py — ingest the LDS Standard Works (Book of Mormon, Doctrine and
 Covenants, Pearl of Great Price) into the BaseX 'religioustext' database, in the

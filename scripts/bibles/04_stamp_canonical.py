@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 stamp_canonical.py — stamps @globalCanonicalSeq on every verse of a Bible
 edition in BaseX, in canonical reading order: book @canonicalOrder, then

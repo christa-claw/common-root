@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 check_edition_info.py — verify EditionInfo.PAGES translations against their
 English originals, and report coverage gaps.

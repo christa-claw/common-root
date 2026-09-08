@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 List API.Bible editions that are NOT yet configured in bible-sources.yml, and
 (optionally) fetch each candidate's detail record so its copyright / info text

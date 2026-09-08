@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 stamp_tanakh.py — stamps globalTanakhSeq on every verse of every BIBLE doc in
 BaseX, in the Hebrew-Bible (Tanakh) arrangement: Torah → Nevi'im → Ketuvim

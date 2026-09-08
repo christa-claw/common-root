@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 make_og_image.py — render the 1200×630 social-share card (og:image) for
 Common Root?, composited from the existing PWA logo mark on the brand navy.

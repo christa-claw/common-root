@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 fetch_diaglott_studybible.py — fetch the Emphatic Diaglott INTERLINEAR from
 studybible.info and emit flat import JSON.

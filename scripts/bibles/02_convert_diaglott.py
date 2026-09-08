@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 convert_diaglott.py — turn the custom Emphatic Diaglott interlinear JSON
 (greek / interlinear / translation / footnotes per verse) into the FLAT shape

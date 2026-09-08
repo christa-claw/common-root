@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 # Extract all 27 NT books of the Emphatic Diaglott TRANSLATION column to draft JSON.
 #
 # Page ranges come from `--mode headers` (the running-header book map); the

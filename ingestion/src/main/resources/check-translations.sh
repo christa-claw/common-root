@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 # Verify which translations exist on the CDN
 # Run before ingesting to confirm codes are valid
 

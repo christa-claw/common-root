@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 #
 # extract_ctl.sh — pause/resume control for the local Ollama comment extractor.
 #

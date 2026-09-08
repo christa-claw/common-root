@@ -22,4 +22,6 @@ repository (`docs/access-control.md`, `docs/search.md`, `docs/groups.md`,
 `docs/api-design.md`); the decisions they record are reflected in the code,
 the migrations and `CHANGELOG.md`.
 
-**Licence:** Apache License 2.0 — see `LICENSE` and `NOTICE`.
+**Licence:** GNU Affero General Public License v3.0 or later — see `LICENSE`
+and `NOTICE`. Release 0.8.1 was published under Apache-2.0 for a few hours on
+2026-09-08; from 0.8.2 the licence is AGPL-3.0-or-later.

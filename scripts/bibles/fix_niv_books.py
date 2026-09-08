@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 """
 Fix NIV duplicate books in BaseX.
 The NIV document has two sets of books — an old partial set and a new complete set.

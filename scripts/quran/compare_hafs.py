@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Christa Claw
 # -*- coding: utf-8 -*-
 """Audit our Hafs (alquran.cloud / Tanzil) against the King Fahd Complex's own Hafs.
 

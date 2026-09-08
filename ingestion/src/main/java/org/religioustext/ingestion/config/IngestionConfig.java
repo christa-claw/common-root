@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Christa Claw
 package org.religioustext.ingestion.config;
 
 import org.springframework.context.annotation.Bean;
