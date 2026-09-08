@@ -1,0 +1,692 @@
+{
+  "info": {
+    "name": "Common Root API v1 (dev)",
+    "description": "Exercises what exists of /api/v1 so far: the health endpoint and the key/quota gate (docs/api-spec.md §2, §3.1, §5; docs/api-test-cases.md H*, K*, Q*). Set the collection variables `baseUrl` and `apiKey`. Scripture routes (texts, chapter, passages) are live; attestation + verify are live; comments and downloads-behind-key are not built yet.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://common-root.org"
+    },
+    {
+      "key": "apiKey",
+      "value": "crk_REPLACE_WITH_YOUR_KEY"
+    }
+  ],
+  "item": [
+    {
+      "name": "H1/H5 Health — no auth, no quota",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 ok or 503 degraded, never 401', () => pm.expect([200, 503]).to.include(pm.response.code));",
+              "const b = pm.response.json();",
+              "pm.test('status matches code', () => pm.expect(b.status).to.eql(pm.response.code === 200 ? 'ok' : 'degraded'));",
+              "pm.test('subsystems listed', () => pm.expect(b.subsystems).to.have.keys('mysql', 'basex', 'meilisearch'));",
+              "pm.test('no rate headers on health', () => pm.expect(pm.response.headers.has('X-RateLimit-Limit')).to.be.false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K8 Missing key → 401 missing_key",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));",
+              "const b = pm.response.json();",
+              "pm.test('error shape', () => pm.expect(b).to.have.keys('status', 'error', 'message', 'docs'));",
+              "pm.test('missing_key', () => pm.expect(b.error).to.eql('missing_key'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K8 Wrong scheme → 401",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Basic Zm9vOmJhcg=="
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401 not 500', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K7 Key in query string → 401 even though valid",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts?key={{apiKey}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));",
+              "pm.test('names the reason', () => pm.expect(pm.response.json().error).to.eql('key_in_query_string'));",
+              "pm.test('tells you to rotate', () => pm.expect(pm.response.json().message).to.include('rotate'));",
+              "pm.test('not counted', () => pm.expect(pm.response.headers.has('X-RateLimit-Remaining')).to.be.false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K5 Unknown key → 401 invalid_key",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer crk_0000000000000000000000000000000000000000"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('401', () => pm.response.to.have.status(401));",
+              "pm.test('invalid_key', () => pm.expect(pm.response.json().error).to.eql('invalid_key'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K4/Q4 Valid key → passes the gate, rate headers present",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('not 401/429', () => pm.expect([401, 429]).to.not.include(pm.response.code));",
+              "pm.test('X-RateLimit-Limit', () => pm.expect(pm.response.headers.get('X-RateLimit-Limit')).to.eql('20000'));",
+              "const remaining = Number(pm.response.headers.get('X-RateLimit-Remaining'));",
+              "pm.test('remaining is a number below the limit', () => pm.expect(remaining).to.be.below(20000));",
+              "pm.test('reset is an epoch in the future', () => pm.expect(Number(pm.response.headers.get('X-RateLimit-Reset'))).to.be.above(Date.now() / 1000));",
+              "// Q1: run this request twice and watch Remaining drop by exactly one.",
+              "const prev = pm.collectionVariables.get('lastRemaining');",
+              "if (prev !== undefined && prev !== null && prev !== '') pm.test('remaining dropped by 1 since last run', () => pm.expect(remaining).to.eql(Number(prev) - 1));",
+              "pm.collectionVariables.set('lastRemaining', String(remaining));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Texts — the catalogue",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('has texts', () => pm.expect(b.texts.length).to.be.above(50));",
+              "pm.test('kjv is listed and downloadable', () => pm.expect(b.texts.find(t => t.token === 'kjv').downloadable).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Text — one edition",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('token', () => pm.expect(pm.response.json().token).to.eql('kjv'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books — KJV table of contents",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/books",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('at least the 66 (KJV 1611 carries the Apocrypha: 80)', () => pm.expect(b.count).to.be.at.least(66));",
+              "pm.test('Genesis has 50 chapters', () => pm.expect(b.books.find(x => x.code === 'GEN').chapters).to.have.lengthOf(50));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books — Qur'an surahs",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/q-ar/books",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('114 surahs, type quran', () => { pm.expect(b.count).to.eql(114); pm.expect(b.type).to.eql('quran'); });",
+              "pm.test('surah 2 has an Arabic name', () => pm.expect(b.books.find(x => x.code === '2').nativeName).to.be.a('string'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books — hadith collection (Bukhari)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/buk-en/books",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('has books', () => pm.expect(pm.response.json().count).to.be.above(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P1 Chapter as JSON — KJV John 1",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/JHN.1",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('51 verses', () => pm.expect(b.verses.length).to.eql(51));",
+              "pm.test('direction stated', () => pm.expect(b.direction).to.eql('ltr'));",
+              "pm.test('cacheable', () => pm.expect(pm.response.headers.get('Cache-Control')).to.include('max-age=3600'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P2 Verse as XML — KJV John 3:16",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/JHN.3.16?format=xml",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 xml', () => { pm.response.to.have.status(200); pm.expect(pm.response.headers.get('Content-Type')).to.include('application/xml'); });",
+              "pm.test('corpus namespace, chapter element, no seq attributes', () => { const t = pm.response.text(); pm.expect(t).to.include('http://religioustext.org/schema/1.0'); pm.expect(t).to.include('<chapter'); pm.expect(t).to.not.include('globalCanonicalSeq'); });",
+              "pm.test('self-validating: attestation PI before the element', () => pm.expect(pm.response.text()).to.match(/^<\\?common-root-attestation .*tag=\"[0-9a-f]{64}\"\\?>\\n<chapter/));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P4 RTL — Qur'an 2:255 (Ayat al-Kursi)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/q-ar/Q.2.255",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('rtl in metadata', () => pm.expect(pm.response.json().direction).to.eql('rtl'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P8 Scattered passages — WEB",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/passages?src=web&refs=JHN.1.1,ROM.9.5,PSA.23.1-3",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const p = pm.response.json().passages;",
+              "pm.test('three groups in asked order', () => pm.expect(p.map(x => x.ref)).to.eql(['JHN.1.1','ROM.9.5','PSA.23.1-3']));",
+              "pm.test('range has three verses', () => pm.expect(p[2].verses.length).to.eql(3));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P11 Unknown source → 404",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/nope/JHN.1",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404 unknown_source', () => { pm.response.to.have.status(404); pm.expect(pm.response.json().error).to.eql('unknown_source'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K12 Licensed edition (NIV) → 403 whatever the key",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/niv/JHN.3.16",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403 not_redistributable', () => { pm.response.to.have.status(403); pm.expect(pm.response.json().error).to.eql('not_redistributable'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "K12 Licensed edition in a bundle → 403, nothing served",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/passages?refs=kjv:JHN.3.16,niv:JHN.3.16",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('403', () => pm.response.to.have.status(403));",
+              "pm.test('no passages leaked', () => pm.expect(pm.response.json().passages).to.be.undefined);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P9 Refs cap → 400",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/passages?src=kjv&refs=GEN.1.1,GEN.1.2,GEN.1.3,GEN.1.4,GEN.1.5,GEN.1.6,GEN.1.7,GEN.1.8,GEN.1.9,GEN.1.10,GEN.1.11,GEN.1.12,GEN.1.13,GEN.1.14,GEN.1.15,GEN.1.16,GEN.1.17,GEN.1.18,GEN.1.19,GEN.1.20,GEN.1.21",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 too_many_refs', () => { pm.response.to.have.status(400); pm.expect(pm.response.json().error).to.eql('too_many_refs'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A6 (1/3) Fetch KJV John 3:16 — saves the bundle for verify",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts/kjv/JHN.3.16",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('attestation present', () => pm.expect(b.attestation).to.have.keys('alg','kid','canon','corpus','minted','app','tag'));",
+              "pm.test('no pilcrow in JSON text', () => pm.expect(b.verses[0].text).to.not.include('\\u00B6'));",
+              "pm.test('header tag equals body tag', () => pm.expect(pm.response.headers.get('X-CommonRoot-Attestation')).to.include('tag=' + b.attestation.tag));",
+              "const bundle = { text: b.text, ref: b.ref, attestation: b.attestation, verses: b.verses };",
+              "pm.collectionVariables.set('bundle', JSON.stringify(bundle));",
+              "const tampered = JSON.parse(JSON.stringify(bundle)); tampered.verses[0].text = tampered.verses[0].text.replace('loved', 'liked');",
+              "pm.collectionVariables.set('bundleTampered', JSON.stringify(tampered));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A6 (2/3) Verify unmodified → valid:true",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/verify",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{bundle}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('valid', () => pm.expect(b.valid).to.be.true);",
+              "pm.test('says what it attests', () => pm.expect(b.attests).to.include('unmodified'));",
+              "pm.test('corpus is current', () => pm.expect(pm.response.json().corpus).to.eql('current'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A7 (3/3) Verify tampered (loved→liked) → valid:false, no reason",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/verify",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{bundleTampered}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('invalid', () => pm.expect(b.valid).to.be.false);",
+              "pm.test('no oracle: body is exactly {valid:false}', () => pm.expect(Object.keys(b)).to.eql(['valid']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A6 Cross-edition bundle — 1 John 5:7 in KJV, WEB, Vulgate, TR (one tag)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/passages?refs=kjv:1JN.5.7,web:1JN.5.7,vul:1JN.5.7,tr:1JN.5.7",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('four editions, in asked order', () => pm.expect(b.passages.map(p => p.text)).to.eql(['kjv','web','vul','tr']));",
+              "pm.test('one attestation for the whole comparison', () => pm.expect(b.attestation.tag).to.have.lengthOf(64));",
+              "pm.collectionVariables.set('bundleX', JSON.stringify({ attestation: b.attestation, passages: b.passages.filter(p => p.found).map(p => ({ text: p.text, ref: p.ref, verses: p.verses })) }));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "A6 Verify the cross-edition bundle → valid:true",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/verify",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{bundleX}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('valid', () => pm.expect(pm.response.json().valid).to.be.true);",
+              "pm.test('names every edition', () => pm.expect(pm.response.json().attests).to.include('kjv').and.include('tr'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Q8 Burst — run this with the Collection Runner, 61+ iterations",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/texts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Iterations 1–60 within a minute pass; the 61st is 429 with Retry-After ≤ 60.",
+              "if (pm.response.code === 429) {",
+              "  pm.test('429 carries Retry-After', () => pm.expect(Number(pm.response.headers.get('Retry-After'))).to.be.within(1, 60));",
+              "  pm.test('quota_exceeded body', () => pm.expect(pm.response.json().error).to.eql('quota_exceeded'));",
+              "} else {",
+              "  pm.test('allowed while under burst', () => pm.expect(pm.response.headers.has('X-RateLimit-Remaining')).to.be.true);",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

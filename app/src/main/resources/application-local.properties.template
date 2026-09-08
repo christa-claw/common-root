@@ -1,0 +1,12 @@
+# Local properties template
+# Copy this to application-local.properties and fill in your values
+# application-local.properties is gitignored and never committed
+
+# MySQL password
+spring.datasource.password=rtpassword
+
+# BaseX password
+basex.password=admin
+
+# API.Bible key — get from scripture.api.bible
+apibible.api-key=YOUR_KEY_HERE

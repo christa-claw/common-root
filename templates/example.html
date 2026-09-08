@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Example printer's template for build_edition.py --format html.
+     A shop replaces the fonts, the CSS and the ornament markup; the four
+     comment-delimited fragments are the only contract. See docs/printer-templates.md. -->
+<html><head><meta charset="utf-8"><title>{{TITLE}}</title>
+<style>
+  /* The shop's own faces go here. Nothing in this file is ours to defend. */
+  /* @font-face { font-family: "House Text"; src: url("HouseText.woff2"); } */
+  @page { size: 5.5in 8.5in; margin: 14mm 12mm 16mm 12mm; }
+  @page { @bottom-center { content: counter(page); font: 8pt Georgia, serif; } }
+  body { font: 9pt/1.32 Georgia, "Times New Roman", serif; column-count: 2;
+         column-gap: 6mm; text-align: justify; hyphens: auto; }
+  h1.book { font-size: 15pt; margin: 6mm 0 3mm; column-span: all; text-align: center; }
+  h2.chap { font-size: 11pt; font-weight: 700; margin: 0 0 1.5mm; }
+  p.body { margin: 0 0 2mm; orphans: 3; widows: 2; }
+  p.orn { text-align: center; font-size: 11pt; color: #444; margin: 2.5mm 0; }
+  sup.vn { font-size: 6pt; vertical-align: .4em; color: #666; margin: 0 .5mm 0 .6mm; }
+</style></head><body>
+{{BODY}}
+<!--CR:BOOK--><h1 class="book">{{BOOK_NAME}}</h1><!--/CR:BOOK-->
+<!--CR:SEPARATOR--><p class="orn">&#10086;</p><!--/CR:SEPARATOR-->
+<!--CR:CHAPTER--><h2 class="chap">{{CHAPTER_NAME}}</h2><p class="body">{{VERSES}}</p><!--/CR:CHAPTER-->
+<!--CR:VERSE--><sup class="vn">{{N}}</sup>{{TEXT}} <!--/CR:VERSE-->
+</body></html>

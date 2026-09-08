@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.religioustext</groupId>
+        <artifactId>religious-texts-parent</artifactId>
+        <version>0.8.1</version>
+    </parent>
+
+    <artifactId>app</artifactId>
+    <name>Common Root - App</name>
+    <description>Vaadin reader application for Common Root</description>
+
+    <properties>
+        <!-- Environment tag shown in the toolbar. Default dev; the production profile overrides
+             it to prod, so the prod jar (built with -Pproduction) is baked as prod automatically.
+             Filtered into application.properties as religioustext.env. -->
+        <rt.env>dev</rt.env>
+    </properties>
+
+    <dependencies>
+
+        <!-- Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Spring Data JPA for MySQL -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- Spring Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Spring Mail (optional: set spring.mail.host to enable SMTP sending;
+             without it the app boots fine and logs verification links instead) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- MySQL driver -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Vaadin -->
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- eXist-db client -->
+        <dependency>
+            <groupId>org.exist-db</groupId>
+            <artifactId>exist-core</artifactId>
+            <version>${exist.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j-impl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- UUID v7 generation for TypedId -->
+        <dependency>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>uuid-creator</artifactId>
+            <version>5.3.7</version>
+        </dependency>
+
+        <!-- Flyway for MySQL migrations -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
+        <!-- Jackson for DataSeeder JSON parsing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <!-- Filter application.properties so @project.version@ etc. expand at
+             build-time. We use the Spring Boot convention of @..@ delimiters
+             (rather than ${..}) so they don't clash with Spring's own runtime
+             property placeholders. Other resources stay un-filtered to avoid
+             surprising changes in unrelated files. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>application.properties</exclude>
+                </excludes>
+            </resource>
+            <!-- Project documentation PDFs (built by docs/build_docs.py, committed
+                 under docs/). Packed into the jar at META-INF/resources/docs so
+                 Spring Boot serves them at /docs/... — the About page links the
+                 per-locale overview + the technical doc from there. The repo is
+                 private, so linking raw.githubusercontent.com 404s for visitors;
+                 serving from the jar is what makes the links public. PDFs only
+                 (docx/pptx are large and not linked). -->
+            <resource>
+                <directory>${project.basedir}/../docs</directory>
+                <targetPath>META-INF/resources/docs</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>*.pdf</include>
+                    <include>api-postman-collection.json</include>   <!-- linked from /api/docs -->
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <delimiters>
+                        <delimiter>@</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <!-- Parent is religious-texts-parent (not spring-boot-starter-parent),
+                     so the repackage goal must be bound explicitly. Without this,
+                     `mvn package` yields a plain jar with no Main-Class and the
+                     container fails with "no main manifest attribute, in app.jar". -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-frontend</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <!-- Keep the checks that catch broken {@link}s, malformed HTML and
+                         unknown tags; drop the "missing @param/@return/comment" category
+                         that floods on undocumented accessors and record components.
+                         Substantive @param/@return are still written by policy (documented
+                         whenever there's any ambiguity). -->
+                    <doclint>all,-missing</doclint>
+                    <quiet>true</quiet>
+                </configuration>
+                <executions>
+                    <!-- Generate the API HTML INTO the jar's served resources so the
+                         running app publishes it at /docs/api/ (same delivery path as the
+                         doc PDFs; /docs/** is permitAll in SecurityConfig). The About page
+                         and the technical document link here so visitors who want more
+                         detail can browse the class-level reference. Bound to
+                         prepare-package: it ships in the built/deployed jar (the Dockerfile
+                         runs `mvn package`). failOnError=false so a stray Javadoc problem
+                         can never block a deployable build — `mvn javadoc:javadoc` is still
+                         the strict, fail-fast check during development. -->
+                    <execution>
+                        <id>javadoc-to-served-resources</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>javadoc</goal>
+                        </goals>
+                        <configuration>
+                            <reportOutputDirectory>${project.build.outputDirectory}/META-INF/resources/docs</reportOutputDirectory>
+                            <destDir>api</destDir>
+                            <failOnError>false</failOnError>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- JaCoCo code coverage + gate.
+                 - prepare-agent: attaches the coverage agent (sets argLine) before tests.
+                 - report (bound to `test`): writes target/site/jacoco/index.html (browsable)
+                   and jacoco.xml (for tooling) after the suite runs.
+                 - check (bound to `test`): the GATE — fails the build if coverage falls
+                   below the rule below. Bound to `test` (not the default `verify`) so the
+                   existing CI command `mvn clean test` runs it without pulling in the
+                   heavier package/frontend phases.
+                 The rule EXCLUDES hard-to-unit-test surfaces (Vaadin UI, config, the
+                 Spring Boot main class) so the number reflects the logic core — service +
+                 model — where your ACL/role tests live.
+                 STARTING FLOOR is deliberately conservative (30%). After the first CI run,
+                 open the HTML report, see the real number, and ratchet this up so it holds
+                 the line you're actually at. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <configuration>
+                    <excludes>
+                        <exclude>org/religioustext/app/ui/**</exclude>
+                        <exclude>org/religioustext/app/config/**</exclude>
+                        <exclude>**/Application.class</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <!-- RATCHET, not aspiration: pinned at the measured
+                                                 level (0.10 @ 0.3.7) so the gate catches
+                                                 REGRESSION — new code without tests fails the
+                                                 build. Raise deliberately as coverage grows
+                                                 (EM-bound services need a Testcontainers-style
+                                                 integration setup to move much beyond this). -->
+                                            <minimum>0.10</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Vaadin production build. Activated by `mvn package -Pproduction`, which
+         the Dockerfile uses. Runs build-frontend to compile the production
+         frontend bundle into the jar. Without this profile the -Pproduction
+         flag does nothing, the jar ships no bundle, and the app boots in dev
+         mode and dies with "Running project in development mode with no access
+         to folder '/build'". -->
+    <profiles>
+        <profile>
+            <id>production</id>
+            <properties>
+                <rt.env>prod</rt.env>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vaadin</groupId>
+                        <artifactId>vaadin-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>frontend</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>prepare-frontend</goal>
+                                    <goal>build-frontend</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

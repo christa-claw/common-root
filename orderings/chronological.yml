@@ -1,0 +1,713 @@
+# chronological.yml — Bible reading plan in chronological order
+#
+# Book names must match BaseX exactly (verified against bible-niv-2011.xml).
+# Key names: "Song of Songs", "Psalm" (not Psalms), "Revelation"
+#
+# Entry formats:
+#   - book: "Genesis"
+#     chapters: "1-11"          # chapter range
+#
+#   - book: "2 Kings"
+#     chapters: "18"
+#     verses: "1-8"             # verse range within a single chapter
+#
+#   - books:                    # multiple books in one reading unit
+#       - {book: "2 Samuel",    chapters: "5"}
+#       - {book: "1 Chronicles", chapters: "11-12"}
+#
+# Corrections applied vs. original Grok plan:
+#   - Song of Songs not split (merged 1-4 + 4-8 → 1-8)
+#   - 2 Chronicles 2 (wrong) → 2 Chronicles 26
+#   - John 1 moved from NT opening to sit with John 2-5
+#
+# SoS placement: between 1 Kings 3-4 and Proverbs, during Solomon's reign.
+# Apocrypha/deuterocanon (KJV 80, DRA 72) not covered — unstamped books
+# will be reported by stamp_chronological.py and sort to end in chrono mode.
+
+sequence:
+
+  # ── OLD TESTAMENT ────────────────────────────────────────────────────────
+
+  - book: "Genesis"
+    chapters: "1-11"
+
+  - book: "Job"
+    chapters: "1-42"
+
+  - book: "Genesis"
+    chapters: "12-50"
+
+  - book: "Exodus"
+    chapters: "1-40"
+
+  - book: "Leviticus"
+    chapters: "1-27"
+
+  - book: "Numbers"
+    chapters: "1-36"
+
+  - book: "Deuteronomy"
+    chapters: "1-34"
+
+  - books:
+      - {book: "Psalm", chapters: "90-91"}
+
+  - book: "Joshua"
+    chapters: "1-24"
+
+  - book: "Judges"
+    chapters: "1-21"
+
+  - book: "Ruth"
+    chapters: "1-4"
+
+  - book: "1 Samuel"
+    chapters: "1-20"
+
+  - books:
+      - {book: "Psalm", chapters: "11"}
+      - {book: "Psalm", chapters: "59"}
+
+  - book: "1 Samuel"
+    chapters: "21-24"
+
+  - books:
+      - {book: "Psalm", chapters: "7"}
+      - {book: "Psalm", chapters: "27"}
+      - {book: "Psalm", chapters: "31"}
+      - {book: "Psalm", chapters: "34"}
+      - {book: "Psalm", chapters: "52"}
+      - {book: "Psalm", chapters: "56"}
+      - {book: "Psalm", chapters: "120"}
+      - {book: "Psalm", chapters: "140-142"}
+
+  - book: "1 Samuel"
+    chapters: "25-27"
+
+  - books:
+      - {book: "Psalm", chapters: "17"}
+      - {book: "Psalm", chapters: "35"}
+      - {book: "Psalm", chapters: "54"}
+      - {book: "Psalm", chapters: "63"}
+
+  - books:
+      - {book: "1 Samuel", chapters: "28-31"}
+      - {book: "Psalm",    chapters: "18"}
+
+  - books:
+      - {book: "Psalm", chapters: "121"}
+      - {book: "Psalm", chapters: "123-125"}
+      - {book: "Psalm", chapters: "128-130"}
+
+  - book: "2 Samuel"
+    chapters: "1-4"
+
+  - books:
+      - {book: "Psalm", chapters: "6"}
+      - {book: "Psalm", chapters: "8-10"}
+      - {book: "Psalm", chapters: "14"}
+      - {book: "Psalm", chapters: "16"}
+      - {book: "Psalm", chapters: "19"}
+      - {book: "Psalm", chapters: "21"}
+
+  - book: "1 Chronicles"
+    chapters: "1-2"
+
+  - books:
+      - {book: "Psalm", chapters: "43-45"}
+      - {book: "Psalm", chapters: "49"}
+      - {book: "Psalm", chapters: "84-85"}
+      - {book: "Psalm", chapters: "87"}
+
+  - book: "1 Chronicles"
+    chapters: "3-5"
+
+  - books:
+      - {book: "Psalm", chapters: "73"}
+
+  - book: "1 Chronicles"
+    chapters: "6"
+
+  - books:
+      - {book: "Psalm", chapters: "81"}
+      - {book: "Psalm", chapters: "88"}
+      - {book: "Psalm", chapters: "92-93"}
+
+  - book: "1 Chronicles"
+    chapters: "7-10"
+
+  - books:
+      - {book: "Psalm", chapters: "102-104"}
+
+  - books:
+      - {book: "2 Samuel",     chapters: "5"}
+      - {book: "1 Chronicles", chapters: "11-12"}
+
+  - books:
+      - {book: "Psalm", chapters: "133"}
+
+  - books:
+      - {book: "Psalm", chapters: "106-107"}
+
+  - books:
+      - {book: "2 Samuel",     chapters: "6"}
+      - {book: "1 Chronicles", chapters: "13-16"}
+
+  - books:
+      - {book: "Psalm", chapters: "1-2"}
+      - {book: "Psalm", chapters: "15"}
+      - {book: "Psalm", chapters: "22-24"}
+      - {book: "Psalm", chapters: "47"}
+      - {book: "Psalm", chapters: "68"}
+
+  - books:
+      - {book: "Psalm", chapters: "89"}
+      - {book: "Psalm", chapters: "96"}
+      - {book: "Psalm", chapters: "100-101"}
+      - {book: "Psalm", chapters: "105"}
+      - {book: "Psalm", chapters: "132"}
+
+  - books:
+      - {book: "2 Samuel",     chapters: "7"}
+      - {book: "1 Chronicles", chapters: "17"}
+
+  - books:
+      - {book: "Psalm", chapters: "25"}
+      - {book: "Psalm", chapters: "29"}
+      - {book: "Psalm", chapters: "33"}
+      - {book: "Psalm", chapters: "36"}
+      - {book: "Psalm", chapters: "39"}
+
+  - books:
+      - {book: "2 Samuel",     chapters: "8-9"}
+      - {book: "1 Chronicles", chapters: "18"}
+
+  - books:
+      - {book: "Psalm", chapters: "50"}
+      - {book: "Psalm", chapters: "53"}
+      - {book: "Psalm", chapters: "60"}
+      - {book: "Psalm", chapters: "75-78"}    # 75-78 merged; Ps 76 was missing from original plan
+
+  - books:
+      - {book: "2 Samuel",     chapters: "10"}
+      - {book: "1 Chronicles", chapters: "19"}
+      - {book: "Psalm",        chapters: "20"}
+
+  - books:
+      - {book: "Psalm", chapters: "65-67"}
+      - {book: "Psalm", chapters: "69-70"}
+
+  - books:
+      - {book: "2 Samuel",     chapters: "11-12"}
+      - {book: "1 Chronicles", chapters: "20"}
+
+  - books:
+      - {book: "Psalm", chapters: "32"}
+      - {book: "Psalm", chapters: "51"}
+      - {book: "Psalm", chapters: "86"}
+      - {book: "Psalm", chapters: "122"}
+
+  - book: "2 Samuel"
+    chapters: "13-15"
+
+  - books:
+      - {book: "Psalm", chapters: "3-4"}
+      - {book: "Psalm", chapters: "12-13"}
+      - {book: "Psalm", chapters: "28"}
+      - {book: "Psalm", chapters: "55"}
+
+  - book: "2 Samuel"
+    chapters: "16-18"
+
+  - books:
+      - {book: "Psalm", chapters: "26"}
+      - {book: "Psalm", chapters: "40"}
+      - {book: "Psalm", chapters: "58"}
+      - {book: "Psalm", chapters: "61-62"}
+      - {book: "Psalm", chapters: "64"}
+
+  - book: "2 Samuel"
+    chapters: "19-21"
+
+  - books:
+      - {book: "Psalm", chapters: "5"}
+      - {book: "Psalm", chapters: "38"}
+      - {book: "Psalm", chapters: "41-42"}
+
+  - books:
+      - {book: "2 Samuel", chapters: "22-23"}
+      - {book: "Psalm",    chapters: "57"}
+
+  - books:
+      - {book: "Psalm",    chapters: "95"}
+      - {book: "Psalm",    chapters: "97-99"}
+      - {book: "2 Samuel", chapters: "24"}
+
+  - books:
+      - {book: "1 Chronicles", chapters: "21-22"}
+      - {book: "Psalm",        chapters: "30"}
+
+  - books:
+      - {book: "Psalm", chapters: "108-110"}
+
+  - book: "1 Chronicles"
+    chapters: "23-25"
+
+  - books:
+      - {book: "Psalm", chapters: "131"}
+      - {book: "Psalm", chapters: "138-139"}
+      - {book: "Psalm", chapters: "143-145"}
+
+  - books:
+      - {book: "1 Chronicles", chapters: "26-29"}
+      - {book: "Psalm",        chapters: "127"}
+
+  - books:
+      - {book: "Psalm", chapters: "111-118"}
+
+  - book: "1 Kings"
+    chapters: "1-2"
+
+  - books:
+      - {book: "Psalm", chapters: "37"}
+      - {book: "Psalm", chapters: "71"}
+      - {book: "Psalm", chapters: "94"}
+      - {book: "Psalm", chapters: "119"}
+
+  - books:
+      - {book: "1 Kings",      chapters: "3-4"}
+      - {book: "2 Chronicles", chapters: "1"}
+
+  - books:
+      - {book: "Psalm", chapters: "72"}
+
+  - book: "Song of Songs"
+    chapters: "1-8"
+
+  - book: "Proverbs"
+    chapters: "1-31"
+
+  - books:
+      - {book: "1 Kings",      chapters: "5-6"}
+      - {book: "2 Chronicles", chapters: "2-3"}
+
+  - books:
+      - {book: "1 Kings",      chapters: "7"}
+      - {book: "2 Chronicles", chapters: "4"}
+
+  - books:
+      - {book: "1 Kings",      chapters: "8"}
+      - {book: "2 Chronicles", chapters: "5"}
+
+  - books:
+      - {book: "2 Chronicles", chapters: "6-7"}
+      - {book: "Psalm",        chapters: "136"}
+
+  - books:
+      - {book: "Psalm", chapters: "134"}
+      - {book: "Psalm", chapters: "146-150"}
+
+  - books:
+      - {book: "1 Kings",      chapters: "9"}
+      - {book: "2 Chronicles", chapters: "8"}
+
+  - book: "Ecclesiastes"
+    chapters: "1-12"
+
+  - books:
+      - {book: "1 Kings",      chapters: "10-11"}
+      - {book: "2 Chronicles", chapters: "9"}
+
+  - book: "1 Kings"
+    chapters: "12-14"
+
+  - book: "2 Chronicles"
+    chapters: "10-12"
+
+  - book: "1 Kings"
+    chapters: "15"
+
+  - book: "2 Chronicles"
+    chapters: "13-16"
+
+  - books:
+      - {book: "1 Kings",      chapters: "16"}
+      - {book: "2 Chronicles", chapters: "17"}
+
+  - book: "1 Kings"
+    chapters: "17-22"
+
+  - book: "2 Chronicles"
+    chapters: "18-23"
+
+  - books:
+      - {book: "Obadiah", chapters: "1"}
+      - {book: "Psalm",   chapters: "82-83"}
+
+  - book: "2 Kings"
+    chapters: "1-13"
+
+  - book: "2 Chronicles"
+    chapters: "24"
+
+  - books:
+      - {book: "2 Kings",      chapters: "14"}
+      - {book: "2 Chronicles", chapters: "25"}
+
+  - book: "Jonah"
+    chapters: "1-4"
+
+  - books:
+      - {book: "2 Kings",      chapters: "15"}
+      - {book: "2 Chronicles", chapters: "26"}    # was "2 Chr 2" in original — corrected
+
+  - book: "Isaiah"
+    chapters: "1-8"
+
+  - book: "Amos"
+    chapters: "1-9"
+
+  - book: "2 Chronicles"
+    chapters: "27"
+
+  - book: "Isaiah"
+    chapters: "9-12"
+
+  - book: "Micah"
+    chapters: "1-7"
+
+  - books:
+      - {book: "2 Chronicles", chapters: "28"}
+      - {book: "2 Kings",      chapters: "16-17"}
+
+  - book: "Isaiah"
+    chapters: "13-27"
+
+  - books:
+      - {book: "2 Kings",      chapters: "18"}
+        verses: "1-8"
+      - {book: "2 Chronicles", chapters: "29-31"}
+      - {book: "Psalm",        chapters: "48"}
+
+  - book: "Hosea"
+    chapters: "1-14"
+
+  - book: "Isaiah"
+    chapters: "28-48"
+
+  - book: "2 Kings"
+    chapters: "18-19"
+
+  - books:
+      - {book: "Psalm", chapters: "46"}
+      - {book: "Psalm", chapters: "80"}
+      - {book: "Psalm", chapters: "135"}
+
+  - book: "Isaiah"
+    chapters: "49-66"
+
+  - books:
+      - {book: "2 Kings",      chapters: "20-21"}
+      - {book: "2 Chronicles", chapters: "32-33"}
+
+  - book: "Nahum"
+    chapters: "1-3"
+
+  - books:
+      - {book: "2 Kings",      chapters: "22-23"}
+      - {book: "2 Chronicles", chapters: "34-35"}
+
+  - book: "Zephaniah"
+    chapters: "1-3"
+
+  - book: "Jeremiah"
+    chapters: "1-40"
+
+  - books:
+      - {book: "Psalm", chapters: "74"}
+      - {book: "Psalm", chapters: "79"}
+
+  - books:
+      - {book: "2 Kings",      chapters: "24-25"}
+      - {book: "2 Chronicles", chapters: "36"}
+
+  - book: "Habakkuk"
+    chapters: "1-3"
+
+  - book: "Jeremiah"
+    chapters: "41-52"
+
+  - book: "Lamentations"
+    chapters: "1-5"
+
+  - book: "Ezekiel"
+    chapters: "1-48"
+
+  - book: "Joel"
+    chapters: "1-3"
+
+  - book: "Daniel"
+    chapters: "1-12"
+
+  - book: "Ezra"
+    chapters: "1-6"
+
+  - books:
+      - {book: "Psalm", chapters: "137"}
+
+  - book: "Haggai"
+    chapters: "1-2"
+
+  - book: "Zechariah"
+    chapters: "1-14"
+
+  - book: "Esther"
+    chapters: "1-10"
+
+  - book: "Ezra"
+    chapters: "7-10"
+
+  - book: "Nehemiah"
+    chapters: "1-13"
+
+  - books:
+      - {book: "Psalm", chapters: "126"}
+
+  - book: "Malachi"
+    chapters: "1-4"
+
+  # ── NEW TESTAMENT ────────────────────────────────────────────────────────
+  # Gospel harmony in broadly chronological event order.
+  # John 1 moved to sit with John 2-5 (Gospel of John dated ~90 AD).
+  # Epistles ordered by Pauline mission chronology.
+
+  - books:
+      - {book: "Luke",     chapters: "1"}
+      - {book: "Matthew",  chapters: "1"}
+
+  - book: "Luke"
+    chapters: "2"
+
+  - book: "Matthew"
+    chapters: "2"
+
+  - books:
+      - {book: "Matthew", chapters: "3"}
+      - {book: "Mark",    chapters: "1"}
+      - {book: "Luke",    chapters: "3"}
+
+  - books:
+      - {book: "Matthew", chapters: "4"}
+      - {book: "Luke",    chapters: "4-5"}
+
+  - book: "Mark"
+    chapters: "2"
+
+  - books:
+      - {book: "John", chapters: "1-5"}    # John 1 (Prologue) placed here with John 2-5
+
+  - books:
+      - {book: "Matthew", chapters: "12"}
+      - {book: "Mark",    chapters: "3"}
+
+  - book: "Luke"
+    chapters: "6"
+
+  - book: "Matthew"
+    chapters: "5-8"
+
+  - book: "Luke"
+    chapters: "7"
+
+  - book: "Matthew"
+    chapters: "11"
+
+  - book: "Luke"
+    chapters: "11"
+
+  - books:
+      - {book: "Matthew", chapters: "13"}
+      - {book: "Luke",    chapters: "8"}
+
+  - book: "Mark"
+    chapters: "4-5"
+
+  - book: "Matthew"
+    chapters: "9-10"
+
+  - books:
+      - {book: "Matthew", chapters: "14"}
+      - {book: "Mark",    chapters: "6"}
+
+  - book: "Luke"
+    chapters: "9"
+
+  - book: "John"
+    chapters: "6"
+
+  - books:
+      - {book: "Matthew", chapters: "15"}
+      - {book: "Mark",    chapters: "7"}
+
+  - books:
+      - {book: "Matthew", chapters: "16"}
+      - {book: "Mark",    chapters: "8"}
+
+  - books:
+      - {book: "Matthew", chapters: "17"}
+      - {book: "Mark",    chapters: "9"}
+
+  - book: "Matthew"
+    chapters: "18"
+
+  - book: "John"
+    chapters: "7-8"
+
+  - book: "John"
+    chapters: "9-10"
+
+  - book: "Luke"
+    chapters: "10-16"
+
+  - book: "John"
+    chapters: "11"
+
+  - book: "Luke"
+    chapters: "17-18"
+
+  - books:
+      - {book: "Matthew", chapters: "19"}
+      - {book: "Mark",    chapters: "10"}
+
+  - book: "Matthew"
+    chapters: "20-21"
+
+  - book: "Luke"
+    chapters: "19"
+
+  - books:
+      - {book: "Mark", chapters: "11"}
+      - {book: "John", chapters: "12"}
+
+  - books:
+      - {book: "Matthew", chapters: "22"}
+      - {book: "Mark",    chapters: "12"}
+
+  - books:
+      - {book: "Matthew", chapters: "23"}
+      - {book: "Luke",    chapters: "20-21"}
+
+  - book: "Mark"
+    chapters: "13"
+
+  - book: "Matthew"
+    chapters: "24-26"
+
+  - book: "Mark"
+    chapters: "14"
+
+  - book: "Luke"
+    chapters: "22"
+
+  - book: "John"
+    chapters: "13-17"
+
+  - books:
+      - {book: "Matthew", chapters: "27"}
+      - {book: "Mark",    chapters: "15"}
+
+  - books:
+      - {book: "Luke", chapters: "23"}
+      - {book: "John", chapters: "18-19"}
+
+  - books:
+      - {book: "Matthew", chapters: "28"}
+      - {book: "Mark",    chapters: "16"}
+
+  - books:
+      - {book: "Luke", chapters: "24"}
+      - {book: "John", chapters: "20-21"}
+
+  - book: "Acts"
+    chapters: "1-14"
+
+  - book: "James"
+    chapters: "1-5"
+
+  - book: "Acts"
+    chapters: "15-16"
+
+  - book: "Galatians"
+    chapters: "1-6"
+
+  - book: "Acts"
+    chapters: "17"
+
+  - book: "1 Thessalonians"
+    chapters: "1-5"
+
+  - book: "2 Thessalonians"
+    chapters: "1-3"
+
+  - book: "Acts"
+    chapters: "18-19"
+
+  - book: "1 Corinthians"
+    chapters: "1-16"
+
+  - book: "2 Corinthians"
+    chapters: "1-13"
+
+  - book: "Acts"
+    chapters: "20"
+
+  - book: "Romans"
+    chapters: "1-16"
+
+  - book: "Acts"
+    chapters: "21-28"
+
+  - book: "Colossians"
+    chapters: "1-4"
+
+  - book: "Philemon"
+    chapters: "1"
+
+  - book: "Ephesians"
+    chapters: "1-6"
+
+  - book: "Philippians"
+    chapters: "1-4"
+
+  - book: "1 Timothy"
+    chapters: "1-6"
+
+  - book: "Titus"
+    chapters: "1-3"
+
+  - book: "1 Peter"
+    chapters: "1-5"
+
+  - book: "Hebrews"
+    chapters: "1-13"
+
+  - book: "2 Timothy"
+    chapters: "1-4"
+
+  - book: "2 Peter"
+    chapters: "1-3"
+
+  - book: "Jude"
+    chapters: "1"
+
+  - book: "1 John"
+    chapters: "1-5"
+
+  - book: "2 John"
+    chapters: "1"
+
+  - book: "3 John"
+    chapters: "1"
+
+  - book: "Revelation"
+    chapters: "1-22"

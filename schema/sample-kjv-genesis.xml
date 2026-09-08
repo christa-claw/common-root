@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<text xmlns="http://religioustext.org/schema/1.0"
+      id="bible-kjv-1611"
+      type="bible"
+      translation="King James Version"
+      abbreviation="KJV"
+      bcp47Language="en"
+      iso639_3="eng"
+      direction="ltr"
+      script="Latn"
+      year="1611"
+      source="https://www.gutenberg.org/ebooks/10"
+      license="Public Domain"
+      totalVerses="31102">
+
+  <book name="Genesis" altName="Bereshit"
+        canonicalOrder="1" chronologicalOrder="2" narrativeOrder="1"
+        testament="OT" period="Patriarchal" approxDateBCE="1400" genre="History">
+    <chapter number="1" title="The Creation">
+      <verse number="1"
+             bookName="Genesis" bookAltName="Bereshit"
+             chapterNumber="1" chapterTitle="The Creation"
+             globalCanonicalSeq="1" globalChronologicalSeq="1070" globalNarrativeSeq="1"
+             >In the beginning God created the heaven and the earth.</verse>
+      <verse number="2"
+             bookName="Genesis" bookAltName="Bereshit"
+             chapterNumber="1" chapterTitle="The Creation"
+             globalCanonicalSeq="2" globalChronologicalSeq="1071" globalNarrativeSeq="2"
+             >And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.</verse>
+      <verse number="3"
+             bookName="Genesis" bookAltName="Bereshit"
+             chapterNumber="1" chapterTitle="The Creation"
+             globalCanonicalSeq="3" globalChronologicalSeq="1072" globalNarrativeSeq="3"
+             >And God said, Let there be light: and there was light.</verse>
+    </chapter>
+  </book>
+
+  <book name="Job"
+        canonicalOrder="18" chronologicalOrder="1" narrativeOrder="2"
+        testament="OT" period="Patriarchal" approxDateBCE="2000" genre="Wisdom">
+    <chapter number="1" title="Job Prosperity and Trial">
+      <verse number="1"
+             bookName="Job"
+             chapterNumber="1" chapterTitle="Job Prosperity and Trial"
+             globalCanonicalSeq="12675" globalChronologicalSeq="1" globalNarrativeSeq="1533"
+             >There was a man in the land of Uz, whose name was Job; and that man was perfect and upright, and one that feared God, and eschewed evil.</verse>
+      <verse number="2"
+             bookName="Job"
+             chapterNumber="1" chapterTitle="Job Prosperity and Trial"
+             globalCanonicalSeq="12676" globalChronologicalSeq="2" globalNarrativeSeq="1534"
+             >And there were born unto him seven sons and three daughters.</verse>
+    </chapter>
+  </book>
+
+</text>

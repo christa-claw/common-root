@@ -1,0 +1,12 @@
+Common Root?
+Copyright 2026 Christa Claw
+
+This product includes software developed by third parties:
+
+  docker/basex-dba/ — the BaseX DBA web application,
+  Copyright (c) 2005-2021 BaseX Team, BSD 3-Clause License (https://basex.org).
+
+The scripture corpus, transcript-derived argument ledger, translator-note
+ledgers and channel registry that the deployed site uses are NOT part of this
+repository and are not covered by its licence. Each edition served on
+common-root.org carries its own terms, stated on its "About this edition" page.

@@ -1,0 +1,39 @@
+# Caddyfile — TLS termination + reverse proxy for Common Root (prod).
+#
+# Caddy obtains and auto-renews a free Let's Encrypt certificate for the
+# hostnames below (HTTP-01 challenge — needs ports 80 + 443 reachable from the
+# internet). No cert files to download or install; renewal is automatic.
+#
+# Lives at /opt/common-root/Caddyfile beside docker-compose.prod.yml, mounted
+# read-only into the caddy container. Reverse-proxies over the internal docker
+# network to the app container (religioustext-app:8090).
+#
+# Prereqs before first start:
+#   - DNS A records: common-root.org and www.common-root.org -> 172.236.205.46
+#   - Linode firewall: allow inbound 80 and 443
+#
+# Sanity-check syntax after editing:  docker run --rm -v "$PWD/Caddyfile":/c caddy caddy validate --config /c
+
+common-root.org {
+    reverse_proxy religioustext-app:8090
+}
+
+# Umami analytics dashboard + tracking script (self-hosted, first-party).
+# Needs a DNS A record: analytics.common-root.org -> 172.236.205.46. Caddy
+# fetches its certificate automatically once the record resolves.
+analytics.common-root.org {
+    reverse_proxy religioustext-umami:3000
+}
+
+# Canonicalise www -> apex (one URL for the site; better for cookies + SEO).
+www.common-root.org {
+    redir https://common-root.org{uri} permanent
+}
+
+# --- Later: point common-root.faith at the canonical .org -------------------
+# Needs its own A records (faith + www.faith -> 172.236.205.46) first; then Caddy
+# will fetch a cert for these too. Uncomment when ready.
+#
+# common-root.faith, www.common-root.faith {
+#     redir https://common-root.org{uri} permanent
+# }

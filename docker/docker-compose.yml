@@ -1,0 +1,110 @@
+services:
+
+  # BaseX XML Database (replaces eXist-db - better ARM64 support)
+  basex:
+    image: basex/basexhttp:latest
+    container_name: religioustext-basex
+    restart: unless-stopped
+    ports:
+      - "8984:8984"   # BaseX HTTP: REST API + DBA web UI (http://localhost:8984/dba)
+      - "1984:1984"   # BaseX client port
+    environment:
+      - BASEX_JVM=-Xmx2g -Xms512m
+    volumes:
+      - basex-data:/srv/basex/data
+      - ../schema:/srv/basex/schema:ro
+      # DBA admin UI (extracted from the BaseX 9.5.2 full distribution; the
+      # slim basexhttp image ships REST but omits the DBA webapp). Mounted
+      # read-only into the served webapp so /dba works over the live data with
+      # no second instance and no data migration.
+      - ./basex-dba:/srv/basex/webapp/dba:ro
+      - ./basex-static:/srv/basex/webapp/static:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8984/rest/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - religioustext-net
+
+  # MySQL
+  mysql:
+    image: mysql:8.3
+    container_name: religioustext-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=religioustext
+      - MYSQL_USER=rtuser
+      - MYSQL_PASSWORD=rtpassword
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+      - ./mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "rtuser", "-prtpassword"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - religioustext-net
+
+  # Meilisearch — full-text search index (LOCAL dev/test only).
+  # In prod (docker-compose.prod.yml) this lives on the internal network with NO
+  # published port and a real master key; here 7700 is exposed so we can curl /
+  # eyeball the index while building reindex_search.py. See docs/search.md §7.
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: religioustext-meili
+    restart: unless-stopped
+    ports:
+      - "7700:7700"   # local only — prod keeps Meilisearch off the public internet
+    environment:
+      - MEILI_MASTER_KEY=masterKey-dev-local
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_ENV=development
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - religioustext-net
+
+  # Umami analytics — local trial instance (dashboard at http://localhost:3000,
+  # default login admin/umami — change it). Shares the MySQL container via its
+  # own `umami` database (created by mysql-init/20-umami.sql on a FRESH volume;
+  # on an existing local volume run the statements from that file manually once).
+  # The local app does NOT inject the tracking script (properties unset), so
+  # this is for exploring the dashboard, not for tracking local dev.
+  umami:
+    image: ghcr.io/umami-software/umami:mysql-latest
+    container_name: religioustext-umami
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mysql://umami:umamipassword@mysql:3306/umami
+      - APP_SECRET=local-dev-secret-change-me
+      - DISABLE_TELEMETRY=1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - religioustext-net
+
+networks:
+  religioustext-net:
+    driver: bridge
+
+volumes:
+  basex-data:
+  mysql-data:
+  meili-data:

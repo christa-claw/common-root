@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Sample Quran fragment (Sahih International translation) demonstrating
+    how the same canonical schema handles:
+      - Arabic RTL text
+      - ISO 639-3 "arb" (Modern Standard Arabic) vs "ara" (generic Arabic)
+      - BCP 47 regional tag "ar-SA"
+      - Meccan/Medinan revelation classification
+      - revelationOrder alongside canonicalOrder
+      - region attribute for Quranic recitation tradition (Hafs/Warsh)
+
+    The Quran has 114 surahs. Canonical order is the traditional
+    printed order. Revelation order is the scholarly sequence in
+    which surahs were revealed to the Prophet Muhammad (PBUH).
+
+    Al-Fatihah: canonical 1, revealed ~5th (Meccan)
+    Al-Alaq (96): canonical 96, revealed 1st (Meccan) — first revelation
+    Al-Baqarah (2): canonical 2, revealed ~87th (Medinan) — first long Medinan surah
+-->
+<text xmlns="http://religioustext.org/schema/1.0"
+      id="quran-sahih-international-2001"
+      type="quran"
+      translation="Sahih International"
+      abbreviation="SI"
+      bcp47Language="ar-SA"
+      iso639_3="arb"
+      direction="rtl"
+      script="Arab"
+      year="2001"
+      source="https://quran.com"
+      license="Public Domain"
+      region="Hafs">
+
+    <!--
+        Al-Fatihah (The Opening)
+        canonicalOrder=1  — always first in the Quran
+        revelationOrder=5  — approximately 5th surah revealed (Meccan period)
+        chronologicalOrder follows revelationOrder for the Quran
+    -->
+    <chapter number="1"
+             title="Al-Fatihah"
+             altTitle="The Opening"
+             chronologicalOrder="5"
+             revelationPlace="Meccan">
+        <verse number="1">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</verse>
+        <verse number="2">الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ</verse>
+        <verse number="3">الرَّحْمَٰنِ الرَّحِيمِ</verse>
+        <verse number="4">مَالِكِ يَوْمِ الدِّينِ</verse>
+        <verse number="5">إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ</verse>
+        <verse number="6">اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ</verse>
+        <verse number="7">صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ</verse>
+    </chapter>
+
+    <!--
+        Al-Baqarah (The Cow)
+        canonicalOrder=2  — second surah in printed Quran
+        revelationOrder=87  — one of the later revelations, Medinan period
+        Longest surah in the Quran
+    -->
+    <chapter number="2"
+             title="البقرة"
+             altTitle="Al-Baqarah / The Cow"
+             chronologicalOrder="87"
+             revelationPlace="Medinan">
+        <verse number="1">الم</verse>
+        <verse number="2">ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ</verse>
+        <verse number="3">الَّذِينَ يُؤْمِنُونَ بِالْغَيْبِ وَيُقِيمُونَ الصَّلَاةَ وَمِمَّا رَزَقْنَاهُمْ يُنفِقُونَ</verse>
+    </chapter>
+
+    <!--
+        Al-Alaq (The Clot / Read)
+        canonicalOrder=96
+        revelationOrder=1  — FIRST surah revealed to the Prophet (PBUH)
+        Verses 1-5 are the very first Quranic revelation
+    -->
+    <chapter number="96"
+             title="العلق"
+             altTitle="Al-Alaq / The Clot"
+             chronologicalOrder="1"
+             revelationPlace="Meccan">
+        <verse number="1">اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ</verse>
+        <verse number="2">خَلَقَ الْإِنسَانَ مِنْ عَلَقٍ</verse>
+        <verse number="3">اقْرَأْ وَرَبُّكَ الْأَكْرَمُ</verse>
+        <verse number="4">الَّذِي عَلَّمَ بِالْقَلَمِ</verse>
+        <verse number="5">عَلَّمَ الْإِنسَانَ مَا لَمْ يَعْلَمْ</verse>
+    </chapter>
+
+</text>

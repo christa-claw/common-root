@@ -1,0 +1,117 @@
+name: Build and publish app image
+
+# Manual-only for now. There is no auto-deploy trigger yet; re-enable the push
+# trigger below once the three VPS_* secrets are set (Settings -> Secrets and
+# variables -> Actions): VPS_HOST, VPS_USER, VPS_SSH_KEY.
+#
+# POLICY: A SNAPSHOT BUILD NEVER REACHES PROD.
+# Prod pulls `app:latest`, so anything this workflow tags `:latest` is, in
+# effect, deployed. Between releases the poms carry `-SNAPSHOT`, which means a
+# routine `--ref main` run would quietly publish in-development code to the
+# public site under a version number that does not identify what is running.
+# The gate below allows ONLY a plain MAJOR.MINOR.PATCH version to be tagged
+# :latest — an allow-list, so a mistyped "-SNAPSOT" is refused too. Build prod
+# images from the TAG:
+#
+#   gh workflow run "Build and publish app image" --ref v0.6.8
+#
+# `allow_snapshot: true` exists for a deliberate throwaway image; it publishes
+# the version tag ONLY, never `:latest`, so prod cannot pull it even by mistake,
+# and it does not deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      allow_snapshot:
+        description: 'Build a -SNAPSHOT version (version tag only, never :latest, no deploy)'
+        type: boolean
+        default: false
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'app/**'
+  #     - 'pom.xml'
+  #     - '.github/workflows/deploy.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/christa-claw/religious-texts/app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # Surfaced as a job-level env so the deploy step can detect whether a VPS
+    # has been configured and skip itself cleanly when it has not.
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f pom.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Resolve image tags (only a release may become :latest)
+        id: tags
+        run: |
+          V='${{ steps.version.outputs.version }}'
+          echo "Version on this ref: $V"
+          # ALLOW-LIST, not a block-list. Blocking "-SNAPSHOT" only stops the
+          # spellings you thought of: a pom typo'd as 0.7.1-SNAPSOT is not a
+          # snapshot by that test, and would have been published as :latest and
+          # deployed. A release is exactly MAJOR.MINOR.PATCH and nothing else;
+          # everything else has to justify itself via allow_snapshot.
+          if printf '%s' "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "snapshot=false" >> "$GITHUB_OUTPUT"
+            {
+              echo 'list<<TAGS'
+              echo "${IMAGE_NAME}:latest"
+              echo "${IMAGE_NAME}:$V"
+              echo 'TAGS'
+            } >> "$GITHUB_OUTPUT"
+          else
+            if [ '${{ inputs.allow_snapshot }}' != 'true' ]; then
+              echo "::error title=Not a release::'$V' is not a release version (MAJOR.MINOR.PATCH). Prod pulls :latest, so this build would deploy it. Cut the release, then run this workflow with --ref <tag>."
+              exit 1
+            fi
+            echo "Deliberate non-release build: version tag only, no :latest, no deploy."
+            echo "snapshot=true" >> "$GITHUB_OUTPUT"
+            {
+              echo 'list<<TAGS'
+              echo "${IMAGE_NAME}:$V"
+              echo 'TAGS'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: app/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
+
+      - name: Deploy to VPS
+        if: ${{ env.VPS_HOST != '' && steps.tags.outputs.snapshot == 'false' }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/common-root
+            docker compose -f docker-compose.prod.yml pull app
+            docker compose -f docker-compose.prod.yml up -d app

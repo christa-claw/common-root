@@ -1,0 +1,52 @@
+/* Common Root? — global theme tweaks (Lumo base). */
+
+/* Hand cursor on everything clickable. Lumo's default is
+   --lumo-clickable-cursor: default (desktop-app convention), so buttons,
+   selects, comboboxes, tabs etc. all show the ARROW even though they're
+   interactive. Web convention is the pointer hand — one variable flips every
+   Vaadin component at once (plain <a> links already use the browser default
+   pointer, and the reader's custom badges set cursor:pointer inline). */
+html {
+  --lumo-clickable-cursor: pointer;
+}
+
+/* Belt-and-suspenders: parts that don't consult the Lumo variable. Buttons
+   styled as links (the comment-card refs, toolbar toggles), anchors that lost
+   the UA default, and select/combobox value areas. */
+a[href],
+vaadin-button,
+vaadin-select,
+vaadin-combo-box,
+[role="button"] {
+  cursor: pointer;
+}
+
+
+/* About page — the "Available Texts" cards are anchors into the reader. The
+   card keeps its inline styling; hover adds a lift so the link is felt.
+   (!important because the resting border is set inline on the card div.) */
+.text-card-link > div:hover {
+  border-color: #c9a84c !important;
+  box-shadow: 0 2px 8px rgba(26, 58, 92, 0.15);
+}
+
+/* The corner download on a public-domain text card. Muted at rest so it does not
+   compete with the card's own link, and it must not inherit the card's hover lift
+   — the two are siblings, not nested, because an <a> inside an <a> is invalid. */
+.text-card-download {
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.text-card-download:hover,
+.text-card-download:focus-visible {
+  color: #1a3a5c !important;
+  background: #dde7f1 !important;
+}
+
+/* Mode cards and problem-example reference chips are links too. */
+.mode-card-link > div:hover {
+  box-shadow: 0 4px 14px rgba(26, 58, 92, 0.18) !important;
+}
+.problem-ref-link:hover span {
+  background: #1a3a5c !important;
+  color: white !important;
+}

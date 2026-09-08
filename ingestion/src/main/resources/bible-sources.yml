@@ -1,0 +1,262 @@
+# Bible translation sources
+# apiBibleId: used for full API.Bible ingestion OR title-only lookup
+# localCode:  if set, text comes from local clone; apiBibleId used for titles only
+# sourceUrl:  canonical URL for attribution — link back to original source
+
+translations:
+
+  # ── Local clone translations (text from local, titles from API.Bible) ──
+  - id: bible-kjv-1611
+    translation: King James Version
+    abbreviation: KJV
+    apiBibleId: de4e12af7f28f599-01
+    localCode: en-kjv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1611
+    license: Public Domain
+    sourceUrl: https://www.bible.com/bible/1/GEN.1
+    region: Protestant
+
+  - id: bible-asv-1901
+    translation: American Standard Version
+    abbreviation: ASV
+    apiBibleId: 06125adad2d5898a-01
+    localCode: en-asv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1901
+    license: Public Domain
+    sourceUrl: https://www.bible.com/bible/12/GEN.1
+    region: Protestant
+
+  - id: bible-web
+    translation: World English Bible
+    abbreviation: WEB
+    apiBibleId: 9879dbb7cfe39e4d-01
+    localCode: en-web
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://worldenglish.bible
+    region: Protestant
+
+  - id: bible-dra-1899
+    translation: Douay-Rheims 1899
+    abbreviation: DRA
+    apiBibleId: 179568874c45066f-01
+    localCode: en-dra
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1899
+    license: Public Domain
+    sourceUrl: https://www.drbo.org
+    region: Catholic
+
+  - id: bible-rvr09-1909
+    translation: Reina Valera 1909
+    abbreviation: RVR09
+    apiBibleId: 592420522e16049f-01
+    localCode: es-rv09
+    bcp47Language: es
+    iso639_3: spa
+    direction: ltr
+    year: 1909
+    license: Public Domain
+    sourceUrl: https://www.bible.com/bible/149/GEN.1
+    region: Protestant
+
+  # ── Additional local-clone full Bibles (normal full Bibles only) ──────
+  - id: bible-bsb
+    translation: Berean Study Bible
+    abbreviation: BSB
+    localCode: en-bsb
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://berean.bible
+    region: Protestant
+
+  - id: bible-fbv
+    translation: Free Bible Version
+    abbreviation: FBV
+    localCode: en-fbv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://freebibleversion.org
+    region: Protestant
+
+  - id: bible-gnv-1599
+    translation: Geneva Bible 1599
+    abbreviation: GNV
+    localCode: en-gnv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1599
+    license: Public Domain
+    sourceUrl: https://github.com/wldeh/bible-api
+    region: Protestant
+
+  - id: bible-lsv
+    translation: Literal Standard Version
+    abbreviation: LSV
+    localCode: en-lsv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://www.lsvbible.com
+    region: Protestant
+
+  - id: bible-rv-1885
+    translation: Revised Version 1885
+    abbreviation: RV
+    localCode: en-rv
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1885
+    license: Public Domain
+    sourceUrl: https://github.com/wldeh/bible-api
+    region: Protestant
+
+  - id: bible-bes
+    translation: Biblia en Español Sencillo
+    abbreviation: BES
+    localCode: es-bes
+    bcp47Language: es
+    iso639_3: spa
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://github.com/wldeh/bible-api
+    region: Protestant
+
+  - id: bible-pddpt
+    translation: Palabra de Dios para Ti
+    abbreviation: PDDPT
+    localCode: es-pddpt
+    bcp47Language: es
+    iso639_3: spa
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://github.com/wldeh/bible-api
+    region: Protestant
+
+  - id: bible-vbl
+    translation: Versión Biblia Libre
+    abbreviation: VBL
+    localCode: es-vbl
+    bcp47Language: es
+    iso639_3: spa
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://github.com/wldeh/bible-api
+    region: Protestant
+
+  # ⛔ IRVHIN row REMOVED (2026-07-03): the wldeh clone's hi-IN-irvhin data embeds
+  # footnote text inline in verses AND yields Hindi @name book names (breaking the
+  # corpus-wide English-@name convention that cross-edition sync depends on).
+  # bible-irvhin-2019 is ingested from ebible.org USFM instead, via
+  # scripts/bibles/02_convert_usfm_flat.py + 03_import_json_bible.py (strips \f footnotes, writes
+  # English CANON names). Do NOT re-add a localCode row for it — /ingest/all would
+  # overwrite the clean doc with the dirty clone data.
+
+  # ── Full API.Bible translations (text + titles from API.Bible) ────────
+  - id: bible-niv-2011
+    translation: New International Version
+    abbreviation: NIV
+    apiBibleId: 78a9f6124f344018-01
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 2011
+    license: Licensed
+    sourceUrl: https://www.thenivbible.com
+    region: Protestant
+
+  - id: bible-nasb-2020
+    translation: New American Standard Bible 2020
+    abbreviation: NASB
+    apiBibleId: a761ca71e0b3ddcf-01
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 2020
+    license: Licensed
+    sourceUrl: https://www.lockman.org/new-american-standard-bible-nasb
+    region: Protestant
+
+  - id: bible-nbla
+    translation: Nueva Biblia de las Américas
+    abbreviation: NBLA
+    apiBibleId: ce11b813f9a27e20-01
+    bcp47Language: es
+    iso639_3: spa
+    direction: ltr
+    license: Licensed
+    sourceUrl: https://nbla.com
+    region: Protestant
+
+  - id: bible-lut1912
+    translation: Luther Bibel 1912
+    abbreviation: LUT1912
+    apiBibleId: 926aa5efbc5e04e2-01
+    bcp47Language: de
+    iso639_3: deu
+    direction: ltr
+    year: 1912
+    license: Public Domain
+    sourceUrl: https://www.bible.com/bible/51/GEN.1
+    region: Protestant
+
+  - id: bible-aeuut
+    translation: Finnish Living News New Testament
+    abbreviation: AEUUT
+    apiBibleId: c739534f6a23acb2-01
+    bcp47Language: fi
+    iso639_3: fin
+    direction: ltr
+    license: Licensed
+    sourceUrl: https://www.agricola.fi
+    region: Protestant
+
+  - id: bible-nav
+    translation: New Arabic Version 2012
+    abbreviation: NAV
+    apiBibleId: b17e246951402e50-01
+    bcp47Language: ar
+    iso639_3: arb
+    direction: rtl
+    license: Licensed
+    sourceUrl: https://www.bible.com/bible/2305/GEN.1
+    region: Protestant
+
+  - id: bible-wlc
+    translation: Westminster Leningrad Codex
+    abbreviation: WLC
+    apiBibleId: 0b262f1ed7f084a6-01
+    bcp47Language: he
+    iso639_3: hbo
+    direction: rtl
+    license: Public Domain
+    sourceUrl: https://www.tanach.us
+    region: Protestant
+
+  - id: bible-grctr
+    translation: Greek Textus Receptus
+    abbreviation: GRCTR
+    apiBibleId: 3aefb10641485092-01
+    bcp47Language: grc
+    iso639_3: grc
+    direction: ltr
+    license: Public Domain
+    sourceUrl: https://www.bible.com/bible/156/GEN.1
+    region: Protestant

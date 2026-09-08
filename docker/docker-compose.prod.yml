@@ -1,0 +1,183 @@
+# docker-compose.prod.yml — domain + TLS deployment (Caddy in front) + FT search
+#
+#   * MySQL is NOT a baked image. It's stock mysql:8.3 on a named volume, so
+#     redeploys never touch user data (accounts, comments, notes).
+#   * Only BaseX (read-only corpus) is a baked content image you push.
+#   * App is NOT published on the public IP — Caddy terminates TLS on 80/443 and
+#     reverse-proxies to the app over the internal network; app port is bound to
+#     127.0.0.1 only (local debugging on the box).
+#   * Meilisearch is internal-only and populated from source by reindex_search.py
+#     (run as a one-off container on religioustext-net). No published port.
+#   * Heaps trimmed for a 4 GB box.
+#
+# On the server, this file needs ./mysql-init/, ./mysql.cnf, ./Caddyfile, and
+# (for populating search) ./reindex_search.py beside it.
+#
+# Usage on the server:
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+
+  basex:
+    image: ghcr.io/christa-claw/religious-texts/basex:latest   # baked corpus
+    container_name: religioustext-basex
+    restart: unless-stopped
+    # No published port — only the app/reindexer reach BaseX, over the network.
+    environment:
+      - BASEX_JVM=-Xmx1g -Xms256m
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8984/rest/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - religioustext-net
+
+  mysql:
+    image: mysql:8.3                       # stock image — NOT baked, data on a volume
+    container_name: religioustext-mysql
+    restart: unless-stopped
+    # No published port — internal only.
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=religioustext
+      - MYSQL_USER=rtuser
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql                      # user data survives every redeploy
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro    # first-boot schema bootstrap
+      - ./mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "rtuser", "-p${DB_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - religioustext-net
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.51      # pinned 2026-08-11 — :latest auto-upgraded 1.47→1.51 and crash-looped for 13 days
+    container_name: religioustext-meili
+    restart: unless-stopped
+    # No published port — internal only; app + reindexer reach it over the network.
+    # Index is populated from source on prod, so its version need not match local.
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}   # add a strong key to /opt/common-root/.env
+      - MEILI_NO_ANALYTICS=true
+      - MEILI_ENV=production
+      # Upgrade the on-disk index format when the engine version moves (no-op otherwise).
+      - MEILI_UPGRADE_DB=true
+      # Cap indexing RAM on the 4 GB box. Meili otherwise sizes its indexing
+      # budget to ~2/3 of total RAM (~2.6 GB here), which would collide with the
+      # two JVMs + MySQL during a full reindex. Serving the finished index is
+      # light (~1.2 GB, mostly mmap); this only bounds the one-shot indexing spike.
+      - MEILI_MAX_INDEXING_MEMORY=1Gb
+    volumes:
+      - meili-data:/meili_data
+    networks:
+      - religioustext-net
+
+  app:
+    # Pinned by VERSION, not by :latest. CI tags every image with its pom version
+    # alongside :latest, and `.env` on the server carries APP_TAG=<version> — so a
+    # deploy pulls a tag the box has never seen, `docker compose ps` names what is
+    # running without asking the app, and rollback is APP_TAG=<older> + up -d.
+    # Pinning also retires the question ":latest is cached, did I really get the
+    # new one?", which is what the corpus block's rm/rmi dance exists to answer.
+    # The :-latest fallback keeps an .env without APP_TAG working exactly as before.
+    image: ghcr.io/christa-claw/religious-texts/app:${APP_TAG:-latest}
+    container_name: religioustext-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"      # localhost-only; public access is via Caddy on 443
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx3g    # cap app heap on the 4 GB box; raise if needed
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/religioustext?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC
+      - DB_PASSWORD=${DB_PASSWORD}
+      - BASEX_PASSWORD=${BASEX_PASSWORD}
+      - BASEX_URI=http://basex:8984/rest
+      - SERVER_SERVLET_SESSION_COOKIE_SECURE=true    # TLS now terminates at Caddy
+      - SERVER_FORWARD_HEADERS_STRATEGY=native       # trust Caddy's X-Forwarded-Proto/Host
+      - MEILI_URL=http://meilisearch:7700
+      - MEILI_KEY=${MEILI_MASTER_KEY}
+      # Web API (0.8.0): the attestation secret MUST be set in /opt/common-root/.env
+      # (any long random string); unset, the app mints a per-boot secret and every
+      # tag dies on restart. Rotate by changing API_ATTEST_KID and moving the old
+      # pair into API_ATTEST_RETIRED ("k1:oldsecret"). API_CORPUS_HASH labels the
+      # corpus version inside tags — set it from the BaseX image's corpus hash.
+      - API_ATTEST_SECRET=${API_ATTEST_SECRET}
+      - API_ATTEST_KID=${API_ATTEST_KID:-k1}
+      - API_ATTEST_RETIRED=${API_ATTEST_RETIRED:-}
+      - API_CORPUS_HASH=${API_CORPUS_HASH:-unlabelled}
+      # Umami tracking snippet — injected by ReligiousTextsApp.configurePage ONLY
+      # when both are non-empty. Leave UMAMI_WEBSITE_ID unset until the site has
+      # been created in the Umami dashboard and the id copied into .env.
+      - RELIGIOUSTEXT_UMAMI_SRC=https://analytics.common-root.org/script.js
+      - RELIGIOUSTEXT_UMAMI_WEBSITE_ID=${UMAMI_WEBSITE_ID}
+      # Transactional mail relay (password reset + channel-claim invites). Provider
+      # SMTP creds live in /opt/common-root/.env. Leave them UNSET/absent to keep
+      # the app in link-logging mode; set all four to REAL values to send (an
+      # empty SPRING_MAIL_HOST is worse than absent — it half-enables a broken
+      # sender). From is info@common-root.org (a real, monitored Proton inbox);
+      # the relay's DKIM must be added to common-root.org DNS for deliverability.
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+      - RELIGIOUSTEXT_BASE_URL=https://common-root.org
+      - RELIGIOUSTEXT_MAIL_FROM=info@common-root.org
+    depends_on:
+      mysql:
+        condition: service_healthy
+      basex:
+        condition: service_healthy
+    networks:
+      - religioustext-net
+
+  umami:
+    image: ghcr.io/umami-software/umami:mysql-latest
+    container_name: religioustext-umami
+    restart: unless-stopped
+    # No published port — public access is via Caddy (analytics.common-root.org).
+    # Shares the existing MySQL container via its own `umami` database (created
+    # manually on prod — mysql-init only runs on first-ever boot of the volume).
+    # ~150-250 MB Node process; watch `docker stats` on the 4 GB box after deploy.
+    environment:
+      - DATABASE_URL=mysql://umami:${UMAMI_DB_PASSWORD}@mysql:3306/umami
+      - APP_SECRET=${UMAMI_APP_SECRET}
+      - DISABLE_TELEMETRY=1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - religioustext-net
+
+  caddy:
+    image: caddy:2
+    container_name: religioustext-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"            # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data         # cert + ACME account storage — MUST persist
+      - caddy-config:/config
+    depends_on:
+      - app
+    networks:
+      - religioustext-net
+
+networks:
+  religioustext-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
+  meili-data:

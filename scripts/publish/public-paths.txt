@@ -1,0 +1,65 @@
+# Paths that go into the public mirror (github.com/christa-claw/common-root).
+#
+# Read by scripts/publish/publish_public.sh. One prefix per line, matched
+# against `git ls-files` — so only TRACKED files can ever be exported; nothing
+# untracked or gitignored (application-local.properties, .env, sources/, …)
+# has a path to the outside. A line starting with "!" is a deny prefix and wins
+# over any allow line. Order does not matter. "#" starts a comment.
+#
+# The rule of thumb: code and the reference documents that describe the
+# system are public; deliberation (design notes, plans, session notes,
+# audits, outreach and correspondence, engineering logs), other people's
+# material (transcripts, the argument ledger, channel contacts, corpus
+# sources) and anything machine-specific stay private. When in doubt, leave
+# it out — a path can be added in a later release, never un-published.
+
+# ── Build ──────────────────────────────────────────────────────────────────
+pom.xml
+.gitignore
+.github/workflows/ci.yml
+.github/workflows/deploy.yml
+.github/FUNDING.yml
+
+# ── The application ────────────────────────────────────────────────────────
+app/
+!app/node_modules/
+ingestion/
+schema/
+orderings/
+templates/
+
+# ── Corpus and deployment containers ───────────────────────────────────────
+# docker/basex-dba is BaseX's own DBA web application (BSD-3, see NOTICE).
+docker/
+
+# ── Pipelines (code only — the automation plists carry this machine's paths)
+scripts/
+!scripts/automation/
+
+# ── Reference documentation (what the system IS, not how we got there) ─────
+README.md
+CHANGELOG.md
+docs/README.md
+docs/build_docs.py
+docs/src/
+docs/images/
+docs/api-spec.md
+docs/api-test-cases.md
+docs/api-postman-collection.json
+docs/link-format.md
+docs/deploy-checklist.md
+docs/schema-current.sql
+transcripts/README.md
+
+# ── Explicitly private (listed so the decision is visible, not implied) ────
+!CLAUDE.md
+!CLAUDE_NOTES.md
+!COMMANDS.md
+!RUNGS.md
+!channels.properties
+!transcripts/arguments.json
+!transcripts/arguments.sql
+!transcripts/notes-
+!transcripts/mentioned_sources.md
+!docs/api-design.md
+!docs/reviews/

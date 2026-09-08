@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+# The public-domain corpus downloads: linked from /about and meant for
+# people, not crawlers. ~30 multi-megabyte XML documents with no ranking
+# value would spend crawl budget that took a canonical fix to recover.
+Disallow: /download
+
+Sitemap: https://common-root.org/sitemap.xml

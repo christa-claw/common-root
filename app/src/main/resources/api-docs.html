@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Common Root? — API v1</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 52rem; margin: 2rem auto; padding: 0 1.25rem; font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.2rem; margin-top: 2.4rem; border-bottom: 1px solid #8884; padding-bottom: .25rem; }
+  h3 { font-size: 1rem; margin-top: 1.6rem; }
+  code, pre { font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  pre { background: #8881; padding: .75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #8881; padding: 0 .25em; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: .75rem 0; }
+  th, td { text-align: left; vertical-align: top; padding: .35rem .5rem; border-bottom: 1px solid #8883; }
+  th { font-weight: 600; }
+  .muted { color: #888; }
+  nav a { margin-right: 1rem; }
+</style>
+</head>
+<body>
+
+<h1>Common Root? — API v1</h1>
+<p class="muted">Read-only access to the corpus: editions, their contents, passages, and a way to prove a quote came from here. Base URL <code>/api/v1</code>. Everything is JSON unless you ask for XML.</p>
+
+<nav>
+  <a href="#start">Start here</a><a href="#auth">Keys</a><a href="#texts">Editions</a><a href="#refs">References</a><a href="#passages">Passages</a><a href="#formats">Formats</a><a href="#attest">Attestation</a><a href="#verify">Verify</a><a href="#quotas">Quotas</a><a href="#errors">Errors</a>
+</nav>
+
+<h2 id="start">Start here: following a token</h2>
+<p>Every edition is identified by a short <strong>token</strong> — its abbreviation, lowercased: <code>kjv</code>, <code>web</code>, <code>q-ar</code>, <code>buk-en</code>. Tokens are the same permanent addresses the site's reader links use, so they never change. Wherever a response says <code>"text": "web"</code>, that token is the handle for everything else:</p>
+<table>
+<tr><th>You have</th><th>Call</th><th>You get</th></tr>
+<tr><td>a token</td><td><code>GET /texts/web</code></td><td>the edition record — full name, type (bible / quran / hadith), language, direction, year, licence, whether it can be downloaded</td></tr>
+<tr><td>a token</td><td><code>GET /texts/web/books</code></td><td>its table of contents — every book (surah, hadith book) with its code and the chapter numbers that actually exist</td></tr>
+<tr><td>a token + a reference</td><td><code>GET /texts/web/JHN.3.16</code></td><td>the verse, span, or chapter, with an attestation</td></tr>
+<tr><td>nothing yet</td><td><code>GET /texts</code></td><td>every edition, so you can find a token</td></tr>
+</table>
+<p>The pattern is always <em>token → contents → reference</em>. A reference you see in one response can be pasted into the next URL as is.</p>
+
+<h2 id="auth">Keys</h2>
+<p>Every call except <code>/health</code> and this page needs an API key. Keys are free: create one on your account page. Send it as a Bearer token — <strong>and only there</strong>:</p>
+<pre><code>curl -H "Authorization: Bearer crk_…" https://common-root.org/api/v1/texts/kjv/JHN.3.16</code></pre>
+<p>A key in the query string is refused with 401 even if it is valid, because query strings land in access logs and <code>Referer</code> headers; if you have done that, treat the key as leaked and rotate it. You can hold up to five live keys, so rotation is create-new, move traffic, revoke-old. Keys are stored hashed; the plaintext is shown once, at creation.</p>
+<p>A key raises your allowance; it never changes what you are entitled to. Licensed editions are not served by the API whatever key you hold.</p>
+<p>To try everything on this page without writing code, import the <a href="/docs/api-postman-collection.json" download>Postman collection</a> (25 requests with assertions, from health to a tampered-bundle verify), set its <code>apiKey</code> variable to your key, and run it. The same file lives in the <a href="https://github.com/christa-claw/common-root">source repository</a>.</p>
+
+<h2 id="texts">Editions</h2>
+<h3><code>GET /texts</code></h3>
+<p>All editions. Each entry:</p>
+<pre><code>{ "id": "bible-web", "token": "web", "abbreviation": "WEB",
+  "translation": "World English Bible", "type": "bible", "language": "en",
+  "direction": "ltr", "year": "2000", "license": "Public Domain", "downloadable": true }</code></pre>
+<p><code>downloadable</code> is computed by the same licence check that gates the download, so the list never advertises what the gate then refuses.</p>
+<h3><code>GET /texts/{token}</code></h3>
+<p>One edition, the same shape. The document <code>id</code> is also accepted in place of the token.</p>
+<h3><code>GET /texts/{token}/books</code></h3>
+<pre><code>{ "text": "kjv", "type": "bible", "count": 80,
+  "books": [ { "code": "GEN", "name": "Genesis", "chapters": [1, 2, …, 50] }, … ] }</code></pre>
+<p>For a Qur'an the books are the surahs — <code>code</code> is the surah number and <code>nativeName</code> carries the Arabic name; for a hadith collection they are its books. Only chapters that exist are listed: an edition that prints selections is described as it is, not as its canon would suggest.</p>
+
+<h2 id="refs">References</h2>
+<p>A reference names a passage independently of any edition, in the site's link format:</p>
+<table>
+<tr><th>Form</th><th>Example</th><th>Meaning</th></tr>
+<tr><td><code>BOOK.chapter</code></td><td><code>JHN.3</code></td><td>a whole chapter</td></tr>
+<tr><td><code>BOOK.chapter.verse</code></td><td><code>JHN.3.16</code></td><td>one verse</td></tr>
+<tr><td><code>BOOK.chapter.verse-verse</code></td><td><code>PHP.4.10-13</code></td><td>a span within one chapter</td></tr>
+<tr><td><code>Q.surah.ayah</code></td><td><code>Q.2.255</code></td><td>Qur'an — surah and ayah; there is no middle level</td></tr>
+</table>
+<p>Book codes are USFM (<code>GEN</code>, <code>1JN</code>, <code>PHP</code>); <code>/texts/{token}/books</code> lists the ones an edition has. Codes are case-insensitive. A span that crosses a chapter boundary is refused (400) rather than guessed at.</p>
+
+<h2 id="passages">Passages</h2>
+<h3><code>GET /texts/{token}/{ref}</code></h3>
+<pre><code>{ "text": "kjv", "direction": "ltr", "ref": "JHN.3.16",
+  "book": { "code": "JHN", "name": "John" }, "chapter": 3,
+  "verses": [ { "number": 16, "text": "For God so loved the world, …" } ],
+  "attestation": { "alg": "HMAC-SHA256", "kid": "k1", "canon": "v1", "corpus": "…",
+                   "minted": "2026-09-06T14:02:11Z", "app": "0.8.0", "tag": "…" } }</code></pre>
+<p><code>direction</code> is stated in every JSON response because plain text cannot carry it. Verse text is the reader's display text: paragraph marks, section marks and stray footnotes removed. Unknown edition or passage: 404.</p>
+<h3><code>GET /passages?refs=…</code></h3>
+<p>Scattered verses, across books and across editions, in one call. Each reference may carry its own edition as a prefix; <code>src</code> supplies editions for the ones that don't, and may itself be a list, in which case an unprefixed reference is fetched from every edition in it:</p>
+<pre><code>GET /passages?src=kjv&amp;refs=JHN.1.1,ROM.9.5,PSA.23.1-6
+GET /passages?refs=kjv:1JN.5.7,web:1JN.5.7,vul:1JN.5.7,tr:1JN.5.7
+GET /passages?src=kjv,web&amp;refs=GEN.1.1,GEN.1.2</code></pre>
+<pre><code>{ "passages": [
+    { "text": "kjv", "direction": "ltr", "ref": "1JN.5.7", "book": {…}, "chapter": 5,
+      "verses": [ … ], "found": true },
+    { "text": "web", … } ],
+  "attestation": { … } }</code></pre>
+<p>Passages come back in the order asked, at most 20 per call. A passage that does not exist in its edition is returned with <code>"found": false</code> and no verses rather than failing the whole call; a reference that cannot be parsed fails the whole call, and nothing is served. The single <code>attestation</code> covers every passage found, in that order — a comparison of one verse across four translations is one provable object.</p>
+
+<h2 id="formats">Formats</h2>
+<p><code>?format=json</code> (default) or <code>?format=xml</code>; the query parameter wins, otherwise an <code>Accept: application/xml</code> header is honoured. XML is the corpus's own <code>&lt;chapter&gt;</code> element under <code>http://religioustext.org/schema/1.0</code> — a valid subtree of <code>religious-text.xsd</code>, the same bytes you would cut out of the bulk download, with this site's reading-order attributes removed. It is available for single passages only; <code>/passages</code> and <code>/texts</code> are JSON. The attestation rides inside the document as a processing instruction before the element — <code>&lt;?common-root-attestation alg="…" kid="…" canon="…" corpus="…" minted="…" app="…" tag="…"?&gt;</code> — so a saved file is self-validating; validators ignore it and the element stays a pure schema subtree. Plain text answers 501 until the display modes ship.</p>
+
+<h2 id="attest">Attestation</h2>
+<p>Every passage response carries a tag that lets anyone later confirm the text came from here, unmodified, for a given corpus version. JSON responses carry it as <code>attestation</code>; every response also carries it as a header:</p>
+<pre><code>X-CommonRoot-Attestation: alg=HMAC-SHA256; kid=k1; canon=v1; corpus=…; minted=2026-09-06T14:02:11Z; app=0.8.0; tag=…</code></pre>
+<p>The tag is an HMAC-SHA256, under a secret held by this site, over a <strong>canonical form</strong> — never over the response bytes, so re-serialising, reformatting or converting between JSON and XML cannot invalidate it. Canonical form <code>v1</code> is UTF-8, lines joined by <code>\n</code>, no trailing newline:</p>
+<pre><code>canon:v1
+corpus:{corpus label from the attestation}
+minted:{minted, from the attestation — ISO-8601 UTC, whole seconds}
+app:{app, from the attestation}
+text:{edition token}
+ref:{reference as returned}
+{verse number}&lt;TAB&gt;{verse text}        one line per verse, in order
+text:{next edition}                     scattered passages: repeat per passage, in served order
+ref:{next reference}
+…</code></pre>
+<p>Verse text in the canonical form is the display text exactly as the JSON returns it, Unicode-normalised to NFC. If you hold XML, apply the same cleaning (remove <code>¶</code> and <code>§</code>, drop an appended footnote of the form <code>1.4 …</code>, collapse whitespace) before verifying. The <code>kid</code> names the signing key so keys can rotate without orphaning old tags; <code>corpus</code> names the corpus version, so a tag from a past publish still verifies. <code>minted</code> and <code>app</code> are signed too: a valid tag is a timestamp — this text was served by this site, at that moment, from that corpus, by that build — and because they are part of the signed form, the same passage fetched twice carries two different tags. Send the attestation object back exactly as received. Every response is self-validating: JSON carries the attestation in the body, XML in the processing instruction, so a saved file needs nothing but this page to be checked.</p>
+<p>Honest limit: the tag is data, not protection. Anyone can remove or alter it. Its value is that <em>if</em> it verifies, the text is ours, unmodified, for that corpus version. A missing tag proves nothing either way.</p>
+
+<h2 id="verify">Verify</h2>
+<h3><code>POST /verify</code></h3>
+<p>Send back what you hold — one passage, or a bundle exactly as served:</p>
+<pre><code>{ "text": "kjv", "ref": "JHN.3.16", "attestation": { … },
+  "verses": [ { "number": 16, "text": "For God so loved the world, …" } ] }
+
+{ "attestation": { … },
+  "passages": [ { "text": "kjv", "ref": "1JN.5.7", "verses": [ … ] },
+                { "text": "web", "ref": "1JN.5.7", "verses": [ … ] } ] }</code></pre>
+<p>Response: <code>{ "valid": true, "attests": "Served by common-root.org on 2026-09-06T14:02:11Z (build 0.8.0): kjv 1JN.5.7; web 1JN.5.7 — corpus …, unmodified.", "minted": "…", "app": "…", "corpus": "current" }</code> — or exactly <code>{ "valid": false }</code>, with no reason, whatever went wrong. <code>corpus</code> is <code>current</code> when a fresh fetch would return this same text, <code>superseded</code> when the bundle is authentic but came from an earlier publish, so today's text may differ; validity is unaffected either way. Bodies are capped at 400 verses / 64 KB.</p>
+
+<h2 id="quotas">Quotas</h2>
+<p>Each key has two monthly allowances (calendar month, UTC, reset on the 1st): <strong>requests</strong> for API calls and <strong>bytes</strong> for downloads. They are sized so that pulling the whole public-domain corpus once never touches the meter. Every metered response says where you stand:</p>
+<pre><code>X-RateLimit-Limit: 20000
+X-RateLimit-Remaining: 19987
+X-RateLimit-Reset: 1790812800        epoch seconds</code></pre>
+<p>Past the allowance, or past 60 requests in a minute, you get <code>429</code> with a <code>Retry-After</code> header. Please honour it: retrying in a loop is exactly the load the quota exists to prevent. Requests that fail authentication do not count.</p>
+
+<h2 id="errors">Errors</h2>
+<p>Every error is JSON, whatever format you asked for:</p>
+<pre><code>{ "status": 404, "error": "unknown_source",
+  "message": "No edition 'nope'. See /api/v1/texts for tokens.",
+  "docs": "https://common-root.org/api/docs#texts" }</code></pre>
+<table>
+<tr><th>Status</th><th><code>error</code></th><th>When</th></tr>
+<tr><td>400</td><td><code>bad_ref</code>, <code>bad_format</code>, <code>too_many_refs</code>, <code>missing_source</code></td><td>the request cannot be honoured as written; nothing partial is served</td></tr>
+<tr><td>401</td><td><code>missing_key</code>, <code>invalid_key</code>, <code>key_in_query_string</code></td><td>no usable key in the <code>Authorization</code> header</td></tr>
+<tr><td>403</td><td><code>not_redistributable</code></td><td>a licensed edition, whatever key is presented</td></tr>
+<tr><td>404</td><td><code>unknown_source</code>, <code>no_such_passage</code></td><td>no such edition, or the reference is not in it</td></tr>
+<tr><td>429</td><td><code>quota_exceeded</code></td><td>allowance or burst limit; see <code>Retry-After</code></td></tr>
+<tr><td>501</td><td><code>not_implemented</code></td><td>plain-text format, for now</td></tr>
+</table>
+<p>Switch on <code>error</code>, never on <code>message</code>: the slug is stable, the sentence is not.</p>
+
+<h2>Health</h2>
+<p><code>GET /health</code> needs no key and counts nothing: <code>200 {"status":"ok"}</code> or <code>503 {"status":"degraded"}</code> with a per-subsystem breakdown. Point your monitor at it.</p>
+
+<p class="muted" style="margin-top:3rem">Common Root? · the texts are not ours · <a href="/about">about</a></p>
+</body>
+</html>

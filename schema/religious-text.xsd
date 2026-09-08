@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://religioustext.org/schema/1.0"
+           xmlns:rt="http://religioustext.org/schema/1.0"
+           elementFormDefault="qualified">
+
+  <!-- Canonical XML Schema for Religious Texts v1.3
+       One XML document per translation/edition stored in eXist-db.
+       Supports:
+         Bible/Torah : text > book > chapter > verse
+         Quran       : text > chapter > verse  (no book wrapper)
+
+       ORDERING STRATEGY
+       Ordering attributes exist at three levels:
+         Book level    : coarse positioning of books relative to each other
+         Chapter level : surah-level revelation sequence for Quran
+         Verse level   : absolute global sequence numbers for full-text
+                         streaming, PLUS full address (book/chapter) so
+                         each verse is self-describing when consumed
+                         outside its tree context.
+
+       Display variants (CAPS, chapter/verse visibility, ordering mode)
+       are rendering concerns only and are never stored here. -->
+
+  <xs:element name="text" type="rt:TextType"/>
+
+  <xs:complexType name="TextType">
+    <xs:choice>
+      <xs:element name="book"    type="rt:BookType"    maxOccurs="unbounded"/>
+      <xs:element name="chapter" type="rt:ChapterType" maxOccurs="unbounded"/>
+    </xs:choice>
+    <xs:attribute name="id"            type="xs:string"          use="required"/>
+    <xs:attribute name="type"          type="rt:TextTypeEnum"    use="required"/>
+    <xs:attribute name="translation"   type="xs:string"          use="required"/>
+    <xs:attribute name="abbreviation"  type="xs:string"          use="required"/>
+    <xs:attribute name="bcp47Language" type="xs:language"        use="required"/>
+    <xs:attribute name="iso639_3"      type="rt:ISO639_3Code"    use="required"/>
+    <xs:attribute name="direction"     type="rt:DirectionEnum"   use="required"/>
+    <xs:attribute name="script"        type="xs:string"          use="optional"/>
+    <xs:attribute name="year"          type="xs:integer"         use="optional"/>
+    <xs:attribute name="source"        type="xs:anyURI"          use="optional"/>
+    <xs:attribute name="ingestedAt"    type="xs:dateTime"        use="optional"/>
+    <xs:attribute name="license"       type="xs:string"          use="optional"/>
+    <xs:attribute name="region"        type="xs:string"          use="optional"/>
+    <xs:attribute name="totalVerses"   type="xs:positiveInteger" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="BookType">
+    <xs:sequence>
+      <xs:element name="chapter" type="rt:ChapterType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"               type="xs:string"          use="required"/>
+    <xs:attribute name="altName"            type="xs:string"          use="optional"/>
+    <xs:attribute name="canonicalOrder"     type="xs:positiveInteger" use="required"/>
+    <xs:attribute name="chronologicalOrder" type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="narrativeOrder"     type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="testament"          type="rt:TestamentEnum"   use="optional"/>
+    <xs:attribute name="period"             type="xs:string"          use="optional"/>
+    <xs:attribute name="approxDateBCE"      type="xs:integer"         use="optional"/>
+    <xs:attribute name="approxDateCE"       type="xs:integer"         use="optional"/>
+    <xs:attribute name="genre"              type="xs:string"          use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="ChapterType">
+    <xs:sequence>
+      <xs:element name="verse" type="rt:VerseType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="number"             type="xs:positiveInteger"     use="required"/>
+    <xs:attribute name="title"              type="xs:string"              use="optional"/>
+    <xs:attribute name="altTitle"           type="xs:string"              use="optional"/>
+    <xs:attribute name="canonicalOrder"     type="xs:positiveInteger"     use="optional"/>
+    <xs:attribute name="chronologicalOrder" type="xs:positiveInteger"     use="optional"/>
+    <xs:attribute name="revelationPlace"    type="rt:RevelationPlaceEnum" use="optional"/>
+    <xs:attribute name="genre"              type="xs:string"              use="optional"/>
+    <xs:attribute name="period"             type="xs:string"              use="optional"/>
+  </xs:complexType>
+
+  <!-- VERSE
+       Atomic unit. Content stored in natural mixed case.
+       ALL CAPS is a render-time toggle only.
+
+       Self-describing address attributes (bookName, chapterNumber etc.)
+       duplicate tree context deliberately so a verse can stand alone
+       in streaming mode, search results and commentary anchors.
+
+       Global sequence numbers enable full-text streaming sorted by
+       any ordering without traversing the tree structure. -->
+  <xs:complexType name="VerseType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="number"                 type="xs:positiveInteger" use="required"/>
+        <xs:attribute name="bookName"               type="xs:string"          use="optional"/>
+        <xs:attribute name="bookAltName"            type="xs:string"          use="optional"/>
+        <xs:attribute name="chapterNumber"          type="xs:positiveInteger" use="optional"/>
+        <xs:attribute name="chapterTitle"           type="xs:string"          use="optional"/>
+        <xs:attribute name="globalCanonicalSeq"     type="xs:positiveInteger" use="optional"/>
+        <xs:attribute name="globalChronologicalSeq" type="xs:positiveInteger" use="optional"/>
+        <xs:attribute name="globalNarrativeSeq"     type="xs:positiveInteger" use="optional"/>
+        <xs:attribute name="note"                   type="xs:string"          use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="TextTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bible"/>
+      <xs:enumeration value="quran"/>
+      <xs:enumeration value="torah"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DirectionEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ltr"/>
+      <xs:enumeration value="rtl"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TestamentEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="OT"/>
+      <xs:enumeration value="NT"/>
+      <xs:enumeration value="DC"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RevelationPlaceEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Meccan"/>
+      <xs:enumeration value="Medinan"/>
+      <xs:enumeration value="Unknown"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ISO639_3Code">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-z]{3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

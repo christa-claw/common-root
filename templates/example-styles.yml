@@ -1,0 +1,10 @@
+# Example style map for build_edition.py --format tagged|docx.
+# The names on the right are the SHOP'S, copied from their template. Ours are
+# the keys and must not be renamed. See docs/printer-templates.md.
+styles:
+  book_title:     "Book Title"
+  chapter_head:   "Chapter Number"
+  body:           "Body Text"
+  verse_number:   "Verse Num"      # character style, not paragraph
+  separator:      "Ornament"       # omit the pair if they have no ornament
+  separator_text: "❦"
