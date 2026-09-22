@@ -12,6 +12,7 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.IFrame;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -32,6 +33,7 @@ import org.religioustext.app.model.SourceColumn;
 import org.religioustext.app.model.VerseRef;
 import org.religioustext.app.ui.views.reader.SourceCatalog;
 import org.religioustext.app.ui.views.reader.SourceRow;
+import org.religioustext.app.service.AudioIndexService;
 import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.service.CommentAclService;
 import org.religioustext.app.service.CommentAuthorService;
@@ -81,8 +83,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // so two loads refill a side. Kept ≤ WINDOW so a single load never overfills.
     static final int BATCH_VERSES  = 60;
 
-    // GitHub Sponsors target for the toolbar ♥ link (also on the About nav).
-    private static final String SPONSOR_URL = "https://github.com/sponsors/christa-claw";
+    // Buy Me a Coffee target for the toolbar ♥ link (also on the About nav).
+    private static final String DONATE_URL = "https://buymeacoffee.com/christaclaw";
 
     // ?comments=_all — "panel open, no commenter filter". Unreserved URL characters ONLY:
     // the first cut used '*', a sub-delimiter that did not survive the Location parse and
@@ -115,6 +117,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         java.util.Map.entry("it", "\uD83C\uDDEE\uD83C\uDDF9"),
         java.util.Map.entry("de", "\uD83C\uDDE9\uD83C\uDDEA"),
         java.util.Map.entry("hi", "\uD83C\uDDEE\uD83C\uDDF3"),
+        java.util.Map.entry("ja", "\uD83C\uDDEF\uD83C\uDDF5"),
+        java.util.Map.entry("tr", "\uD83C\uDDF9\uD83C\uDDF7"),
         java.util.Map.entry("hlt", "\uD83C\uDDF2\uD83C\uDDF2"),
         java.util.Map.entry("he", "\uD83C\uDDEE\uD83C\uDDF1"),
         java.util.Map.entry("grc", "\uD83C\uDDEC\uD83C\uDDF7"),
@@ -152,6 +156,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         java.util.Map.entry("zh", "\u4E2D\u6587"),    java.util.Map.entry("fr", "Fran\u00E7ais"),
         java.util.Map.entry("it", "Italiano"), java.util.Map.entry("de", "Deutsch"),
         java.util.Map.entry("hi", "\u0939\u093F\u0928\u094D\u0926\u0940"),
+        java.util.Map.entry("ja", "\u65E5\u672C\u8A9E"),
+        java.util.Map.entry("tr", "T\u00FCrk\u00E7e"),
         java.util.Map.entry("hlt", "Matu Chin"),
         java.util.Map.entry("he", "\u05E2\u05D1\u05E8\u05D9\u05EA"),
         java.util.Map.entry("grc", "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC"),
@@ -165,7 +171,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // language is chosen in tier 1; strip it for the tier-2 label (display only).
     private static final java.util.Set<String> LANG_GLOSSES = java.util.Set.of(
         "English","Arabic","Spanish","Finnish","Swedish","Russian","Chinese","French","Italian","German","Hindi",
-        "Matu Chin","Hebrew","Greek","Latin");
+        "Matu Chin","Hebrew","Greek","Latin","Japanese","Turkish");
     private static String stripLangGloss(final String aName) {
         if (aName == null) return "";
         final int p = aName.lastIndexOf('(');
@@ -175,7 +181,31 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         return aName;
     }
 
+    /**
+     * Play control for one chapter, or null when that chapter has no audio.
+     *
+     * <p>Null is the common case and must stay cheap: the manifest is already in
+     * memory, so this is a map lookup per chapter group, no IO. The column's own
+     * scroll root id is handed to the player because verse ids repeat across
+     * columns — without it a second column reading the same chapter would
+     * highlight the wrong text.
+     */
+    private com.vaadin.flow.component.Component audioControl(
+            final ColState aState, final String aBookCode, final int aChapter) {
+        if (aState == null || aState.col == null) return null;
+        final String textId = aState.col.getSourceId();
+        if (textId == null || textId.isBlank()) return null;
+        final java.util.Optional<String> mp3 = audioIndex.mp3Url(textId, aBookCode, aChapter);
+        if (mp3.isEmpty()) return null;
+        final String offsets = audioIndex.offsetsUrl(textId, aBookCode, aChapter).orElse(null);
+        if (offsets == null) return null;
+        return new org.religioustext.app.ui.components.ChapterAudioPlayer(
+                mp3.get(), offsets, aBookCode, aChapter,
+                "col-" + aState.uid, t("reader.audio.available"));
+    }
+
     private final TextQueryService   queryService;
+    private final AudioIndexService  audioIndex;
     private final CommentQueryService commentService;
     private final CommentAuthorService commentAuthor;
     private final CommentAclService commentAcl;
@@ -261,6 +291,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // bounds, controls, attribution) extracted to ColState.java (same package).
 
     public ReaderView(final TextQueryService aQueryService,
+                      final AudioIndexService anAudioIndex,
                       final CommentQueryService aCommentService,
                       final CommentAuthorService aCommentAuthor,
                       final CommentAclService aCommentAcl,
@@ -271,6 +302,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                       final AuthenticationContext anAuthContext,
                       final BuildInfo aBuildInfo) {
         this.queryService = aQueryService;
+        this.audioIndex   = anAudioIndex;
         this.commentService = aCommentService;
         this.commentAuthor = aCommentAuthor;
         this.commentAcl   = aCommentAcl;
@@ -290,6 +322,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 }
                 @Override public String bookHeading(final ColState aState, final String aBookName) {
                     return ReaderView.this.bookHeading(aState, aBookName);
+                }
+                @Override public com.vaadin.flow.component.Component audioControl(
+                        final ColState aState, final String aBookCode, final int aChapter) {
+                    return ReaderView.this.audioControl(aState, aBookCode, aChapter);
                 }
                 @Override public Span commentBadge(final ColState aState, final String aBookName,
                         final int aChapter, final String aVerseNo, final List<VerseComment> theComments) {
@@ -378,6 +414,29 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         return getTranslation(aKey, LocaleUtil.currentLocale());
     }
 
+    /** As {@link #t(String)}, for the handful of keys that take placeholders. */
+    private String t(final String aKey, final Object... theArgs) {
+        return getTranslation(aKey, LocaleUtil.currentLocale(), theArgs);
+    }
+
+    /**
+     * The marker for anything with generated audio.
+     *
+     * <p>Sized and dimmed to sit with the translation flags rather than shout
+     * over them: the dropdown should read as one family of hints. A Vaadin icon
+     * rather than an emoji speaker, which renders differently on every platform
+     * and would clash with the flag characters beside it.
+     */
+    private Icon audioIcon(final String aTooltip) {
+        final Icon icon = VaadinIcon.VOLUME_UP.create();
+        icon.getStyle().set("width", "0.85em").set("height", "0.85em")
+            .set("margin-inline-start", "6px").set("opacity", "0.75")
+            .set("flex-shrink", "0");
+        icon.getElement().setAttribute("title", aTooltip);
+        icon.getElement().setAttribute("aria-label", aTooltip);
+        return icon;
+    }
+
     private HorizontalLayout buildToolbar() {
         final HorizontalLayout toolbar = new HorizontalLayout();
         toolbar.setWidthFull();
@@ -407,11 +466,11 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             .set("color", "var(--lumo-secondary-text-color)")
             .set("text-decoration", "none");
 
-        final Anchor sponsorLink = new Anchor(SPONSOR_URL, t("nav.sponsor"));
-        sponsorLink.setTarget("_blank");
-        sponsorLink.getElement().setAttribute("rel", "noopener");
-        sponsorLink.setTitle(t("about.support.title"));
-        sponsorLink.getStyle()
+        final Anchor donateLink = new Anchor(DONATE_URL, t("nav.sponsor"));
+        donateLink.setTarget("_blank");
+        donateLink.getElement().setAttribute("rel", "noopener");
+        donateLink.setTitle(t("about.support.title"));
+        donateLink.getStyle()
             .set("font-size", "14px").set("color", "#c9a84c")
             .set("font-weight", "600").set("text-decoration", "none")
             .set("white-space", "nowrap");
@@ -489,7 +548,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 .set("text-decoration", "none");
             final Button signOut = new Button(t("action.signOut"), e -> authContext.logout());
             signOut.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-            toolbar.add(title, version, refsField, spacer, langSelect, aboutLink, sponsorLink, profileLink, signOut, searchBtn, commentsBtn, copyLinkBtn, addBtn);
+            toolbar.add(title, version, refsField, spacer, langSelect, aboutLink, donateLink, profileLink, signOut, searchBtn, commentsBtn, copyLinkBtn, addBtn);
         } else {
             // A Button (not a static Anchor) so the CURRENT reader state is captured at click
             // time: the live link is stashed in the session and replayed after a successful
@@ -521,7 +580,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 .set("border-radius", "4px")
                 .set("text-decoration", "none")
                 .set("white-space", "nowrap");
-            toolbar.add(title, version, refsField, spacer, langSelect, aboutLink, sponsorLink, signIn, createAccount, searchBtn, commentsBtn, copyLinkBtn, addBtn);
+            toolbar.add(title, version, refsField, spacer, langSelect, aboutLink, donateLink, signIn, createAccount, searchBtn, commentsBtn, copyLinkBtn, addBtn);
         }
         return toolbar;
     }
@@ -577,7 +636,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         state.col          = col;
         state.bookSelect   = new Select<>();
         state.chapterLabel = new Span("—");
-        state.chapterAbbrev = t("reader.chapterAbbrev");
+        state.chapterLabelFormat = t("reader.chapterLabel");
         final int oldSize = columns.size();
         final boolean append = aWantIndex < 0 || aWantIndex > oldSize;
         final int idx = append ? oldSize : aWantIndex;
@@ -1296,6 +1355,125 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
 
     // ── Column header ────────────────────────────────────────────────────────
 
+    /** Book-row renderer: the localised book label plus the per-book audio
+     *  marker. A Select renders the chosen item into the field with the same
+     *  renderer, so this covers the open list and the closed field both.
+     *
+     *  It has to be a renderer rather than a text renderer because
+     *  {@code setTextRenderer} REPLACES the renderer — which is why the marker
+     *  built in buildHeader never used to appear: every loadBookList call
+     *  clobbered it a moment later. Group captions are unaffected: they are
+     *  separate components between the items, not part of one.
+     */
+    private com.vaadin.flow.data.renderer.ComponentRenderer<com.vaadin.flow.component.Component, String>
+            bookRenderer(final ColState aState) {
+        return new com.vaadin.flow.data.renderer.ComponentRenderer<>(name -> {
+            final Span lbl = new Span(bookHeading(aState, name));
+            final int have = audioIndex
+                .chaptersWithAudio(aState.col.getSourceId(), aState.bookCode(name)).size();
+            if (have == 0) return lbl;
+            // Books arrive a chapter at a time, so the marker means "some", and
+            // the tooltip carries the truth rather than implying completeness.
+            final int total = aState.chapterNumbersForBook(aState.indexOfBook(name)).length;
+            final Span row = new Span(lbl, audioIcon(t("reader.audio.partial", have, total)));
+            row.getStyle().set("display", "inline-flex").set("align-items", "baseline")
+               .set("gap", "2px");
+            return row;
+        });
+    }
+
+    /** New Testament book codes (USFM). */
+    private static final java.util.Set<String> NT_CODES = java.util.Set.of(
+        "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH",
+        "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS",
+        "1PE", "2PE", "1JN", "2JN", "3JN", "JUD", "REV");
+
+    /** Protocanonical Old Testament book codes (USFM). */
+    private static final java.util.Set<String> OT_CODES = java.util.Set.of(
+        "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
+        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO",
+        "ECC", "SNG", "ISA", "JER", "LAM", "EZK", "DAN", "HOS", "JOL", "AMO",
+        "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL");
+
+    /** Deuterocanonical / apocryphal book codes, which the editions that carry
+     *  them (KJV, WEB, VUL, DRA, SV1917, KR3338 …) list after Revelation. */
+    private static final java.util.Set<String> DC_CODES = java.util.Set.of(
+        "TOB", "JDT", "WIS", "SIR", "BAR", "LJE", "1MA", "2MA", "3MA", "4MA",
+        "1ES", "2ES", "MAN", "PS2", "ESG", "DAG", "SUS", "BEL", "LAO", "S3Y",
+        "ODA", "PSS", "EZA", "5EZ", "6EZ");
+
+    /** i18n key for the block a book belongs to, or "" when the book is not part
+     *  of a biblical canon — Qur'an surahs, hadith books and the LDS works have
+     *  no testaments, and their lists stay ungrouped rather than being given an
+     *  invented label. Keyed on the USFM code rather than @testament because the
+     *  API.Bible path derives that attribute from a book's POSITION (order &lt;= 39
+     *  is "OT"), which mislabels every NT-only edition. */
+    private static String bookGroupKey(final String aCode) {
+        if (aCode == null || aCode.isBlank()) return "";
+        final String c = aCode.toUpperCase(java.util.Locale.ROOT);
+        if (NT_CODES.contains(c)) return "reader.books.nt";
+        if (OT_CODES.contains(c)) return "reader.books.ot";
+        if (DC_CODES.contains(c)) return "reader.books.dc";
+        return "";
+    }
+
+    /** The small uppercase caption both pickers use for a block heading. */
+    private static Span groupCaption(final String aText) {
+        final Span head = new Span(aText);
+        head.getStyle().set("display", "block").set("font-size", "0.7em")
+            .set("text-transform", "uppercase").set("letter-spacing", "0.06em")
+            .set("opacity", "0.6").set("margin", "2px 0 3px")
+            .set("pointer-events", "none");
+        return head;
+    }
+
+    // ── Source-picker group headings ──────────────────────────────────
+    //
+    // Vaadin's ComboBox has no optgroups, so the FIRST row of each text-type
+    // block renders a small caption above itself. Blocks follow typeRank()'s
+    // order (Bibles, the Qur'an, then the rest), and "first" is recomputed
+    // against the live filter text — otherwise typing a query would strand a
+    // heading on a row that is no longer at the top of its block.
+
+    /** The ComboBox's own label for a source row: what the filter matches on
+     *  and what the closed field shows. */
+    private static String sourceLabel(final String[] aRow) {
+        return aRow[2] + " — " + stripLangGloss(aRow.length > 1 ? aRow[1] : "");
+    }
+
+    /** ComboBox's default filtering, restated because supplying an ItemFilter
+     *  replaces it: case-insensitive substring match on the label. */
+    private static boolean sourceMatches(final String[] aRow, final String aFilter) {
+        return aFilter == null || aFilter.isBlank()
+            || sourceLabel(aRow).toLowerCase(java.util.Locale.ROOT)
+                                .contains(aFilter.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /** Heading for a text type's block, or "" for a type with no heading yet —
+     *  an unknown type continues the list rather than inventing a label. */
+    private String groupHeading(final String aType) {
+        return switch (aType == null ? "" : aType) {
+            case "bible"      -> t("reader.group.bible");
+            case "quran"      -> t("reader.group.quran");
+            case "hadith"     -> t("reader.group.hadith");
+            case "lds"        -> t("reader.group.lds");
+            case "commentary" -> t("reader.group.commentary");
+            default           -> "";
+        };
+    }
+
+    /** True when this row is the first of its type block among the rows the
+     *  current filter leaves visible — the row that carries the heading. */
+    private static boolean headsGroup(final java.util.List<String[]> aListed
+                                    , final String aFilter, final String[] aRow) {
+        final String type = aRow.length > 6 ? aRow[6] : "";
+        for (final String[] r : aListed) {
+            if (!type.equals(r.length > 6 ? r[6] : "") || !sourceMatches(r, aFilter)) continue;
+            return r[0].equals(aRow[0]);
+        }
+        return false;
+    }
+
     private Div buildHeader(final SourceColumn aColumn, final ColState aState, final Div aScrollRoot) {
         final Div header = new Div();
         header.getStyle()
@@ -1339,29 +1517,67 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         // translation languages the text offers (Qur'an only today), so the reader
         // can tell at a glance which texts have a translation. The closed field keeps
         // the plain label (above).
+        // Rows the picker is currently offering, and what has been typed into
+        // it — the two things a group heading has to be computed against.
+        final java.util.concurrent.atomic.AtomicReference<java.util.List<String[]>> listed =
+            new java.util.concurrent.atomic.AtomicReference<>(java.util.List.of());
+        final java.util.concurrent.atomic.AtomicReference<String> typed =
+            new java.util.concurrent.atomic.AtomicReference<>("");
+        final ComboBox.ItemFilter<String[]> sourceFilter = (arr, filter) -> {
+            typed.set(filter == null ? "" : filter);
+            return sourceMatches(arr, filter);
+        };
         sourceCombo.setRenderer(new com.vaadin.flow.data.renderer.ComponentRenderer<>(arr -> {
-            final Span lbl = new Span(arr[2] + " \u2014 " + stripLangGloss(arr.length > 1 ? arr[1] : ""));
+            final Span lbl = new Span(sourceLabel(arr));
             final String flags = translationFlags(arr[0]);
-            if (flags.isEmpty()) return lbl;
-            final Span tr = new Span(flags);
-            tr.getStyle().set("font-size", "0.7em").set("margin-inline-start", "6px")
-              .set("opacity", "0.75").set("white-space", "nowrap");
-            final Span row = new Span(lbl, tr);
-            row.getStyle().set("display", "inline-flex").set("align-items", "baseline")
-               .set("flex-wrap", "wrap").set("gap", "2px");
-            return row;
+            final boolean audio = audioIndex.hasAudio(arr[0]);
+            final com.vaadin.flow.component.Component body;
+            if (flags.isEmpty() && !audio) {
+                body = lbl;
+            } else {
+                final Span row = new Span(lbl);
+                if (!flags.isEmpty()) {
+                    final Span tr = new Span(flags);
+                    tr.getStyle().set("font-size", "0.7em").set("margin-inline-start", "6px")
+                      .set("opacity", "0.75").set("white-space", "nowrap");
+                    row.add(tr);
+                }
+                if (audio) row.add(audioIcon(t("reader.audio.available")));
+                row.getStyle().set("display", "inline-flex").set("align-items", "baseline")
+                   .set("flex-wrap", "wrap").set("gap", "2px");
+                body = row;
+            }
+            final String heading = headsGroup(listed.get(), typed.get(), arr)
+                ? groupHeading(arr.length > 6 ? arr[6] : "") : "";
+            if (heading.isEmpty()) return body;
+            final Div block = new Div();
+            block.add(groupCaption(heading), body);
+            return block;
         }));
+        // A ComboBox shows the plain label once closed, not the rendered row, so
+        // the marker has to be put back into the field explicitly. Worth doing:
+        // the closed field is exactly when someone is reading and wants to know
+        // whether this edition can be listened to.
+        sourceCombo.addValueChangeListener(e -> {
+            final String[] picked = e.getValue();
+            sourceCombo.setPrefixComponent(
+                picked != null && audioIndex.hasAudio(picked[0])
+                    ? audioIcon(t("reader.audio.available")) : null);
+        });
         sourceCombo.setEnabled(false);
         langCombo.addValueChangeListener(e -> {
             final String lang = e.getValue();
             sourceCombo.clear();
             sourceCombo.setEnabled(lang != null);
-            sourceCombo.setItems(lang == null ? List.<String[]>of() : primary.stream()
+            final List<String[]> rows = lang == null ? List.<String[]>of() : primary.stream()
                 .filter(r -> lang.equals(r.length > 7 ? r[7] : ""))
                 .sorted(java.util.Comparator
                     .comparingInt((String[] r) -> typeRank(r.length > 6 ? r[6] : ""))
                     .thenComparing(r -> r.length > 2 ? r[2] : ""))
-                .toList());
+                .toList();
+            listed.set(rows);
+            typed.set("");
+            sourceCombo.setItems(sourceFilter, rows);
         });
         // A Qur'an *translation* (type quran with a baseText) is not a standalone
         // primary text — it is shown beneath the Arabic via the translation picker.
@@ -1599,6 +1815,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
 
         aState.bookSelect.setPlaceholder(t("reader.bookPlaceholder"));
         aState.bookSelect.setTooltipText(t("tooltip.book"));
+        // Per-book audio marker. Unlike ComboBox, a Select renders the chosen
+        // item into the field itself, so this one renderer covers both the open
+        // list and the closed field — no prefix component needed.
+        aState.bookSelect.setRenderer(bookRenderer(aState));
         aState.bookSelect.getStyle().set("flex", "1").set("min-width", "0").set("max-width", "300px");
         aState.bookSelect.addValueChangeListener(e -> {
             if (e.getValue() == null || aColumn.getSourceId() == null) return;
@@ -1786,7 +2006,27 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         aState.bookSelect.setItems(bookKeys);
         // Localised label in the picker; the English value stays the selection
         // (the query/sync key).
-        aState.bookSelect.setTextRenderer(n -> bookHeading(aState, n));
+        aState.bookSelect.setRenderer(bookRenderer(aState));
+        // Block headings between testaments. Select takes components BETWEEN its
+        // items, so unlike the source ComboBox's headings these are siblings of
+        // the rows rather than part of one — which keeps them out of the closed
+        // field, where the chosen book alone belongs. A heading appears wherever
+        // the block CHANGES, so an order that interleaves stays honest, and a
+        // list with no canon codes gets none at all.
+        String prevGroup = "";
+        for (final String[] b : books) {
+            final String key = bookGroupKey(b.length > 3 ? b[3] : null);
+            // An unrecognised code CONTINUES the current block rather than
+            // ending it: breaking the run there would print the same heading
+            // twice, a book or two apart, which is worse than no heading.
+            if (key.isEmpty()) continue;
+            if (!key.equals(prevGroup)) {
+                final Span caption = groupCaption(t(key));
+                caption.getStyle().set("padding-inline", "var(--lumo-space-s)");
+                aState.bookSelect.prependComponents(b[0], caption);
+            }
+            prevGroup = key;
+        }
     }
 
     /** Book label for the active source. When a translation is shown beneath an
@@ -1806,7 +2046,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  forces the Select to relabel every item (refreshAll alone may not). */
     private void refreshBookNames(final ColState aState) {
         if (aState.bookSelect != null)
-            aState.bookSelect.setTextRenderer(n -> bookHeading(aState, n));
+            aState.bookSelect.setRenderer(bookRenderer(aState));
     }
 
     // ── Window open / reload ────────────────────────────────────────────────────

@@ -45,6 +45,12 @@ public class SecurityConfig extends VaadinWebSecurity {
                 new AntPathRequestMatcher("/site.webmanifest"),
                 new AntPathRequestMatcher("/icons/**"),
                 new AntPathRequestMatcher("/images/**"),
+                // Generated chapter audio (mp3 + its per-verse offsets JSON),
+                // served by AudioStaticConfig at /audio/*. Without this the
+                // filter chain 302s them to /login: <audio> gets a redirect to
+                // HTML instead of an mp3 and stays silent, and the offsets
+                // fetch() lands on the login page so the text never highlights.
+                new AntPathRequestMatcher("/audio/**"),
                 new AntPathRequestMatcher("/docs/**"),
                 new AntPathRequestMatcher("/download"),
                 new AntPathRequestMatcher("/download/**"),

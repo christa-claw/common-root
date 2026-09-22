@@ -41,6 +41,13 @@ final class VerseWindowRenderer {
         int activeSeq(ColState aState, VerseRef aVerseRef);
         /** Display name for a book (localized / Arabic surah / + companion Latin). */
         String bookHeading(ColState aState, String aBookName);
+        /**
+         * Play control for this chapter, or null when it has no generated audio.
+         * Lives on ReaderView because the manifest service and the column's
+         * source id do; the renderer only decides where it hangs.
+         */
+        com.vaadin.flow.component.Component audioControl(ColState aState,
+                String aBookCode, int aChapter);
         /** Superscript badge for a verse that has public comments. */
         Span commentBadge(ColState aState, String aBookName, int aChapter,
                           String aVerseNo, List<VerseComment> theComments);
@@ -284,7 +291,21 @@ final class VerseWindowRenderer {
             h.getElement().setAttribute("data-chapter-heading", "true");
             h.getStyle().set("font-size", "15px").set("margin", "8px 0 4px 0")
              .set("color", "var(--lumo-secondary-text-color)");
-            div.add(h);
+            // The play control sits beside the reference, not inside the text:
+            // the heading is the one element that names exactly one chapter.
+            final String audioBook = theVerses.isEmpty() ? null : theVerses.get(0).getBookCode();
+            final com.vaadin.flow.component.Component audio =
+                (audioBook == null || audioBook.isBlank())
+                    ? null : host.audioControl(aState, audioBook, aChapter);
+            if (audio == null) {
+                div.add(h);
+            } else {
+                final Div bar = new Div();
+                bar.getStyle().set("display", "flex").set("align-items", "center")
+                   .set("gap", "6px").set("flex-wrap", "wrap");
+                bar.add(h, audio);
+                div.add(bar);
+            }
         }
 
         final Div text = new Div();

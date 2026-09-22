@@ -89,6 +89,11 @@ services:
     # new one?", which is what the corpus block's rm/rmi dance exists to answer.
     # The :-latest fallback keeps an .env without APP_TAG working exactly as before.
     image: ghcr.io/christa-claw/religious-texts/app:${APP_TAG:-latest}
+    volumes:
+      # Same tree caddy serves at /audio/*, read-only. The app only reads
+      # index.json from it, to know which chapters have audio; the mp3s
+      # themselves are never served through the app.
+      - ./audio:/srv/audio:ro
     container_name: religioustext-app
     restart: unless-stopped
     ports:
@@ -165,6 +170,7 @@ services:
       - "443:443/udp"            # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./audio:/srv/audio:ro    # chapter mp3s + verse-offset JSON, rsynced from the Mac mini
       - caddy-data:/data         # cert + ACME account storage — MUST persist
       - caddy-config:/config
     depends_on:

@@ -6,8 +6,8 @@ _研读塑造我们世界的文本。_
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.5 |
-| Generated | 2026-09-08 |
+| Version | 0.8.11 |
+| Generated | 2026-09-22 |
 <!-- /AUTOGEN:meta -->
 
 ## 这是什么
@@ -61,78 +61,46 @@ Common Root? 是一款免费、开放的阅读工具，用于并排探索亚伯�
 ## 当前可用的文本
 
 <!-- AUTOGEN:translations -->
-| Document | Language | Books | Verses |
-|---|---|---|---|
-| `bible-ar-vandyck` |  | 66 | 31102 |
-| `bible-asv-1901` |  | 66 | 31102 |
-| `bible-bes` |  | 66 | 31103 |
-| `bible-bsb` |  | 66 | 31086 |
-| `bible-byz1904-1904` |  | 27 | 7958 |
-| `bible-de-1545` |  | 66 | 31170 |
-| `bible-de-elberfelder` |  | 66 | 31102 |
-| `bible-diaglott-il-1864` |  | 27 | 7955 |
-| `bible-dra-1899` |  | 72 | 35598 |
-| `bible-fbv` |  | 66 | 31104 |
-| `bible-fi-1548` |  | 71 | 13616 |
-| `bible-fi-1642` |  | 78 | 35545 |
-| `bible-fi-1776` |  | 66 | 31102 |
-| `bible-fi-1933` |  | 78 | 35438 |
-| `bible-fr-darby` |  | 66 | 31167 |
-| `bible-gnv-1599` |  | 66 | 31090 |
-| `bible-grc-tr` |  | 27 | 7957 |
-| `bible-he-delitzsch` |  | 66 | 31102 |
-| `bible-he-wlc` |  | 39 | 23213 |
-| `bible-hlt-olcim` |  | 66 | 31104 |
-| `bible-irvhin-2019` |  | 66 | 31104 |
-| `bible-it-diodati` |  | 66 | 31102 |
-| `bible-kjv-1611` |  | 80 | 36820 |
-| `bible-la-vulgate` |  | 73 | 35809 |
-| `bible-lsv` |  | 66 | 31104 |
-| `bible-lut1912-1912` |  | 66 | 31171 |
-| `bible-nasb-2020` |  | 66 | 31073 |
-| `bible-nbla` |  | 66 | 31090 |
-| `bible-niv-2011` |  | 66 | 30752 |
-| `bible-pddpt` |  | 66 | 31078 |
-| `bible-ru-synodal` |  | 66 | 30266 |
-| `bible-rv-1885` |  | 80 | 36873 |
-| `bible-rvr09-1909` |  | 66 | 31102 |
-| `bible-sv-1917` |  | 78 | 35350 |
-| `bible-tr-ytc-2023` |  | 66 | 31059 |
-| `bible-vbl` |  | 66 | 31102 |
-| `bible-web` |  | 80 | 37839 |
-| `bible-zh-cuv` |  | 66 | 31101 |
-| `hadith-abudawud-ar` | ar | 43 | 5274 |
-| `hadith-abudawud-en` | en | 43 | 5274 |
-| `hadith-bukhari-ar` | ar | 98 | 7589 |
-| `hadith-bukhari-en` | en | 98 | 7589 |
-| `hadith-dehlawi-ar` | ar | 1 | 40 |
-| `hadith-dehlawi-en` | en | 1 | 40 |
-| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
-| `hadith-ibnmajah-en` | en | 38 | 4343 |
-| `hadith-malik-ar` | ar | 62 | 1858 |
-| `hadith-malik-en` | en | 62 | 1858 |
-| `hadith-muslim-ar` | ar | 57 | 7563 |
-| `hadith-muslim-en` | en | 57 | 7563 |
-| `hadith-nasai-ar` | ar | 52 | 5765 |
-| `hadith-nasai-en` | en | 52 | 5765 |
-| `hadith-nawawi-ar` | ar | 1 | 42 |
-| `hadith-nawawi-en` | en | 1 | 42 |
-| `hadith-qudsi-ar` | ar | 1 | 40 |
-| `hadith-qudsi-en` | en | 1 | 40 |
-| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
-| `hadith-tirmidhi-en` | en | 49 | 3998 |
-| `lds-book-of-mormon` | en | 15 | 6604 |
-| `lds-doctrine-and-covenants` | en | 1 | 3654 |
-| `lds-pearl-of-great-price` | en | 5 | 635 |
-| `quran-ar-uthmani` | ar | 114 | 6236 |
-| `quran-en-pickthall` | en | 114 | 6236 |
-| `quran-en-yusufali` | en | 114 | 6236 |
-| `quran-ru-sablukov` | ru | 114 | 6236 |
-
-_65 translations, 1,235,270 verses total._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 更多译本与传统——包括《古兰经》、各圣训集，以及多种语言的更多圣经版本——正在持续添加。
+
+## 章节音频
+
+公有领域的版本正在逐步获得朗读音频：每章一个 mp3，另有逐节的毫秒位置索引，使阅读行
+能够跟随文本，单节经文也可以被链接。目前的覆盖范围：
+
+<!-- AUTOGEN:audio -->
+_No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COMMONROOT_AUDIO_INDEX` to point at it._
+<!-- /AUTOGEN:audio -->
+
+这是尽力而为地让公有领域经文至少有音频形式，而不是出版级的有声圣经。朗读是合成的
+——神经网络语音合成，每个版本一个声音，没有真人朗读者，也没有录音棚处理——并且在免费
+字符额度内每晚只生成几章，因此一部圣经规模的版本需要数月才能补齐。只朗读公有领域文
+本；许可证禁止演绎作品的版本被有意排除在外。
+
+重点是覆盖那些一无所有的文本。1933 年芬兰语译本和德里慈希伯来文新约没有像样的音频
+版本，而英语在别处已有充足供应——所以英语在队列中被刻意排在最后，而不是最前。
+
+### 机器朗读会出的错
+
+收听前值得知道，听到时也值得反馈：
+
+- **专有名词。** 希伯来语和希腊语的人名常常读错。经文文本以纯连续文本送入引擎，没有
+  发音词典，因此读错的名字不会被任何机制纠正。
+- **古旧拼写。** 1776 年芬兰语早于现代正字法，引擎的文本规范化并非为它而建。数字、
+  缩写和旧拼写只能按引擎的读法读出。
+- **全程只有一个声音。** 叙述、对话和引语共用同一语调；音频从不标示说话者是谁。
+- **节的时间点可能不准。** 章节是有意作为连贯散文合成的，让语句的停顿跨越节与节的
+  分界，而不是在每一节都停下。时间点来自引擎经过每一节时报告的标记，通常精确——但
+  如果它报告的标记少于该章的节数，该章仍会发布，缺口只记在日志里。因此少数章节的
+  跟随可能不够精确。
+- **长章节的接缝。** 超过约 7,500 个字符的内容会分段合成再拼接。接缝安排在节的边界，
+  那里本就适合停顿，但偶尔仍能听出来。
+
+已经生成的内容不会自动重新生成——磁盘上的一章就是已经付过费的一章——所以纠正一处糟糕
+的朗读是一个刻意的动作：删除该章，让下一次夜间运行重新生成。
 
 ## 注释与论辩
 
@@ -181,7 +149,7 @@ _30 channels configured._
 
 ## 支持
 
-Common Root? 是免费的，并将永远免费。如果它对你有用，赞助有助于支付托管费用、获得授权译本的使用
+Common Root? 是免费的，并将永远免费。如果它对你有用，你的支持有助于支付托管费用、获得授权译本的使用
 权限，以及投入时间添加新文本与新功能。
 
-GitHub Sponsors: https://github.com/sponsors/christa-claw
+Buy Me a Coffee: https://buymeacoffee.com/christaclaw

@@ -101,6 +101,10 @@ public class SocialPreviewInitListener implements VaadinServiceInitListener {
             Map.entry("tr", new LanguageMeta(
                     "Common Root? — İbrahimî kutsal metinler yan yana",
                     "Kitab-ı Mukaddes'i, Kur'an'ı ve hadisleri kaynaklı açıklamalarla paralel sütunlarda okuyun."
+            )),
+            Map.entry("ja", new LanguageMeta(
+                    "Common Root? — アブラハムの聖典を並べて読む",
+                    "聖書・クルアーン・ハディースを平行する列で、出典付きの注釈とともに読む。"
             ))
     );
 

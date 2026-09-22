@@ -38,6 +38,7 @@ failing the whole build.
 
 import argparse
 import configparser
+import json
 import os
 import re
 import shutil
@@ -54,6 +55,13 @@ OUT_DIR      = SCRIPT_DIR  # binaries land alongside the existing docs
 
 POM_FILE      = os.path.join(PROJECT_ROOT, "pom.xml")
 CHANNELS_FILE = os.path.join(PROJECT_ROOT, "channels.properties")
+
+# Chapter-audio manifest. Written by scripts/audio/tts_build.py and kept OUTSIDE
+# the repo on purpose (audio is ~1.7 GB per edition and the weekly crons abort on
+# a dirty tree), so this is an absolute path rather than a repo-relative one, and
+# overridable for a machine that mounts the volume elsewhere.
+AUDIO_INDEX = os.environ.get(
+    "COMMONROOT_AUDIO_INDEX", "audio/index.json")
 
 APP_NAME = "Common Root?"
 
@@ -179,10 +187,88 @@ def gen_translations():
     return "\n".join(out) + "\n"
 
 
+def _chapter_ranges(numbers):
+    """[1,2,3,5,9,10] -> "1-3, 5, 9-10". Chapters are made a few a night, so a
+       book's list is long, mostly contiguous, and unreadable spelled out."""
+    runs, start, prev = [], None, None
+    for n in numbers:
+        if start is None:
+            start = prev = n
+        elif n == prev + 1:
+            prev = n
+        else:
+            runs.append((start, prev))
+            start = prev = n
+    if start is not None:
+        runs.append((start, prev))
+    return ", ".join(str(a) if a == b else f"{a}\u2013{b}" for a, b in runs)
+
+
+def _listening_time(ms):
+    """Milliseconds -> "1 h 43 min" / "34 min" / "48 s"."""
+    total = int(round((ms or 0) / 1000.0))
+    hours, rest = divmod(total, 3600)
+    minutes, seconds = divmod(rest, 60)
+    if hours:
+        return f"{hours} h {minutes:02d} min"
+    if minutes:
+        return f"{minutes} min"
+    return f"{seconds} s"
+
+
+def gen_audio():
+    """
+    Chapter-audio coverage, read from the generator's manifest — the same file the
+    reader itself uses to decide which chapters to offer, so this table cannot
+    claim audio the site does not have. Falls back to a note when the manifest is
+    absent (e.g. building the docs somewhere that does not mount the audio volume).
+    """
+    try:
+        with open(AUDIO_INDEX, encoding="utf-8") as handle:
+            index = json.load(handle)
+    except FileNotFoundError:
+        return (f"_No audio manifest at `{AUDIO_INDEX}`; coverage table not "
+                "refreshed. Set `COMMONROOT_AUDIO_INDEX` to point at it._\n")
+    except (OSError, ValueError) as exc:
+        return f"_Audio manifest unreadable ({exc}); coverage table not refreshed._\n"
+
+    texts = index.get("texts") or {}
+    rows, chapters_total, ms_total = [], 0, 0
+    for text_id in sorted(texts):
+        text = texts[text_id] or {}
+        voice = text.get("voice") or "?"
+        books = text.get("books") or {}
+        for book in sorted(books):
+            entry = books[book] or {}
+            numbers = sorted(int(c) for c in (entry.get("chapters") or {})
+                             if str(c).isdigit())
+            if not numbers:
+                continue
+            duration = entry.get("durationMs") or 0
+            rows.append(f"| `{text_id}` | {voice} | {book} | "
+                        f"{_chapter_ranges(numbers)} ({len(numbers)}) | "
+                        f"{_listening_time(duration)} |")
+            chapters_total += len(numbers)
+            ms_total += duration
+
+    if not rows:
+        return "_No chapter audio has been generated yet._\n"
+
+    out = ["| Edition | Voice | Book | Chapters with audio | Listening time |",
+           "|---|---|---|---|---|"] + rows + [""]
+    editions = len(texts)
+    out.append(f"_{chapters_total} chapters across {editions} "
+               f"edition{'' if editions == 1 else 's'}, "
+               f"{_listening_time(ms_total)} of audio. Manifest generated "
+               f"{index.get('generated', 'unknown')}._")
+    return "\n".join(out) + "\n"
+
+
 GENERATORS = {
     "meta":         gen_meta,
     "channels":     gen_channels,
     "translations": gen_translations,
+    "audio":        gen_audio,
 }
 
 

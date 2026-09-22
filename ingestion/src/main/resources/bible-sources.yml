@@ -272,3 +272,15 @@ translations:
     license: Public Domain
     sourceUrl: https://scripture.api.bible/
     region: Orthodox
+
+  - id: bible-en-jps-1917
+    translation: JPS TaNaKH 1917
+    abbreviation: JPS1917
+    apiBibleId: bf8f1c7f3f9045a5-01
+    bcp47Language: en
+    iso639_3: eng
+    direction: ltr
+    year: 1917
+    license: Public Domain
+    sourceUrl: https://ebible.org/find/details.php?id=engojps
+    region: Jewish

@@ -6,8 +6,8 @@ _Étudiez les textes qui façonnent notre monde._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.5 |
-| Generated | 2026-09-08 |
+| Version | 0.8.11 |
+| Generated | 2026-09-22 |
 <!-- /AUTOGEN:meta -->
 
 ## Ce que c'est
@@ -86,80 +86,66 @@ correctement dans une autre.
 ## Textes actuellement disponibles
 
 <!-- AUTOGEN:translations -->
-| Document | Language | Books | Verses |
-|---|---|---|---|
-| `bible-ar-vandyck` |  | 66 | 31102 |
-| `bible-asv-1901` |  | 66 | 31102 |
-| `bible-bes` |  | 66 | 31103 |
-| `bible-bsb` |  | 66 | 31086 |
-| `bible-byz1904-1904` |  | 27 | 7958 |
-| `bible-de-1545` |  | 66 | 31170 |
-| `bible-de-elberfelder` |  | 66 | 31102 |
-| `bible-diaglott-il-1864` |  | 27 | 7955 |
-| `bible-dra-1899` |  | 72 | 35598 |
-| `bible-fbv` |  | 66 | 31104 |
-| `bible-fi-1548` |  | 71 | 13616 |
-| `bible-fi-1642` |  | 78 | 35545 |
-| `bible-fi-1776` |  | 66 | 31102 |
-| `bible-fi-1933` |  | 78 | 35438 |
-| `bible-fr-darby` |  | 66 | 31167 |
-| `bible-gnv-1599` |  | 66 | 31090 |
-| `bible-grc-tr` |  | 27 | 7957 |
-| `bible-he-delitzsch` |  | 66 | 31102 |
-| `bible-he-wlc` |  | 39 | 23213 |
-| `bible-hlt-olcim` |  | 66 | 31104 |
-| `bible-irvhin-2019` |  | 66 | 31104 |
-| `bible-it-diodati` |  | 66 | 31102 |
-| `bible-kjv-1611` |  | 80 | 36820 |
-| `bible-la-vulgate` |  | 73 | 35809 |
-| `bible-lsv` |  | 66 | 31104 |
-| `bible-lut1912-1912` |  | 66 | 31171 |
-| `bible-nasb-2020` |  | 66 | 31073 |
-| `bible-nbla` |  | 66 | 31090 |
-| `bible-niv-2011` |  | 66 | 30752 |
-| `bible-pddpt` |  | 66 | 31078 |
-| `bible-ru-synodal` |  | 66 | 30266 |
-| `bible-rv-1885` |  | 80 | 36873 |
-| `bible-rvr09-1909` |  | 66 | 31102 |
-| `bible-sv-1917` |  | 78 | 35350 |
-| `bible-tr-ytc-2023` |  | 66 | 31059 |
-| `bible-vbl` |  | 66 | 31102 |
-| `bible-web` |  | 80 | 37839 |
-| `bible-zh-cuv` |  | 66 | 31101 |
-| `hadith-abudawud-ar` | ar | 43 | 5274 |
-| `hadith-abudawud-en` | en | 43 | 5274 |
-| `hadith-bukhari-ar` | ar | 98 | 7589 |
-| `hadith-bukhari-en` | en | 98 | 7589 |
-| `hadith-dehlawi-ar` | ar | 1 | 40 |
-| `hadith-dehlawi-en` | en | 1 | 40 |
-| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
-| `hadith-ibnmajah-en` | en | 38 | 4343 |
-| `hadith-malik-ar` | ar | 62 | 1858 |
-| `hadith-malik-en` | en | 62 | 1858 |
-| `hadith-muslim-ar` | ar | 57 | 7563 |
-| `hadith-muslim-en` | en | 57 | 7563 |
-| `hadith-nasai-ar` | ar | 52 | 5765 |
-| `hadith-nasai-en` | en | 52 | 5765 |
-| `hadith-nawawi-ar` | ar | 1 | 42 |
-| `hadith-nawawi-en` | en | 1 | 42 |
-| `hadith-qudsi-ar` | ar | 1 | 40 |
-| `hadith-qudsi-en` | en | 1 | 40 |
-| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
-| `hadith-tirmidhi-en` | en | 49 | 3998 |
-| `lds-book-of-mormon` | en | 15 | 6604 |
-| `lds-doctrine-and-covenants` | en | 1 | 3654 |
-| `lds-pearl-of-great-price` | en | 5 | 635 |
-| `quran-ar-uthmani` | ar | 114 | 6236 |
-| `quran-en-pickthall` | en | 114 | 6236 |
-| `quran-en-yusufali` | en | 114 | 6236 |
-| `quran-ru-sablukov` | ru | 114 | 6236 |
-
-_65 translations, 1,235,270 verses total._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 D'autres traductions et traditions — dont le Coran, des recueils de hadiths et des
 versions supplémentaires de la Bible en de nombreuses langues — sont ajoutées en
 continu.
+
+## Audio par chapitre
+
+Les éditions du domaine public reçoivent peu à peu une version parlée : un MP3 par
+chapitre, accompagné d'un index des décalages en millisecondes verset par verset,
+pour que la ligne de lecture puisse suivre et qu'un verset reste lisible par lien.
+État actuel :
+
+<!-- AUTOGEN:audio -->
+_No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COMMONROOT_AUDIO_INDEX` to point at it._
+<!-- /AUTOGEN:audio -->
+
+Il s'agit d'un effort au mieux pour donner une forme audio aux Écritures du
+domaine public, non d'une bible audio éditée. La lecture est synthétique — synthèse
+vocale neuronale, une voix par édition, sans narrateur humain ni passage en studio
+— et elle est produite quelques chapitres par nuit dans les limites d'un quota de
+caractères gratuit : une édition de la taille d'une bible demande donc des mois.
+Seuls des textes du domaine public sont lus ; les éditions dont la licence interdit
+les œuvres dérivées sont volontairement exclues.
+
+L'objectif est de couvrir les textes qui n'ont rien. Le finnois de 1933 et le
+Nouveau Testament hébreu de Delitzsch n'ont aucune édition audio digne de ce nom,
+tandis que l'anglais est abondamment servi ailleurs — d'où sa place volontairement
+dernière, et non première, dans la file.
+
+### Ce que la lecture automatique rate
+
+Bon à savoir avant d'écouter, et utile à signaler quand on l'entend :
+
+- **Les noms propres.** Les noms hébreux et grecs sont fréquemment mal prononcés.
+  Le texte des versets est transmis au moteur en texte courant, sans lexique de
+  prononciation : rien ne corrige un nom mal deviné.
+- **L'orthographe ancienne.** Le finnois de 1776 est antérieur à l'orthographe
+  moderne, et le normaliseur de texte du moteur n'a pas été conçu pour elle. Les
+  nombres, les abréviations et les graphies anciennes sont lus comme le moteur les
+  lit.
+- **Une seule voix du début à la fin.** Narration, dialogue et citation partagent
+  le même registre ; l'audio ne marque jamais qui parle.
+- **Les repères de versets peuvent être imprécis.** Les chapitres sont synthétisés
+  comme une prose continue, à dessein, pour que le phrasé franchisse les limites de
+  versets au lieu de s'arrêter à chacune. Les décalages proviennent de marques que
+  le moteur signale en passant chaque verset et sont normalement exacts — mais un
+  chapitre où il signale moins de marques qu'il n'y a de versets est tout de même
+  publié, l'écart n'étant noté que dans le journal. Quelques chapitres peuvent donc
+  suivre imparfaitement.
+- **Coutures des longs chapitres.** Au-delà d'environ 7 500 caractères, un chapitre
+  est synthétisé en plusieurs parties puis rejoint. Les raccords sont placés aux
+  limites de versets, là où une pause est naturelle, mais il arrive qu'on en
+  entende un.
+
+Rien de ce qui a été produit n'est reproduit automatiquement — un chapitre sur le
+disque est un chapitre déjà payé — : corriger une mauvaise lecture est donc un
+geste délibéré, supprimer ce chapitre et laisser la passe de la nuit suivante le
+refaire.
 
 ## Commentaires et arguments
 
@@ -210,8 +196,8 @@ _30 channels configured._
 
 ## Soutien
 
-Common Root? est gratuit et le restera toujours. S'il vous est utile, le
-parrainage aide à couvrir l'hébergement, l'accès aux traductions sous licence et
+Common Root? est gratuit et le restera toujours. S'il vous est utile, votre
+soutien aide à couvrir l'hébergement, l'accès aux traductions sous licence et
 le temps consacré à l'ajout de nouveaux textes et fonctionnalités.
 
-GitHub Sponsors : https://github.com/sponsors/christa-claw
+Buy Me a Coffee : https://buymeacoffee.com/christaclaw

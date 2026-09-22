@@ -72,7 +72,15 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
             return;
         }
         removeAll();
-        add(buildNavBar(), buildHero(), buildFacts(), buildBody(), buildFooter());
+        // Keyed on the PAGE's language rather than the UI locale: these pages are
+        // per-language EditionInfo entries, so a Finnish page is machine-Finnish
+        // whatever language the chrome happens to be in.
+        final com.vaadin.flow.component.Component mtNotice = TranslationNotice.forLocale(
+            java.util.Locale.forLanguageTag(page.lang), this::getTranslation,
+            "/edition/" + page.abbr + "?lang=en");
+        add(buildNavBar());
+        if (mtNotice != null) add(mtNotice);
+        add(buildHero(), buildFacts(), buildBody(), buildFooter());
     }
 
     /** Resolve the {@link EditionInfo#PAGES} key. An explicit language prefix

@@ -1,0 +1,51 @@
+# Audio generation queue, worked strictly top to bottom. An entry is finished
+# when every chapter of every listed book is in the ledger AND on disk; the
+# generator then falls through to the next line on its own, so completing a
+# language needs no edit here.
+#
+# Order is by observed traffic (Umami, 30d: FI 21 / CN 18 + SG 12 / DE 7 / FR 4),
+# not by corpus order. English is deliberately LAST: en is the largest audience
+# but the best served elsewhere — English audio Bibles are abundant, Finnish
+# 1933 and Delitzsch Hebrew are not.
+#
+# 2026-09-14: zh-cuv moved to the front on usage statistics (maintainer's
+# call). The 30d figures above already put Chinese-reading traffic
+# (CN + SG) ahead of FI; zh-cuv is also ~2.07M characters against
+# fi-1933's ~4.19M, so it completes sooner. fi-1933 pauses at GEN 27.
+#
+# 2026-09-18: ja-freedom-2026 added and placed ahead of fi-1933
+# (maintainer's call) — Finnish pauses at 645/1189 and resumes after
+# Japanese completes (~1.70M chars).
+#
+# 2026-09-21: reordered to ONE public-domain bible per language, in the
+# maintainer's stated order: he, ru, de, fr, es, it, sv, en. This supersedes the
+# traffic ordering above. fi-1933 moves to LAST (maintainer's call) to be finalised after
+# the eight, so it keeps its 956/1337 chapters and is deferred, not abandoned.
+# Measured sizes at this date (raw verse characters):
+#   he 2.04M  ru 3.22M  de 4.00M  es 3.98M  en 4.09M  it 4.20M  fr 4.21M
+#   sv 4.64M  fi remaining 1.43M   -- the eight total 30.4M
+# Paid lifetime was 7.77M of a 20.5M cap (12.7M headroom) and the Azure credit
+# (EUR 171.73, expires ~11 Oct 2026) covers roughly 11.4M, so the MONEY binds
+# first: expect he + ru + de complete and fr part-way, then a clean stop at a
+# cap. Everything below fr is queued for later credit, not for this run.
+#
+# Every text here is Public Domain and complete (OT+NT). Excluded on purpose:
+#   tr  YTC 2023      CC BY-ND — "no derivatives" likely bars synthesised audio
+#   hi  IRV 2019      CC BY-SA — usable, but the audio inherits share-alike
+#   la  Vulgate       no Azure voice exists
+#   grc TR / BYZ1904  no Azure voice, and NT only
+#   ar  Qur'an/hadith NOT to be synthesised — recitation needs tajwid, not TTS
+#
+# text-id                voice                    lang    books
+bible-zh-cuv             zh-CN-YunxiNeural        zh-CN   ALL
+bible-ar-vandyck         ar-SA-HamedNeural        ar-SA   ALL
+bible-ja-freedom-2026    ja-JP-KeitaNeural        ja-JP   ALL
+bible-he-delitzsch       he-IL-AvriNeural         he-IL   ALL
+bible-ru-synodal         ru-RU-DmitryNeural       ru-RU   ALL
+bible-lut1912-1912       de-DE-ChristophNeural    de-DE   ALL
+bible-fr-darby           fr-FR-AlainNeural        fr-FR   ALL
+bible-rvr09-1909         es-ES-AlvaroNeural       es-ES   ALL
+bible-it-diodati         it-IT-BenignoNeural      it-IT   ALL
+bible-sv-1917            sv-SE-MattiasNeural      sv-SE   ALL
+bible-lsv                en-GB-AlfieNeural        en-GB   ALL
+bible-fi-1933            fi-FI-HarriNeural        fi-FI   ALL

@@ -155,7 +155,10 @@ final class ColState {
      *  where stepping ‹ › through a long book is the only alternative and the
      *  verse-search box at the top does not announce what it is for. */
     com.vaadin.flow.component.textfield.TextField chapterInput;
-    String          chapterAbbrev = "Ch.";
+    /** Pattern, not a prefix: Chinese puts the number before the word (第1章),
+     *  so "abbreviation + space + number" produced "章 1" on every chapter of
+     *  the site's most-viewed page. {0} is the chapter number. */
+    String          chapterLabelFormat = "Ch. {0}";
     // Verse-precision link memory: when this column was OPENED AT A SPECIFIC
     // VERSE (a comment ref, a search hit, a cN.ref=BOOK.CH.VS deep link), the
     // verse is remembered here so Copy-link can emit it. Used only while the
@@ -253,13 +256,30 @@ final class ColState {
         return -1;
     }
 
+    /**
+     * USFM code of a book by its displayed name, or {@code null}.
+     *
+     * <p>Rows are {name, chapterCount, arabicName, code}; the audio manifest is
+     * keyed by code while this Select holds localised names, so something has
+     * to bridge the two. Done by lookup rather than by index arithmetic on the
+     * two lists, because book lists here are irregular — Agricola prints
+     * seventy-one books and starts Exodus at chapter 15.
+     */
+    String bookCode(final String aBookName) {
+        final int i = indexOfBook(aBookName);
+        if (i < 0) return null;
+        final String[] row = books.get(i);
+        return row.length > 3 ? row[3] : null;
+    }
+
     String currentBookName() {
         return books.isEmpty() ? null : books.get(bookIndex)[0];
     }
 
     void setVisible(final int aChapter, final String aBook) {
         visibleChapter = aChapter;
-        chapterLabel.setText(col.getDisplayOptions().isContinuous() ? "" : chapterAbbrev + " " + aChapter);
+        chapterLabel.setText(col.getDisplayOptions().isContinuous() ? ""
+            : chapterLabelFormat.replace("{0}", String.valueOf(aChapter)));
         if (aBook != null && !aBook.equals(bookSelect.getValue())) {
             bookSelect.setValue(aBook);
         }

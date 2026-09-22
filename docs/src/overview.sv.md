@@ -6,8 +6,8 @@ _Studera texterna som formar vår värld._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.8.5 |
-| Generated | 2026-09-08 |
+| Version | 0.8.11 |
+| Generated | 2026-09-22 |
 <!-- /AUTOGEN:meta -->
 
 ## Vad det är
@@ -79,79 +79,59 @@ Hänvisningarna är översättnings- och språkoberoende, så en länk som skapa
 ## Tillgängliga texter just nu
 
 <!-- AUTOGEN:translations -->
-| Document | Language | Books | Verses |
-|---|---|---|---|
-| `bible-ar-vandyck` |  | 66 | 31102 |
-| `bible-asv-1901` |  | 66 | 31102 |
-| `bible-bes` |  | 66 | 31103 |
-| `bible-bsb` |  | 66 | 31086 |
-| `bible-byz1904-1904` |  | 27 | 7958 |
-| `bible-de-1545` |  | 66 | 31170 |
-| `bible-de-elberfelder` |  | 66 | 31102 |
-| `bible-diaglott-il-1864` |  | 27 | 7955 |
-| `bible-dra-1899` |  | 72 | 35598 |
-| `bible-fbv` |  | 66 | 31104 |
-| `bible-fi-1548` |  | 71 | 13616 |
-| `bible-fi-1642` |  | 78 | 35545 |
-| `bible-fi-1776` |  | 66 | 31102 |
-| `bible-fi-1933` |  | 78 | 35438 |
-| `bible-fr-darby` |  | 66 | 31167 |
-| `bible-gnv-1599` |  | 66 | 31090 |
-| `bible-grc-tr` |  | 27 | 7957 |
-| `bible-he-delitzsch` |  | 66 | 31102 |
-| `bible-he-wlc` |  | 39 | 23213 |
-| `bible-hlt-olcim` |  | 66 | 31104 |
-| `bible-irvhin-2019` |  | 66 | 31104 |
-| `bible-it-diodati` |  | 66 | 31102 |
-| `bible-kjv-1611` |  | 80 | 36820 |
-| `bible-la-vulgate` |  | 73 | 35809 |
-| `bible-lsv` |  | 66 | 31104 |
-| `bible-lut1912-1912` |  | 66 | 31171 |
-| `bible-nasb-2020` |  | 66 | 31073 |
-| `bible-nbla` |  | 66 | 31090 |
-| `bible-niv-2011` |  | 66 | 30752 |
-| `bible-pddpt` |  | 66 | 31078 |
-| `bible-ru-synodal` |  | 66 | 30266 |
-| `bible-rv-1885` |  | 80 | 36873 |
-| `bible-rvr09-1909` |  | 66 | 31102 |
-| `bible-sv-1917` |  | 78 | 35350 |
-| `bible-tr-ytc-2023` |  | 66 | 31059 |
-| `bible-vbl` |  | 66 | 31102 |
-| `bible-web` |  | 80 | 37839 |
-| `bible-zh-cuv` |  | 66 | 31101 |
-| `hadith-abudawud-ar` | ar | 43 | 5274 |
-| `hadith-abudawud-en` | en | 43 | 5274 |
-| `hadith-bukhari-ar` | ar | 98 | 7589 |
-| `hadith-bukhari-en` | en | 98 | 7589 |
-| `hadith-dehlawi-ar` | ar | 1 | 40 |
-| `hadith-dehlawi-en` | en | 1 | 40 |
-| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
-| `hadith-ibnmajah-en` | en | 38 | 4343 |
-| `hadith-malik-ar` | ar | 62 | 1858 |
-| `hadith-malik-en` | en | 62 | 1858 |
-| `hadith-muslim-ar` | ar | 57 | 7563 |
-| `hadith-muslim-en` | en | 57 | 7563 |
-| `hadith-nasai-ar` | ar | 52 | 5765 |
-| `hadith-nasai-en` | en | 52 | 5765 |
-| `hadith-nawawi-ar` | ar | 1 | 42 |
-| `hadith-nawawi-en` | en | 1 | 42 |
-| `hadith-qudsi-ar` | ar | 1 | 40 |
-| `hadith-qudsi-en` | en | 1 | 40 |
-| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
-| `hadith-tirmidhi-en` | en | 49 | 3998 |
-| `lds-book-of-mormon` | en | 15 | 6604 |
-| `lds-doctrine-and-covenants` | en | 1 | 3654 |
-| `lds-pearl-of-great-price` | en | 5 | 635 |
-| `quran-ar-uthmani` | ar | 114 | 6236 |
-| `quran-en-pickthall` | en | 114 | 6236 |
-| `quran-en-yusufali` | en | 114 | 6236 |
-| `quran-ru-sablukov` | ru | 114 | 6236 |
-
-_65 translations, 1,235,270 verses total._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 Fler översättningar och traditioner — inklusive Koranen, hadith-samlingar och
 ytterligare bibelversioner på många språk — läggs till löpande.
+
+## Ljud per kapitel
+
+Utgåvor i public domain får efter hand uppläst ljud: en MP3 per kapitel, plus ett
+index med millisekundpositioner för varje vers, så att läsraden kan följa med och en
+enskild vers går att länka till. Nuvarande täckning:
+
+<!-- AUTOGEN:audio -->
+_No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COMMONROOT_AUDIO_INDEX` to point at it._
+<!-- /AUTOGEN:audio -->
+
+Det här är ett försök att över huvud taget få public domain-skrifter i ljudform,
+inte en förlagsutgiven ljudbibel. Uppläsningen är syntetisk — neural talsyntes, en
+röst per utgåva, ingen mänsklig uppläsare och ingen studiogenomgång — och den
+skapas några kapitel per natt inom en gratis teckenkvot, så en utgåva i bibelstorlek
+tar månader att fylla. Endast public domain-texter läses; utgåvor vars licens
+förbjuder bearbetningar är medvetet uteslutna.
+
+Poängen är att täcka texter som inte har något. Finska 1933 och Delitzsch hebreiska
+Nya testamente saknar ljudutgåva värd namnet, medan engelskan är rikligt försörjd på
+annat håll — därför står engelskan medvetet sist i kön i stället för först.
+
+### Vad den maskinella uppläsningen gör fel
+
+Värt att veta innan man lyssnar, och värt att rapportera när man hör det:
+
+- **Egennamn.** Hebreiska och grekiska namn uttalas ofta fel. Versens text går till
+  motorn som löpande text utan uttalslexikon, så ingenting rättar ett namn den
+  gissar fel.
+- **Ålderdomlig stavning.** Finskan från 1776 är äldre än modern ortografi, och
+  motorns textnormalisering byggdes inte för den. Siffror, förkortningar och gamla
+  stavningar läses som motorn nu läser dem.
+- **En enda röst rakt igenom.** Berättande, dialog och citat delar samma tonläge;
+  ljudet markerar aldrig vem som talar.
+- **Verstiderna kan vara oprecisa.** Kapitel syntetiseras med flit som
+  sammanhängande prosa, så att frasering bärs över versgränserna i stället för att
+  stanna vid varje. Positionerna kommer från markörer som motorn rapporterar när
+  den passerar varje vers och stämmer normalt exakt — men ett kapitel där den
+  rapporterar färre markörer än kapitlet har verser publiceras ändå, och
+  underskottet noteras bara i loggen. Några kapitel kan därför följa texten
+  oprecist.
+- **Skarvar i långa kapitel.** Allt över ungefär 7 500 tecken syntetiseras i delar
+  och fogas samman. Skarvarna läggs vid versgränser, där en paus är naturlig, men
+  någon gång hörs de.
+
+Inget som redan genererats genereras om automatiskt — ett kapitel på disk är ett
+kapitel som redan är betalt — så att rätta en dålig uppläsning är en medveten
+handling: ta bort det kapitlet och låt nästa natts körning göra om det.
 
 ## Kommentarer och argument
 
@@ -203,7 +183,7 @@ _30 channels configured._
 ## Stöd
 
 Common Root? är gratis och kommer alltid att vara det. Om den är till nytta för
-dig hjälper sponsring till att täcka drift, tillgång till licensierade
+dig hjälper ditt stöd till att täcka drift, tillgång till licensierade
 översättningar och tiden att lägga till nya texter och funktioner.
 
-GitHub Sponsors: https://github.com/sponsors/christa-claw
+Buy Me a Coffee: https://buymeacoffee.com/christaclaw

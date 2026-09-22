@@ -94,9 +94,9 @@ docker-compose down -v
 ## Support
 
 Common Root? is free and open. If it's useful to you, you can support its
-development via GitHub Sponsors:
+development via Buy Me a Coffee:
 
-https://github.com/sponsors/christa-claw
+https://buymeacoffee.com/christaclaw
 
 ## About this repository
 

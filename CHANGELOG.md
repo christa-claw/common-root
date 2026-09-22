@@ -70,6 +70,191 @@ in the reader toolbar and About-page nav.
 
 ---
 
+## [Unreleased]
+
+## [0.8.11] — 2026-09-22
+
+### Added
+- **Edition info for the Geneva Bible (GNV) in Japanese**, completing all
+  fourteen interface languages for that edition.
+
+## [0.8.10] — 2026-09-21
+
+### Added
+- **Verse-anchored whole-transcript extraction.** The extractors only ever saw
+  the first 3,000 characters of a transcript. The median is ~5k but the mean is
+  ~24k and p90 ~74k, so on a long debate the model was summarising the intro —
+  46% of useful entries carried no verse reference at all. `verse_scan.py` now
+  scans the whole transcript by regex, with no model, for spoken citations and
+  clusters them into windows; only those windows go to the model, which emits
+  several timestamped arguments per video with `&t=` deep links. Measured on a
+  500-video random sample: 2.1× the model calls for 7.2× the verse references,
+  where a blind chunked sweep would have cost 8–10× for the same coverage. The
+  pass is additive — existing entries and their minted permalink ids are never
+  touched, verified byte-identical over a pilot run.
+- **Edition info for the Reina-Valera 1909 (RVR09) and the Smith–Van Dyke (SVD)**,
+  English plus thirteen translations, and the **Vulgate (VUL) in Japanese**.
+
+### Fixed
+- **Chapter audio never actually played.** Three bugs stacked. `/audio/**` was
+  missing from SecurityConfig's permitAll list, so every mp3 and offsets JSON
+  redirected to `/login`: the `<audio>` element got HTML and stayed silent, and
+  the offsets fetch failed its JSON parse into an empty catch, so the text did
+  not highlight either — one root cause, two symptoms. Behind it,
+  `ResourceHttpRequestHandler` threw on an attribute only the DispatcherServlet
+  sets, and there is no DispatcherServlet on that route by design; the servlet
+  now sets it from `getPathInfo()`. And the player's host div shrink-wrapped to
+  the 24px play button, so its `width:100%` resolved to 24px. Verified: mp3 200,
+  offsets 200, Range → 206, traversal refused, player 287px, verses highlighting
+  in step.
+- **Japanese and Turkish rendered without flags in the language pickers.**
+  `LocaleUtil.LOCALES` listed fourteen locales while `LanguageSelect.LABELS` held
+  thirteen, so Japanese fell through to `Locale.getDisplayName()`; ReaderView's
+  separate flag and name maps were missing `tr` entirely, so Turkish showed as a
+  bare language code.
+- **Timestamped deep links would have been dropped at seed time.** `video_link`
+  sat on the entry, but DataSeeder reads it per reference — it now sits on the
+  ref. Chapter-only citations ("Romans 9", no verse) are no longer emitted as
+  refs either: the seeder skips `verse==0`, so they would have created comments
+  attached to nothing, and they were 57% of anchors on one dry run. They still
+  locate windows and still inform the summary.
+- A `--dry-run` summary printed "Output: arguments.json", claiming a write that
+  never happened.
+
+### Changed
+- **Per-voice speaking rate; Hebrew slowed 20%.** `build_ssml` emitted no
+  `<prosody>`, so every voice ran at its factory default — measured across
+  generated chapters, Finnish at 118 wpm and Arabic at 113, against
+  `he-IL-AvriNeural` at 180, a news-reader pace where everyone else is unhurried.
+  The rate map is keyed by voice rather than language, since it is the voice that
+  varies; voices absent from it emit byte-identical SSML. The 97 Hebrew chapters
+  made at the old rate were discarded and regenerated.
+- **The TTS queue now takes one public-domain bible per language** — he, ru, de,
+  fr, es, it, sv, en — superseding the traffic ordering, with fi-1933 moved last
+  to be finished after the eight rather than abandoned.
+- JFB 2026 recorded in the lineage YEARS map, which had been reading the value
+  from BaseX rather than being its source of truth.
+
+
+## [0.8.9] — 2026-09-18
+
+_Released as 0.8.9, not 0.8.8: `v0.8.8` was tagged on a commit whose poms still
+read `0.8.8-SNAPSHOT`, so it is not a releasable tree. That tag is left in place
+and superseded by this release._
+
+
+### Added
+- **Japanese (ja), the fourteenth UI language.** Full interface bundle with no
+  key gaps against the English base — something the other twelve locales cannot
+  currently claim, each still missing the same eight keys. Book names, reference
+  parsing, the language select's flag and native name, social-preview `og:` tags
+  and a 2,500-character TTS segment size all landed with it. The Japanese
+  scripture text ships in the BaseX image, not this one.
+- **Edition info for the Luther 1912 (LUT1912)**, English plus twelve
+  translations. As with any edition, the page is half the shipment: the text
+  lives in BaseX and both images must reach prod together.
+- **Static serving for chapter audio.** `AudioStaticConfig` registers a resource
+  handler for the on-disk audio directory that prod bind-mounts read-only, so
+  audio still never enters the app image.
+
+### Changed
+- **Donations moved from GitHub Sponsors to Buy Me a Coffee.** The Sponsors
+  enrolment was never completed, so `github.com/sponsors/christa-claw` resolved
+  to the profile page rather than a sponsor button — every donate link in the
+  app, the docs and the README pointed at a dead end. All of them now go to
+  `https://buymeacoffee.com/christaclaw`: the reader toolbar ♥ link, the About
+  nav link, the About support callout and the About footer (`SPONSOR_URL` is
+  now `DONATE_URL` in both `ReaderView` and `AboutView`), plus `README.md`,
+  `.github/FUNDING.yml` and the Support section of all ten `docs/src/overview`
+  files. The call to action is translated in all thirteen UI bundles
+  ("♥ Buy me a coffee", "♥ Offrez-moi un café", "♥ 请我喝杯咖啡", …) and the
+  supporting copy now says *your support* rather than *sponsorship*.
+
+## [0.8.7] — 2026-09-16
+
+### Added
+- **A chapter audio player in the reader.** A play control sits beside each
+  chapter heading for editions with generated audio, and the text follows the
+  voice from the per-verse offsets the generator already writes. The highlight
+  is scoped to the column root, because verse ids repeat across columns; one
+  player runs at a time; both the wrapped (rungs/companion) and flat verse DOM
+  shapes are handled. The manifest now carries each book's directory, so the
+  reader never has to know the naming convention.
+- **Edition info for the World English Bible (WEB)**, English plus twelve
+  translations. This completes the Phase 3 lineage rung above ASV — WEB was the
+  last leaf on the corpus's longest chain (WEB → ASV → RV → KJV → GNV) without a
+  page, and the ASV page already promised a reciprocal rung back to it. The page
+  explains the blank year rather than asserting one (the WEB has no single
+  edition date), draws the Yahweh/Jehovah contrast against our ASV directly, and
+  states plainly that our copy carries 80 books including 3 and 4 Maccabees and
+  Psalm 151 but not Baruch — which looks like an ingestion gap on our side,
+  worth a separate look.
+
+### Fixed
+- **Newly generated chapters were invisible on prod.** `nightly_tts.sh` shipped
+  `index.json` under `--ignore-existing`, so the server kept serving a manifest
+  frozen at its first copy while the mp3s kept arriving. The manifest is now
+  shipped separately. This is the known gap recorded in the deploy checklist.
+
+### Changed
+- **Audio book folders are numbered by canonical position** per edition
+  (`01_GEN`), so a directory listing sorts in reading order. The numbering comes
+  from each edition's own book order rather than a fixed table — DRA has 72
+  books.
+- Arabic moved ahead of Finnish in the TTS queue.
+- Small-batch printing contact added to the printer outreach notes.
+
+### Known issues
+- **The scheduled edition-page task's pending guard is stale.** It greps the
+  `EditionInfo.java` diff for `PAGES.put`, but page content now lives in the
+  `i18n/editions` property bundles, so it always returns 0 and the cap can never
+  trip. Its `\uXXXX` escaping rule is stale for the same reason.
+
+## [0.8.6] — 2026-09-14
+
+### Added
+- **Chapter audio.** A nightly job generates one mp3 per chapter with a JSON of
+  per-verse millisecond offsets, from SSML `<bookmark>` events, rationed against
+  Azure's free tier and a lifetime character cap. Chapter-level rather than
+  per-verse: a file per verse gives every verse a terminal falling contour and
+  an mp3 padding gap. Offsets are shifted by the joined file's true `ffprobe`
+  duration, not the SDK's reported speech length. Audio never enters an image —
+  prod serves it from disk, additively, so a half-finished book is a book that
+  gains chapters each night.
+- **Audio markers** in the source and book selectors, from a manifest rebuilt by
+  scanning the audio directory. Never derived from the generator's ledger: the
+  reader must not offer a file that 404s. Book coverage is partial by nature, so
+  the marker means "some" and the tooltip carries the count.
+- **A machine-translation notice** on About and edition pages in any language no
+  native speaker has read through. It fails toward showing — only an explicit
+  `i18n.status=reviewed` suppresses it — and it is bilingual, because a notice
+  that is itself machine-translated would otherwise undermine its own claim.
+
+### Fixed
+- **The chapter label read "章 1" in Chinese**, where the number belongs first
+  (第1章). `reader.chapterAbbrev` becomes `reader.chapterLabel`, a pattern;
+  twelve languages keep their exact previous rendering.
+- **Reference lists ignored non-ASCII separators.** The Chinese placeholder
+  shows `约翰福音 1:1、罗马书 9:5` and the Arabic one uses `،` — typing what the
+  field asked for parsed nothing. Full-width and ideographic commas and both
+  semicolons now separate references.
+- **Six Chinese keys fell back to English mid-interface**, including
+  `reader.group.commentary` inside the otherwise-Chinese source dropdown, and a
+  preferences helper that quoted a settings label which does not exist.
+
+### Changed
+- Corpus schema **v1.4**: a `commentary` text type, and `book/@code` and
+  `verse/@globalTanakhSeq` declared — both already written by every importer and
+  read by the app, so the schema had been describing a narrower corpus than the
+  one on disk.
+
+### Thanks
+- **u/LiuMarife** and **u/plantcount** (r/ChineseLanguage, r/translator) for
+  reading the Chinese strings, and for the finding behind the machine-translation
+  notice: the short UI strings mostly survived machine translation, the long
+  prose largely did not.
+- **u/Sungodatemychildren** and **u/JosephEK** (r/hebrew) for the Hebrew review.
+
 ## [0.8.5] — 2026-09-08
 
 ### Added

@@ -48,8 +48,11 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("overflow-y", "auto")
             .set("overflow-x", "hidden");
 
+        final com.vaadin.flow.component.Component mtNotice = TranslationNotice.forLocale(
+            LocaleUtil.currentLocale(), this::getTranslation, "/about?lang=en");
         add(
              buildNavBar()
+            , mtNotice == null ? new Div() : mtNotice
             , buildHero()
             , buildHowToSection()
             , buildDisplayModesSection()
@@ -130,11 +133,11 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("font-size", "14px").set("color", "var(--lumo-primary-color)")
             .set("font-weight", "600").set("text-decoration", "none");
 
-        final Anchor sponsorLink = new Anchor(SPONSOR_URL, t("nav.sponsor"));
-        sponsorLink.setTarget("_blank");
-        sponsorLink.getElement().setAttribute("rel", "noopener");
-        sponsorLink.setTitle(t("about.support.title"));
-        sponsorLink.getStyle()
+        final Anchor donateLink = new Anchor(DONATE_URL, t("nav.sponsor"));
+        donateLink.setTarget("_blank");
+        donateLink.getElement().setAttribute("rel", "noopener");
+        donateLink.setTitle(t("about.support.title"));
+        donateLink.getStyle()
             .set("font-size", "14px").set("color", "#c9a84c")
             .set("font-weight", "600").set("text-decoration", "none")
             .set("margin-right", "16px").set("white-space", "nowrap");
@@ -173,7 +176,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
                 .set("text-decoration", "none").set("margin-right", "16px").set("white-space", "nowrap");
             nav.add(signIn, createAccount);
         }
-        nav.add(sponsorLink, readerLink);
+        nav.add(donateLink, readerLink);
         return nav;
     }
 
@@ -1196,9 +1199,9 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         return a;
     }
 
-    // ── Support / Sponsor callout ─────────────────────────────────────
+    // ── Support / Donate callout ──────────────────────────────────────
 
-    private static final String SPONSOR_URL = "https://github.com/sponsors/christa-claw";
+    private static final String DONATE_URL = "https://buymeacoffee.com/christaclaw";
 
     private Div buildSupportCallout() {
         final Div callout = new Div();
@@ -1224,7 +1227,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
         text.add(title, body);
 
-        final Anchor sponsor = new Anchor(SPONSOR_URL, t("about.support.cta"));
+        final Anchor sponsor = new Anchor(DONATE_URL, t("about.support.cta"));
         sponsor.setTarget("_blank");
         sponsor.getElement().setAttribute("rel", "noopener");
         sponsor.getStyle()
@@ -1255,7 +1258,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         for (final String[] link : new String[][]{
                 {t("about.footer.openReader"), "/reader"},
                 {t("about.footer.aboutHelp"), "/"},
-                {t("about.footer.sponsor"), SPONSOR_URL}}) {
+                {t("about.footer.sponsor"), DONATE_URL}}) {
             final Anchor a = new Anchor(link[1], link[0]);
             a.getStyle().set("color", "rgba(255,255,255,0.7)").set("font-size", "13px")
              .set("text-decoration", "none");

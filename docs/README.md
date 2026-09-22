@@ -35,6 +35,7 @@ Everything outside the markers is hand-written prose and is left untouched.
 | `meta` | `pom.xml` | App name, version, build date |
 | `translations` | live BaseX query | Per-translation book/verse counts |
 | `channels` | `channels.properties` | Transcript channels and traditions |
+| `audio` | `audio/index.json` (outside the repo) | Chapter audio: editions, books and chapters generated |
 
 To add a new auto-generated section: wrap a region in `<!-- AUTOGEN:name -->` /
 `<!-- /AUTOGEN:name -->` markers and add a matching `gen_name()` function to the

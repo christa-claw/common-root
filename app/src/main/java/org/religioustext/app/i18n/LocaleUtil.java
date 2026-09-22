@@ -34,9 +34,10 @@ public final class LocaleUtil {
     public static final Locale HI = Locale.forLanguageTag("hi");
     public static final Locale HE = Locale.forLanguageTag("he");
     public static final Locale TR = Locale.forLanguageTag("tr");
+    public static final Locale JA = Locale.forLanguageTag("ja");
 
     /** Provided locales, English first (the default). */
-    public static final List<Locale> LOCALES = List.of(EN, AR, ES, FI, SV, RU, ZH, FR, IT, DE, HI, HE, TR);
+    public static final List<Locale> LOCALES = List.of(EN, AR, ES, FI, SV, RU, ZH, FR, IT, DE, HI, HE, TR, JA);
 
     private static final String SESSION_KEY = "cr.locale";
 

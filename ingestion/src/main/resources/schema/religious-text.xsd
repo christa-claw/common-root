@@ -4,7 +4,13 @@
            xmlns:rt="http://religioustext.org/schema/1.0"
            elementFormDefault="qualified">
 
-  <!-- Canonical XML Schema for Religious Texts v1.3
+  <!-- Canonical XML Schema for Religious Texts v1.4
+       v1.4 (2026-09-13): added the "commentary" text type (verse-anchored
+       commentaries projected onto book > chapter > verse, see
+       scripts/commentaries/02_convert_sefaria_commentary.py) and declared two
+       attributes the corpus has been carrying undeclared: book/@code (the USFM
+       code, written by every importer and read by TextQueryService) and
+       verse/@globalTanakhSeq (written by 06_stamp_tanakh.py).
        One XML document per translation/edition stored in eXist-db.
        Supports:
          Bible/Torah : text > book > chapter > verse
@@ -51,6 +57,7 @@
     </xs:sequence>
     <xs:attribute name="name"               type="xs:string"          use="required"/>
     <xs:attribute name="altName"            type="xs:string"          use="optional"/>
+    <xs:attribute name="code"               type="xs:string"          use="optional"/>
     <xs:attribute name="canonicalOrder"     type="xs:positiveInteger" use="required"/>
     <xs:attribute name="chronologicalOrder" type="xs:positiveInteger" use="optional"/>
     <xs:attribute name="narrativeOrder"     type="xs:positiveInteger" use="optional"/>
@@ -96,6 +103,7 @@
         <xs:attribute name="globalCanonicalSeq"     type="xs:positiveInteger" use="optional"/>
         <xs:attribute name="globalChronologicalSeq" type="xs:positiveInteger" use="optional"/>
         <xs:attribute name="globalNarrativeSeq"     type="xs:positiveInteger" use="optional"/>
+        <xs:attribute name="globalTanakhSeq"        type="xs:positiveInteger" use="optional"/>
         <xs:attribute name="note"                   type="xs:string"          use="optional"/>
       </xs:extension>
     </xs:simpleContent>
@@ -106,6 +114,7 @@
       <xs:enumeration value="bible"/>
       <xs:enumeration value="quran"/>
       <xs:enumeration value="torah"/>
+      <xs:enumeration value="commentary"/>
       <xs:enumeration value="other"/>
     </xs:restriction>
   </xs:simpleType>

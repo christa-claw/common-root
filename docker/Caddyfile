@@ -15,6 +15,21 @@
 # Sanity-check syntax after editing:  docker run --rm -v "$PWD/Caddyfile":/c caddy caddy validate --config /c
 
 common-root.org {
+    # Chapter audio (nightly_tts.sh generates it on the Mac mini and rsyncs it
+    # here). Served straight off disk: it never touches the app, BaseX or a
+    # session, so a listener costs the JVM nothing. Paths carry the voice
+    # (/audio/<text-id>/<voice>/<BOOK>/<chapter>.mp3 + .json), so the content at
+    # a URL never changes and it can be cached for a year — switching voices
+    # produces new URLs rather than stale hits.
+    #
+    # Needs the directory bind-mounted into the caddy container in
+    # docker-compose.prod.yml:  - ./audio:/srv/audio:ro
+    handle_path /audio/* {
+        root * /srv/audio
+        header Cache-Control "public, max-age=31536000, immutable"
+        file_server
+    }
+
     reverse_proxy religioustext-app:8090
 }
 

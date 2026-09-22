@@ -65,6 +65,7 @@ public class LanguageSelect extends Select<Locale> {
         LABELS.put(LocaleUtil.HI, "\uD83C\uDDEE\uD83C\uDDF3 हिन्दी");    // 🇮🇳
         LABELS.put(LocaleUtil.HE, "\uD83C\uDDEE\uD83C\uDDF1 עברית");     // 🇮🇱
         LABELS.put(LocaleUtil.TR, "\uD83C\uDDF9\uD83C\uDDF7 Türkçe");    // 🇹🇷
+        LABELS.put(LocaleUtil.JA, "\uD83C\uDDEF\uD83C\uDDF5 日本語");     // 🇯🇵
     }
 
     /**

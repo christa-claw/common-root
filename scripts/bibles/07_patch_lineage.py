@@ -45,6 +45,7 @@ YEARS = {
     "FB1642": "1642",  "LUT1545": "1545", "AGR1548": "1548",
     "RVR09":  "1909",  "SYN":  "1876", "CUV":    "1919", "SVD": "1865",
     "IRVHIN": "2019",  "YTC":  "2023", "NASB": "2020", "LUT1912": "1912",
+    "JFB":    "2026",
 }
 
 # abbreviation -> ordered parent abbreviations (main line first)

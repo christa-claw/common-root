@@ -85,10 +85,21 @@ public final class RefListParser {
     /** booknames/bookabbrev bundle suffixes paired with their language code. A
      *  missing file is skipped, so adding bookabbrev_pt.properties (+ "_pt"/"pt"
      *  here) is all it takes to support another language. */
+    /**
+     * What counts as a separator between references typed by a person.
+     *
+     * <p>ASCII comma only was a Western assumption. The Chinese placeholder
+     * shows 约翰福音 1:1、罗马书 9:5 and the Arabic one uses ، — type what the
+     * field tells you to type, in either language, and nothing parsed. Also
+     * accepts the full-width comma and both semicolons, since a reader pasting
+     * a reference list has no reason to know which one we prefer.
+     */
+    private static final String SEPARATORS = "[,\uFF0C\u3001;\uFF1B\u061B\u060C]";
+
     private static final String[][] BUNDLES = {
         {"",    "en"}, {"_ar", "ar"}, {"_es", "es"}, {"_fi", "fi"}, {"_ru", "ru"},
         {"_sv", "sv"}, {"_zh", "zh"}, {"_de", "de"}, {"_fr", "fr"}, {"_it", "it"},
-        {"_hi", "hi"}, {"_he", "he"},
+        {"_hi", "hi"}, {"_he", "he"}, {"_ja", "ja"},
     };
 
     private static String norm(final String aValue) {
@@ -229,7 +240,7 @@ public final class RefListParser {
         final List<Span> out = new ArrayList<>();
         if (anInput == null || anInput.isBlank()) return out;
         final Map<String, String> local = aLocale == null ? null : BY_LANG.get(aLocale.getLanguage());
-        for (final String token : anInput.split(",")) {
+        for (final String token : anInput.split(SEPARATORS)) {
             final Span sp = parseOneSpan(token, local);
             if (sp != null) out.add(sp);
         }
@@ -243,7 +254,7 @@ public final class RefListParser {
         final List<VerseComment.Ref> out = new ArrayList<>();
         if (anInput == null || anInput.isBlank()) return out;
         final Map<String, String> local = aLocale == null ? null : BY_LANG.get(aLocale.getLanguage());
-        for (final String token : anInput.split(",")) {
+        for (final String token : anInput.split(SEPARATORS)) {
             final Span sp = parseOneSpan(token, local);
             if (sp != null) out.add(sp.ref());
         }
