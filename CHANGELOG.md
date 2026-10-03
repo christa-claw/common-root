@@ -72,7 +72,11 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
-## [0.8.12] — 2026-10-03
+## [0.9.0] — 2026-10-03
+
+First tagged as 0.8.12, then re-released as 0.9.0 before it was deployed: print-ready
+Bibles and a second reading order are a feature release, not a patch. 0.8.12 was
+never deployed and has the same content.
 
 ### Added
 - **Print this Bible.** An order page (`/edition-designer.html`) that previews
