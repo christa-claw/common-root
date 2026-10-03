@@ -56,6 +56,21 @@ public class UserPreferences {
     @Column(name = "resume_enabled", nullable = false)
     private boolean resumeEnabled = true;
 
+    /** The reader's look (V19): 'book' | 'classic'. Null = the default for a
+     *  signed-in reader (book). See {@link ReaderLook}. */
+    @Column(name = "reader_style", length = 10)
+    private String readerStyle;
+
+    /** Accent colour of the book look: rubric | black | indigo | sepia | forest.
+     *  Null = rubric. */
+    @Column(name = "reader_accent", length = 10)
+    private String readerAccent;
+
+    /** Show the traditional long title under each book's name (English editions).
+     *  Null = on. */
+    @Column(name = "reader_long_titles")
+    private Boolean readerLongTitles;
+
     @Column(name = "last_position", length = 2000)
     private String lastPosition;
 
@@ -78,6 +93,9 @@ public class UserPreferences {
     public String  getMutedVoices()         { return mutedVoices; }
     public boolean isResumeEnabled()       { return resumeEnabled; }
     public String  getLastPosition()       { return lastPosition; }
+    public String  getReaderStyle()        { return readerStyle; }
+    public String  getReaderAccent()       { return readerAccent; }
+    public Boolean getReaderLongTitles()   { return readerLongTitles; }
     public String  getUiLanguage()         { return uiLanguage; }
     public LocalDateTime getUpdatedAt()    { return updatedAt; }
 
@@ -90,5 +108,8 @@ public class UserPreferences {
     public void setMutedVoices(final String aMutedVoices)          { this.mutedVoices = aMutedVoices; }
     public void setResumeEnabled(final boolean aResumeEnabled)     { this.resumeEnabled = aResumeEnabled; }
     public void setLastPosition(final String aLastPosition)       { this.lastPosition = aLastPosition; }
+    public void setReaderStyle(final String aReaderStyle)         { this.readerStyle = aReaderStyle; }
+    public void setReaderAccent(final String aReaderAccent)       { this.readerAccent = aReaderAccent; }
+    public void setReaderLongTitles(final Boolean aReaderLongTitles) { this.readerLongTitles = aReaderLongTitles; }
     public void setUiLanguage(final String aUiLanguage)         { this.uiLanguage = aUiLanguage; }
 }

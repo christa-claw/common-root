@@ -71,7 +71,13 @@ public class NotesSeeder {
         // Source id is the corpus's own quirky "bible-lut1912-1912" (see
         // CHANGELOG 0.6.x: derived from bible-sources.yml before ids were
         // explicit; renaming means an XQuery update, so it stays).
-        "LUT1912", new NotesEdition("Lutherbibel 1912", "Anmerkung", "bible-lut1912-1912"));
+        "LUT1912", new NotesEdition("Lutherbibel 1912", "Anmerkung", "bible-lut1912-1912"),
+        // Footnotes and cross-references lifted out of the verse text by
+        // scripts/bibles/09_extract_inline_notes.py (the inline footnote leak).
+        "WEB", new NotesEdition("World English Bible", "Note", "bible-web"),
+        // The translators' own margin notes of the 1919 Chinese Union Version,
+        // taken out of the verse text by scripts/bibles/01_fetch_wikisource_cuv.py.
+        "CUV1919", new NotesEdition("和合本 1919", "註", "bible-zh-cuv1919"));
 
     @PersistenceContext
     private EntityManager em;

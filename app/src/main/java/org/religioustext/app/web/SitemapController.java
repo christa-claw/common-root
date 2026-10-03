@@ -102,12 +102,12 @@ public class SitemapController {
 
     private static void url(final StringBuilder aXml, final String aPath,
                             final String aChangefreq, final String aPriority,
-                            final String aAlternates) {
+                            final String anAlternates) {
         aXml.append("  <url>\n")
             .append("    <loc>").append(ORIGIN).append(aPath).append("</loc>\n")
             .append("    <changefreq>").append(aChangefreq).append("</changefreq>\n")
             .append("    <priority>").append(aPriority).append("</priority>\n");
-        if (aAlternates != null) aXml.append(aAlternates);
+        if (anAlternates != null) aXml.append(anAlternates);
         aXml.append("  </url>\n");
     }
 

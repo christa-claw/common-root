@@ -43,6 +43,7 @@ import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.SearchService;
 import org.religioustext.app.service.UserPreferencesService;
 import org.religioustext.app.service.UserService;
+import org.religioustext.app.model.user.ReaderLook;
 import org.religioustext.app.model.user.UserPreferences;
 import org.religioustext.app.ui.components.LanguageSelect;
 import org.religioustext.app.ui.components.SearchDialog;
@@ -280,6 +281,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // never saved). Loaded once per view in beforeEnter; feeds the no-link
     // defaults, the src-less-link fallback edition, and the resume position.
     private UserPreferences prefs;
+    /** How this reader is dressed — see {@link ReaderLook}. Set in loadPrefs(). */
+    private ReaderLook look = ReaderLook.CLASSIC_LOOK;
     /** Voices this reader has muted (V17) — parsed once from {@link #prefs} so
      *  the per-verse render path never re-parses. Empty when signed out: muting is
      *  an account preference, and an anonymous visitor sees every voice. */
@@ -351,6 +354,17 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 }
                 @Override public java.util.Set<String> mutedVoices() {
                     return ReaderView.this.mutedVoices;
+                }
+                @Override public boolean bookLook() {
+                    return ReaderView.this.look.book();
+                }
+                @Override public String longTitle(final ColState aState, final String aBookName) {
+                    // English editions only: an English subtitle under a Finnish
+                    // or Greek Bible's book names would be a foreign caption.
+                    if (!ReaderView.this.look.longTitles()) return null;
+                    final String lang = aState.srcLang == null ? "" : aState.srcLang.toLowerCase(java.util.Locale.ROOT);
+                    return lang.startsWith("en")
+                        ? org.religioustext.app.ui.views.reader.BookTitles.longTitle(aBookName) : null;
                 }
             });
         this.scrollController = new ReaderScrollController(new ReaderScrollController.Host() {
@@ -909,9 +923,19 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private void loadPrefs() {
         if (prefsLoaded) return;
         prefsLoaded = true;
-        if (!authContext.isAuthenticated()) return;
-        prefs = prefsService.find(authContext.getPrincipalName().orElse("")).orElse(null);
-        mutedVoices = CommentQueryService.parseMuted(prefs == null ? null : prefs.getMutedVoices());
+        final boolean signedIn = authContext.isAuthenticated();
+        if (signedIn) {
+            prefs = prefsService.find(authContext.getPrincipalName().orElse("")).orElse(null);
+            mutedVoices = CommentQueryService.parseMuted(prefs == null ? null : prefs.getMutedVoices());
+        }
+        // A signed-out reader always gets today's reader; a signed-in one gets the
+        // typeset book look (rubric red) unless they chose otherwise. The
+        // stylesheet is only fetched when it will be used.
+        look = ReaderLook.of(signedIn, prefs);
+        if (look.book()) {
+            addClassNames("book-look", "accent-" + look.accent());
+            UI.getCurrent().getPage().addStyleSheet("/book-look.css");
+        }
     }
 
     /** The Bible token substituted for src-less link columns and for opening
@@ -1474,6 +1498,38 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         return false;
     }
 
+    /** The edition's info page, carrying the column's reading order and display
+     *  mode along. The reader stays clean — no print or buy control of its own;
+     *  the info page is where an edition is described and where its "Buy this
+     *  Bible" button lives, and it forwards these two settings to the order page,
+     *  so what you were reading is what you can order.
+     *
+     *  Only the two settings the print pipeline consumes travel; they are the
+     *  app's own OrderMode and DisplayMode constants, unchanged. Returns null
+     *  when the column's edition has no info page. */
+    private static String editionInfoUrl(final SourceColumn aColumn, final String aLang) {
+        if (aColumn == null) return null;
+        final String abbr = aColumn.getAbbreviation();
+        if (abbr == null || !EditionInfo.PAGES.containsKey(abbr)) return null;
+        final StringBuilder url = new StringBuilder(EditionInfo.PREFIX)
+            .append(EditionInfo.slugFor(abbr, aLang));
+        final DisplayOptions opts = aColumn.getDisplayOptions();
+        char sep = '?';
+        if (opts != null) {
+            if (opts.getOrderMode() != null) {
+                url.append(sep).append("ordering=")
+                   .append(opts.getOrderMode().name().toLowerCase(java.util.Locale.ROOT));
+                sep = '&';
+            }
+            if (opts.getMode() != null) url.append(sep).append("mode=").append(opts.getMode().name());
+        }
+        return url.toString();
+    }
+
+    private static String enc(final String aValue) {
+        return java.net.URLEncoder.encode(aValue, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     private Div buildHeader(final SourceColumn aColumn, final ColState aState, final Div aScrollRoot) {
         final Div header = new Div();
         header.getStyle()
@@ -1504,7 +1560,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         langCombo.setTooltipText(t("tooltip.source"));
         langCombo.setItemLabelGenerator(ReaderView::langLabel);
         langCombo.setItems(langs);
-        langCombo.getStyle().set("min-width", "104px").set("flex-shrink", "0");
+        langCombo.getStyle().set("width", "130px").set("min-width", "112px").set("flex-shrink", "0");
 
         // Tier 2 — texts in the chosen language (Bibles, then the Qur'an, then hadith,
         // then by abbreviation). Disabled until a language is picked.
@@ -1594,11 +1650,20 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             aState.srcTranslation = sel.length > 1 ? sel[1] : sel[2];
             aState.srcLicense     = sel.length > 4 ? sel[4] : null;
             aState.srcSource      = sel.length > 5 ? sel[5] : null;
+            aState.srcLang        = org.religioustext.app.ui.views.reader.SourceRow.of(sel).language();
+            // The info button only shows for an edition that has an info page.
+            if (aState.infoBtn != null)
+                aState.infoBtn.setVisible(EditionInfo.PAGES.containsKey(sel[2]));
             // RTL applies to the verse CONTENT only — keep the header/nav controls
             // LTR so the toolbar doesn't reverse and clip the eye / sync / remove
             // buttons off the column's (left) edge.
-            if (aColumn.isRtl()) aState.content.getStyle().set("direction", "rtl");
-            else                 aState.content.getStyle().remove("direction");
+            if (aColumn.isRtl()) {
+                aState.content.getStyle().set("direction", "rtl");
+                aState.content.getElement().setAttribute("dir", "rtl");   // the book look keys on it
+            } else {
+                aState.content.getStyle().remove("direction");
+                aState.content.getElement().removeAttribute("dir");
+            }
             loadBookList(aState);
             if (aState.books.isEmpty()) return;
             setCompanion(aState, sel);
@@ -1793,12 +1858,33 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             }
         });
 
+        // "Print this" — hand the column's own reading over to the edition
+        // designer. Translation, reading order and display mode are the three
+        // choices the print pipeline also takes, and the names match one to
+        // one (OrderMode, DisplayMode), which is why nothing is translated
+        // here: the designer reads the enum constants.
+        final Button infoBtn = new Button(VaadinIcon.INFO_CIRCLE_O.create());
+        infoBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        infoBtn.setTooltipText(t("tooltip.editionInfo"));
+        infoBtn.addClickListener(e -> {
+            final String url = editionInfoUrl(aColumn,
+                org.religioustext.app.i18n.LocaleUtil.currentLocale().getLanguage());
+            if (url != null) UI.getCurrent().getPage().open(url, "_blank");
+        });
+        aState.infoBtn = infoBtn;
+
         final Button removeBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
         removeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
         removeBtn.setTooltipText(t("tooltip.removeColumn"));
         removeBtn.addClickListener(e -> removeColumn(aState));
 
-        header.add(langCombo, sourceCombo, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, syncBtn, removeBtn);
+        // The (i) describes the edition just picked, so it travels with the picker:
+        // one flex item, so the two wrap together and never part.
+        final Div sourceGroup = new Div(sourceCombo, infoBtn);
+        sourceGroup.getStyle().set("display", "flex").set("align-items", "center")
+            .set("flex", "1 1 100px").set("min-width", "0");
+        sourceCombo.getStyle().set("min-width", "64px");
+        header.add(langCombo, sourceGroup, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, syncBtn, removeBtn);
         return header;
     }
 
@@ -2131,7 +2217,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 if (el) {
                     const bar = root.firstElementChild;
                     const off = bar ? bar.offsetHeight : 0;
-                    root.scrollTop += el.getBoundingClientRect().top
+                    const a = (el.previousElementSibling && el.previousElementSibling.classList.contains('bk-open')) ? el.previousElementSibling : el;
+                    root.scrollTop += a.getBoundingClientRect().top
                                     - root.getBoundingClientRect().top - off;
                 } else root.scrollTop = 0;
                 root.removeAttribute('data-jumping');
@@ -2154,6 +2241,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private int activeSeq(final ColState aState, final VerseRef aVerseRef) {
         final Integer s = switch (aState.order()) {
             case CHRONOLOGICAL -> aVerseRef.getGlobalChronologicalSeq();
+            case WRITING       -> aVerseRef.getGlobalWritingSeq();
             default            -> aVerseRef.getGlobalCanonicalSeq();
         };
         return s != null ? s : (aVerseRef.getGlobalCanonicalSeq() != null ? aVerseRef.getGlobalCanonicalSeq() : 0);

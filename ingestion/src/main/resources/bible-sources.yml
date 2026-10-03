@@ -284,3 +284,15 @@ translations:
     license: Public Domain
     sourceUrl: https://ebible.org/find/details.php?id=engojps
     region: Jewish
+
+  - id: bible-grc-lxx-brenton-1851
+    translation: Brenton Greek Septuagint
+    abbreviation: LXX
+    apiBibleId: c114c33098c4fef1-01
+    bcp47Language: grc
+    iso639_3: grc
+    direction: ltr
+    year: 1851
+    license: Public Domain
+    sourceUrl: https://ebible.org/find/details.php?id=grcbrent
+    region: Original

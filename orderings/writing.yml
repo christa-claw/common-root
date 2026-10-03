@@ -1,0 +1,240 @@
+# writing.yml — the Bible in the order its books were WRITTEN
+#
+# The companion to chronological.yml, which orders the Bible by when the events
+# it DESCRIBES happened. Same entry format, same book names, same stamper
+# machinery (06b_stamp_writing.py writes @globalWritingSeq).
+#
+# THE BASIS — read this before trusting the order
+# -----------------------------------------------
+# Critical scholarly consensus, stated as a range. Every entry carries the
+# years between which the book (or the stratum of it) is generally held to
+# have reached its present form, and the list is sorted by the MIDDLE of that
+# range, ties broken by canonical position. Nothing else decides the order.
+#
+# That is a position, not a fact, and it is contested:
+#   * Traditional attribution (Moses writes the Pentateuch, David the Psalms,
+#     Daniel in the sixth century) would give a different order. This file does
+#     not follow it, and the printed edition says so.
+#   * Books that grew over centuries are placed by the date of their FINAL form,
+#     so the Pentateuch (Priestly and final redaction, c. 550-400 BCE) falls AFTER
+#     the Deuteronomistic History (Joshua-Kings, final exilic form, c. 620-560
+#     BCE) and after Deuteronomy. A reader will find Deuteronomy before Genesis.
+#     That is what "written order" means on this basis, and it is the point.
+#   * Only Isaiah and Zechariah are split into strata, because that split is
+#     close to universal among critical scholars. Psalms, Proverbs, Genesis and
+#     the rest are placed whole; splitting them would take a verse-by-verse
+#     dating that no consensus supports.
+#   * Where authorship is disputed (Colossians, 2 Thessalonians, Ephesians, the
+#     Pastorals) the range spans both views rather than choosing one.
+#
+# The apocrypha and deuterocanon are outside this plan; unstamped books sort to
+# the end, as with the chronological plan.
+
+sequence:
+
+  - book: "Amos"
+    chapters: "1-9"   # 765 BCE - 755 BCE
+
+  - book: "Hosea"
+    chapters: "1-14"   # 755 BCE - 720 BCE
+
+  - book: "Isaiah"
+    chapters: "1-39"   # 740 BCE - 700 BCE — First Isaiah; later additions are within the range
+
+  - book: "Micah"
+    chapters: "1-7"   # 725 BCE - 700 BCE
+
+  - book: "Nahum"
+    chapters: "1-3"   # 663 BCE - 612 BCE
+
+  - book: "Zephaniah"
+    chapters: "1-3"   # 640 BCE - 620 BCE
+
+  - book: "Jeremiah"
+    chapters: "1-52"   # 627 BCE - 580 BCE
+
+  - book: "Deuteronomy"
+    chapters: "1-34"   # 650 BCE - 550 BCE — core c. 622; exilic edition
+
+  - book: "Habakkuk"
+    chapters: "1-3"   # 610 BCE - 590 BCE
+
+  - book: "Joshua"
+    chapters: "1-24"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "Judges"
+    chapters: "1-21"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "1 Samuel"
+    chapters: "1-31"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "2 Samuel"
+    chapters: "1-24"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "1 Kings"
+    chapters: "1-22"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "2 Kings"
+    chapters: "1-25"   # 620 BCE - 560 BCE — Deuteronomistic History, final exilic form
+
+  - book: "Ezekiel"
+    chapters: "1-48"   # 593 BCE - 571 BCE
+
+  - book: "Obadiah"
+    chapters: "1"   # 586 BCE - 550 BCE
+
+  - book: "Lamentations"
+    chapters: "1-5"   # 586 BCE - 540 BCE
+
+  - book: "Isaiah"
+    chapters: "40-55"   # 550 BCE - 540 BCE — Second Isaiah
+
+  - book: "Haggai"
+    chapters: "1-2"   # 520 BCE
+
+  - book: "Zechariah"
+    chapters: "1-8"   # 520 BCE - 518 BCE — First Zechariah
+
+  - book: "Isaiah"
+    chapters: "56-66"   # 520 BCE - 450 BCE — Third Isaiah
+
+  - book: "Genesis"
+    chapters: "1-50"   # 550 BCE - 400 BCE — Priestly and final redaction
+
+  - book: "Exodus"
+    chapters: "1-40"   # 550 BCE - 400 BCE — Priestly and final redaction
+
+  - book: "Leviticus"
+    chapters: "1-27"   # 550 BCE - 400 BCE — Priestly and final redaction
+
+  - book: "Numbers"
+    chapters: "1-36"   # 550 BCE - 400 BCE — Priestly and final redaction
+
+  - book: "Malachi"
+    chapters: "1-4"   # 480 BCE - 450 BCE
+
+  - book: "Job"
+    chapters: "1-42"   # 550 BCE - 350 BCE
+
+  - book: "Joel"
+    chapters: "1-3"   # 500 BCE - 350 BCE
+
+  - book: "Ruth"
+    chapters: "1-4"   # 500 BCE - 300 BCE
+
+  - book: "Jonah"
+    chapters: "1-4"   # 450 BCE - 350 BCE
+
+  - book: "Ezra"
+    chapters: "1-10"   # 400 BCE - 300 BCE
+
+  - book: "Nehemiah"
+    chapters: "1-13"   # 400 BCE - 300 BCE
+
+  - book: "1 Chronicles"
+    chapters: "1-29"   # 350 BCE - 300 BCE
+
+  - book: "2 Chronicles"
+    chapters: "1-36"   # 350 BCE - 300 BCE
+
+  - book: "Zechariah"
+    chapters: "9-14"   # 350 BCE - 300 BCE — Second Zechariah
+
+  - book: "Proverbs"
+    chapters: "1-31"   # 350 BCE - 250 BCE — collections of several centuries; final form
+
+  - book: "Song of Songs"
+    chapters: "1-8"   # 400 BCE - 200 BCE
+
+  - book: "Esther"
+    chapters: "1-10"   # 300 BCE - 200 BCE
+
+  - book: "Psalm"
+    chapters: "1-150"   # 300 BCE - 200 BCE — composed over some eight centuries; the Psalter reached its present form
+
+  - book: "Ecclesiastes"
+    chapters: "1-12"   # 250 BCE - 200 BCE
+
+  - book: "Daniel"
+    chapters: "1-12"   # 167 BCE - 164 BCE
+
+  - book: "1 Thessalonians"
+    chapters: "1-5"   # 50 CE - 51 CE
+
+  - book: "Galatians"
+    chapters: "1-6"   # 50 CE - 55 CE — early or late within Paul's mission
+
+  - book: "1 Corinthians"
+    chapters: "1-16"   # 53 CE - 55 CE
+
+  - book: "2 Corinthians"
+    chapters: "1-13"   # 55 CE - 56 CE
+
+  - book: "Romans"
+    chapters: "1-16"   # 56 CE - 58 CE
+
+  - book: "Philippians"
+    chapters: "1-4"   # 55 CE - 62 CE
+
+  - book: "Philemon"
+    chapters: "1"   # 55 CE - 62 CE
+
+  - book: "Mark"
+    chapters: "1-16"   # 66 CE - 74 CE
+
+  - book: "Colossians"
+    chapters: "1-4"   # 60 CE - 80 CE — authorship disputed; the range spans both views
+
+  - book: "2 Thessalonians"
+    chapters: "1-3"   # 50 CE - 100 CE — authorship disputed; the range spans both views
+
+  - book: "Hebrews"
+    chapters: "1-13"   # 60 CE - 95 CE
+
+  - book: "Ephesians"
+    chapters: "1-6"   # 60 CE - 100 CE — authorship disputed; the range spans both views
+
+  - book: "1 Peter"
+    chapters: "1-5"   # 70 CE - 95 CE
+
+  - book: "Matthew"
+    chapters: "1-28"   # 80 CE - 90 CE
+
+  - book: "Luke"
+    chapters: "1-24"   # 80 CE - 90 CE
+
+  - book: "Acts"
+    chapters: "1-28"   # 80 CE - 90 CE
+
+  - book: "James"
+    chapters: "1-5"   # 70 CE - 110 CE
+
+  - book: "Jude"
+    chapters: "1"   # 70 CE - 110 CE
+
+  - book: "Revelation"
+    chapters: "1-22"   # 90 CE - 100 CE
+
+  - book: "John"
+    chapters: "1-21"   # 90 CE - 110 CE
+
+  - book: "1 Timothy"
+    chapters: "1-6"   # 80 CE - 120 CE — authorship disputed; the range spans both views
+
+  - book: "2 Timothy"
+    chapters: "1-4"   # 80 CE - 120 CE — authorship disputed; the range spans both views
+
+  - book: "Titus"
+    chapters: "1-3"   # 80 CE - 120 CE — authorship disputed; the range spans both views
+
+  - book: "1 John"
+    chapters: "1-5"   # 90 CE - 110 CE
+
+  - book: "2 John"
+    chapters: "1"   # 90 CE - 110 CE
+
+  - book: "3 John"
+    chapters: "1"   # 90 CE - 110 CE
+
+  - book: "2 Peter"
+    chapters: "1-3"   # 100 CE - 150 CE

@@ -60,6 +60,7 @@ final class ColState {
     java.util.Map<String, java.util.Map<String,String>> rungTexts = new java.util.HashMap<>();
     Button          rungMoreBtn;
     Button          rungLessBtn;
+    Button          infoBtn;               // link to the edition's info page (hidden when it has none)
     Button          commentsToggle;        // in-text comment-marker toggle (per column)
     Select<String[]> translationSelect;   // Qur'an: which translation shows beneath the Arabic
     Select<DisplayOptions.DisplayMode> modeSelect;
@@ -147,6 +148,7 @@ final class ColState {
     ComboBox<String[]> sourceCombo;
     Span            attribution;            // source/translation + licence line under the nav
     String          srcTranslation, srcLicense, srcSource;  // primary-source attribution parts
+    String          srcLang;                // the edition's language ("en", "he", ...); "" when unknown
     boolean         showComments;           // in-text 💬 markers; OFF by default — scripture text stays pristine
     Span            chapterLabel;
     /** The chapter label doubles as a jump box: clicking it swaps in this

@@ -51,6 +51,32 @@ public class ChapterAudioPlayer extends Div {
             box-decoration-break: clone;
             transition: background 120ms linear;
         }
+
+        /* The browser's native <audio controls> seek bar renders its played
+           and unplayed segments in near-identical greys (worst on Chrome,
+           and Firefox/Safari expose no styling hooks for it at all), so
+           progress is hard to read at a glance. accent-color nudges Chromium's
+           own scrubber toward this color; the track/fill pair below is the
+           real fix, since it is ours to color and works in every browser. */
+        .cr-audio-progress-track {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--lumo-contrast-10pct);
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .cr-audio-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--lumo-primary-color);
+            border-radius: 2px;
+            transition: width 100ms linear;
+        }
+        .cr-audio-caption {
+            font-size: var(--lumo-font-size-xxs);
+            color: var(--lumo-secondary-text-color);
+            margin-top: 2px;
+        }
         """;
 
     private static final String JS = """
@@ -71,17 +97,77 @@ public class ChapterAudioPlayer extends Div {
         audio.src = $0;
         audio.style.width = '100%';
         audio.style.marginTop = '6px';
+        // Best-effort: Chromium's own scrubber honors accent-color on
+        // recent versions. Firefox/Safari ignore it harmlessly; the custom
+        // track/fill built below is what actually guarantees visibility.
+        audio.style.setProperty('accent-color', 'var(--lumo-primary-color)');
         // The host div shrink-wraps to the play button (~24px), so a plain
-        // width:100% on the audio resolves to 24px of unusable player. The
-        // chapter-heading row it sits in is already flex-wrap:wrap, so taking a
-        // full flex line drops the player onto its own row at the column's full
-        // width and leaves the heading beside the button untouched. Set here
-        // rather than in Java: until the reader presses play there is no player,
-        // and the bare button should stay inline next to the chapter title.
-        host.style.flexBasis = '100%';
+        // width:100% on the audio resolves to 24px of unusable player.
         host.style.width = '100%';
+
+        // STICKY LIKE THE PAGE HEADER, for the length of THIS chapter only.
+        // A sticky element unsticks the moment its containing block's bottom
+        // edge passes the offset — and the containing block of a flex item is
+        // the flex container. Left inside 'bar' (heading + button, flex-wrap,
+        // maybe 60px tall), the player would unstick almost immediately, not
+        // stay pinned while reading on. So it is promoted out of 'bar' to be
+        // a direct child of the per-chapter group div instead — the box that
+        // actually spans the whole chapter, heading through last verse — right
+        // after 'bar', where it already visually sat once flex-wrap dropped it
+        // to its own line. That group div is 'bar's parent (see
+        // VerseWindowRenderer: div.add(bar) then div.add(text)); only done
+        // once, since a later click short-circuits above before reaching here.
+        const bar = host.parentElement;
+        const group = bar ? bar.parentElement : null;
+        if (group) group.insertBefore(host, bar.nextSibling);
+
+        // Pinned beneath the column's own sticky header (same technique:
+        // sticky, opaque so verses don't show through) rather than at the
+        // viewport top. The header's height varies (attribution line, wrapped
+        // nav), so it is measured rather than guessed; the column's sticky bar
+        // is always its scroll root's first child (see ReaderView.buildColumn).
+        const columnRoot = document.getElementById($4);
+        const stickyBar = columnRoot ? columnRoot.firstElementChild : null;
+        host.style.position = 'sticky';
+        host.style.top = (stickyBar ? stickyBar.getBoundingClientRect().height : 0) + 'px';
+        host.style.zIndex = '9';
+        host.style.background = 'var(--lumo-base-color)';
+        host.style.borderBottom = '1px solid var(--lumo-contrast-10pct)';
+        host.style.paddingBottom = '6px';
         host.appendChild(audio);
         host._crAudio = audio;
+
+        const track = document.createElement('div');
+        track.className = 'cr-audio-progress-track';
+        const fill = document.createElement('div');
+        fill.className = 'cr-audio-progress-fill';
+        track.appendChild(fill);
+        host.appendChild(track);
+
+        // Click or drag anywhere on the track to seek. audio.duration is
+        // NaN until metadata loads (preload='none'), which is already true
+        // by the time a reader can see the bar since play() runs below.
+        track.style.cursor = 'pointer';
+        const seekTo = clientX => {
+            if (!audio.duration) return;
+            const rect = track.getBoundingClientRect();
+            const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+            audio.currentTime = ratio * audio.duration;
+            fill.style.width = (ratio * 100) + '%';
+        };
+        let seeking = false;
+        track.addEventListener('pointerdown', e => {
+            seeking = true;
+            track.setPointerCapture(e.pointerId);
+            seekTo(e.clientX);
+        });
+        track.addEventListener('pointermove', e => { if (seeking) seekTo(e.clientX); });
+        track.addEventListener('pointerup', () => { seeking = false; });
+
+        const caption = document.createElement('div');
+        caption.className = 'cr-audio-caption';
+        caption.textContent = 'Audio generated with Azure AI';
+        host.appendChild(caption);
 
         let marks = null;
         fetch($1).then(r => r.ok ? r.json() : null).then(j => {
@@ -134,6 +220,7 @@ public class ChapterAudioPlayer extends Div {
         });
 
         audio.addEventListener('timeupdate', () => {
+            if (audio.duration) fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
             if (!marks || !marks.length) return;
             const t = audio.currentTime * 1000;
             let found = null;
@@ -147,22 +234,39 @@ public class ChapterAudioPlayer extends Div {
             run.forEach(el => el.classList.add('cr-audio-on'));
             if (run.length) run[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
         });
-        audio.addEventListener('ended', clear);
+        audio.addEventListener('ended', () => {
+            clear();
+            const scope = document.getElementById($4) || document;
+            const nextChapter = String(Number($3) + 1);
+            const nextHost = scope.querySelector(
+                '.cr-audio-player[data-book="' + $2 + '"][data-chapter="' + nextChapter + '"]');
+            // No next player on the page (end of book, or a mode that only
+            // renders one chapter at a time) — stop quietly rather than guess.
+            if (!nextHost) return;
+            const nextButton = nextHost.querySelector('vaadin-button, button');
+            if (nextButton) nextButton.click();
+        });
         audio.play().catch(() => {});
         """;
 
     /**
      * @param aMp3Url       public URL of the chapter mp3
-     * @param aOffsetsUrl   its companion per-verse offsets JSON
+     * @param anOffsetsUrl   its companion per-verse offsets JSON
      * @param aBookCode     book code as used in the verse ids, e.g. GEN
      * @param aChapter      chapter number as used in the verse ids
      * @param aColumnRootId DOM id of this column's scroll root ({@code col-<uid>}),
      *                      without which the wrong column would highlight
      * @param aTooltip      accessible label for the button
      */
-    public ChapterAudioPlayer(final String aMp3Url, final String aOffsetsUrl,
+    public ChapterAudioPlayer(final String aMp3Url, final String anOffsetsUrl,
                               final String aBookCode, final int aChapter,
                               final String aColumnRootId, final String aTooltip) {
+        // Present on every player from render, not just ones a reader has
+        // clicked — the 'ended' handler below needs to find the NEXT
+        // chapter's player even when that chapter has never been played.
+        addClassName("cr-audio-player");
+        getElement().setAttribute("data-book", aBookCode);
+        getElement().setAttribute("data-chapter", String.valueOf(aChapter));
         final Button play = new Button(VaadinIcon.PLAY_CIRCLE_O.create());
         final String label = aTooltip == null ? "" : aTooltip;
         play.getElement().setAttribute("title", label);
@@ -170,7 +274,7 @@ public class ChapterAudioPlayer extends Div {
         play.getStyle().set("min-width", "0").set("padding", "0")
                        .set("color", "var(--lumo-secondary-text-color)");
         play.addClickListener(e -> getElement().executeJs(
-                JS, aMp3Url, aOffsetsUrl, aBookCode, String.valueOf(aChapter),
+                JS, aMp3Url, anOffsetsUrl, aBookCode, String.valueOf(aChapter),
                 aColumnRootId == null ? "" : aColumnRootId, HIGHLIGHT_CSS));
         add(play);
     }

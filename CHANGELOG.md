@@ -72,6 +72,47 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.8.12] — 2026-10-03
+
+### Added
+- **Print this Bible.** An order page (`/edition-designer.html`) that previews
+  real page spreads and produces a print-ready PDF package for the printer: PDF
+  generator with our own typography (two columns, drop caps, balanced columns,
+  book rules across the page, running heads), a rights registry that records
+  each edition's provenance (public domain by age, or its open licence), and a
+  package with RIGHTS, SPEC and MANIFEST files. Reached from an edition's info
+  page, shown only for editions that can be printed; defaults come from a
+  signed-in user's preferences.
+- **Writing order**, a second chronological order beside the event order: each
+  book at the midpoint of the date range scholars give for its final form
+  (critical consensus). Available in the reader, downloads, About and print.
+- **Book look for signed-in users.** The reader takes the printed book's look
+  (EB Garamond, drop caps, an accent colour with a picker) from new user
+  preferences; anonymous readers keep the existing reader.
+- **Right-to-left printing** for Arabic and Hebrew (shaped, mirrored columns,
+  drop cap and gutter on the right) and **Chinese printing** (Noto Serif TC
+  subset, front pages in Traditional Chinese — a draft awaiting a native reader).
+- **Three new editions:** the Chinese Union Version in its 1919 form (from
+  Chinese Wikisource, with footnotes), the Arabic Van Dyck in the fully vowelled
+  eBible.org text, and Biblica's Open New Arabic Version (CC BY-SA 4.0), each
+  with an English info page and an About card. Japanese info pages for RV, WEB
+  and WLC.
+- Self-hosted OFL fonts for the book look and for printing, with licence files.
+
+### Fixed
+- **Page margins in generated PDFs.** The gutter was on the outer edge from
+  page 2 on; every PDF built before this release has it and must be rebuilt.
+- WEB footnotes that had truncated verse text are moved to the notes ledger and
+  the verses repaired.
+- The print links on info pages no longer fail with "Could not navigate".
+- The USFM converter accepts a bridged verse written after a right-to-left mark.
+
+### Changed
+- The SVD and CUV info pages (English) no longer claim to be the only Arabic or
+  Chinese Bible in the reader; their translations follow in the next wave.
+- The nightly content job runs from launchd at 22:00.
+- Database migration V19 adds the reader-look columns to user preferences.
+
 ## [0.8.11] — 2026-09-22
 
 ### Added

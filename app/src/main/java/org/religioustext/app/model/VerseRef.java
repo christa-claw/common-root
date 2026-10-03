@@ -19,6 +19,7 @@ public final class VerseRef {
     private final String  content;
     private final Integer globalCanonicalSeq;
     private final Integer globalChronologicalSeq;
+    private final Integer globalWritingSeq;
     private final Integer globalNarrativeSeq;
     private final String  note;
     private final String  bookCode;
@@ -33,6 +34,7 @@ public final class VerseRef {
         this.content                = aBuilder.content;
         this.globalCanonicalSeq     = aBuilder.globalCanonicalSeq;
         this.globalChronologicalSeq = aBuilder.globalChronologicalSeq;
+        this.globalWritingSeq       = aBuilder.globalWritingSeq;
         this.globalNarrativeSeq     = aBuilder.globalNarrativeSeq;
         this.note                   = aBuilder.note;
         this.bookCode               = aBuilder.bookCode;
@@ -49,6 +51,7 @@ public final class VerseRef {
     public String  getContent()                { return content; }
     public Integer getGlobalCanonicalSeq()     { return globalCanonicalSeq; }
     public Integer getGlobalChronologicalSeq() { return globalChronologicalSeq; }
+    public Integer getGlobalWritingSeq()       { return globalWritingSeq; }
     public Integer getGlobalNarrativeSeq()     { return globalNarrativeSeq; }
     public String  getNote()                   { return note; }
     public String  getBookCode()               { return bookCode; }
@@ -108,6 +111,7 @@ public final class VerseRef {
         private String  content;
         private Integer globalCanonicalSeq;
         private Integer globalChronologicalSeq;
+        private Integer globalWritingSeq;
         private Integer globalNarrativeSeq;
         private String  note;
         private String  bookCode;
@@ -149,6 +153,11 @@ public final class VerseRef {
 
         public Builder globalCanonicalSeq(final Integer aGlobalCanonicalSeq) {
             this.globalCanonicalSeq = aGlobalCanonicalSeq;
+            return this;
+        }
+
+        public Builder globalWritingSeq(final Integer aGlobalWritingSeq) {
+            this.globalWritingSeq = aGlobalWritingSeq;
             return this;
         }
 

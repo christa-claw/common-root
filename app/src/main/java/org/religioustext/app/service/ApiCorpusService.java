@@ -175,7 +175,7 @@ public class ApiCorpusService {
         if (!SAFE_KEY.matcher(aSourceId).matches() || !SAFE_KEY.matcher(aBookCode).matches()) return null;
         final StringBuilder deletes = new StringBuilder(
             "delete node $c//@globalCanonicalSeq, delete node $c//@globalChronologicalSeq, "
-          + "delete node $c//@globalTanakhSeq");
+          + "delete node $c//@globalTanakhSeq, delete node $c//@globalWritingSeq");
         if (aFromVerse > 0) {
             deletes.append(", delete node $c/rt:verse[xs:integer(@number) < ").append(aFromVerse).append(']');
             if (aToVerse >= aFromVerse) {

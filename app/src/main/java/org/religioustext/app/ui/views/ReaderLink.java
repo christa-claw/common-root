@@ -138,6 +138,7 @@ public final class ReaderLink {
         return switch (anOrderMode) {
             case CHRONOLOGICAL -> "chrono";
             case TANAKH        -> "tanakh";
+            case WRITING       -> "writing";
             default            -> "canon";
         };
     }
@@ -147,6 +148,7 @@ public final class ReaderLink {
         return switch (aToken.trim().toLowerCase()) {
             case "chrono", "crono", "chronological" -> OrderMode.CHRONOLOGICAL;
             case "tanakh"                            -> OrderMode.TANAKH;
+            case "writing", "written"                -> OrderMode.WRITING;
             default -> OrderMode.CANONICAL;
         };
     }

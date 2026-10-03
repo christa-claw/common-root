@@ -97,6 +97,12 @@ public final class DisplayOptions {
          *  NT unchanged after it. Driven by @globalTanakhSeq (stamp_tanakh.py);
          *  sources without the attribute fall back to canonical via seqLet. */
         , TANAKH
+        /** The Bible in the order its books were WRITTEN (critical consensus, as
+         *  a range, sorted by midpoint — see orderings/writing.yml). Driven by
+         *  @globalWritingSeq (06b_stamp_writing.py). CHRONOLOGICAL remains the
+         *  order the described EVENTS happened in; the two answer different
+         *  questions. Sources without the attribute fall back to canonical. */
+        , WRITING
     }
 
     // ── Getters ───────────────────────────────────────────────────────

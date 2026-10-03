@@ -48,6 +48,9 @@ import java.util.Locale;
 public class EditionInfoView extends VerticalLayout implements HasUrlParameter<String>, HasDynamicTitle {
 
     private EditionInfo page;
+    /** Reading order and display mode a reader column handed over (?ordering=…&mode=…),
+     *  validated, to forward to the order page so what was being read is what is ordered. */
+    private String handOffOrdering, handOffMode;
     private final BuildInfo buildInfo;
 
     public EditionInfoView(final BuildInfo aBuildInfo) {
@@ -64,11 +67,22 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
      *  {@link EditionInfo#PAGES} key verbatim, so adding a language stays a
      *  matter of adding a map entry. */
     @Override
-    public void setParameter(final BeforeEvent aEvent,
+    public void setParameter(final BeforeEvent anEvent,
                              @WildcardParameter final String aParameter) {
         page = resolve(aParameter);
+        final java.util.Map<String, java.util.List<String>> q =
+            anEvent.getLocation().getQueryParameters().getParameters();
+        handOffOrdering = firstOf(q, "ordering");
+        if (handOffOrdering != null
+                && !java.util.Set.of("canonical", "chronological", "tanakh", "writing").contains(handOffOrdering))
+            handOffOrdering = null;
+        handOffMode = firstOf(q, "mode");
+        if (handOffMode != null) {
+            try { org.religioustext.app.model.DisplayOptions.DisplayMode.valueOf(handOffMode); }
+            catch (final IllegalArgumentException ex) { handOffMode = null; }
+        }
         if (page == null) {
-            aEvent.rerouteToError(NotFoundException.class);
+            anEvent.rerouteToError(NotFoundException.class);
             return;
         }
         removeAll();
@@ -83,12 +97,23 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
         add(buildHero(), buildFacts(), buildBody(), buildFooter());
     }
 
+    private static String firstOf(final java.util.Map<String, java.util.List<String>> aQuery, final String aKey) {
+        final java.util.List<String> v = aQuery.get(aKey);
+        return v == null || v.isEmpty() || v.get(0).isBlank() ? null : v.get(0);
+    }
+
     /** Resolve the {@link EditionInfo#PAGES} key. An explicit language prefix
      *  ("fi/WLC") is served verbatim. A bare abbreviation ("WLC") prefers the
      *  current UI locale's variant when one exists, falling back to the English
      *  base entry — so a Finnish visitor landing on /edition/AGR1548 reads the
      *  Finnish article, while the per-language URLs (and the sitemap built from
      *  them) keep their one-URL-per-variant shape for crawlers. */
+    /** Editions the print pipeline can actually produce today. Mirrors
+     *  PRINTABLE in edition-designer.html, which in turn follows the VERIFIED
+     *  entries of scripts/print/build_package.py — an edition joins all three
+     *  together, when its print rights are confirmed. */
+    static final java.util.Set<String> PRINT_READY = java.util.Set.of("WEB", "KJV");
+
     private static EditionInfo resolve(final String aParameter) {
         if (aParameter == null || aParameter.isBlank()) {
             return null;
@@ -168,6 +193,27 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
             .set("padding", "13px 30px").set("border-radius", "4px").set("text-decoration", "none");
 
         hero.add(abbrTag, heading, openReader);
+        if (PRINT_READY.contains(page.abbr)) {
+            // The print offer belongs with the edition, not with a reader
+            // column: what is printed is THIS translation, and this is the
+            // page that says what it is and whose it is.
+            final Anchor print = new Anchor(
+                "/edition-designer.html?source=" + page.abbr
+                    + (handOffOrdering != null ? "&ordering=" + handOffOrdering : "")
+                    + (handOffMode != null ? "&mode=" + handOffMode : ""),
+                t("edition.printThis"));
+            print.getStyle()
+                .set("display", "inline-block").set("margin-left", "14px")
+                .set("border", "1px solid rgba(255,255,255,0.55)").set("color", "white")
+                .set("font-weight", "600").set("font-size", "16px")
+                .set("padding", "12px 26px").set("border-radius", "4px")
+                .set("text-decoration", "none");
+            // A plain page, not a Vaadin route: without router-ignore the client
+            // router catches the click and asks the server to navigate, which
+            // answers "Could not navigate to 'edition-designer.html'".
+            print.getElement().setAttribute("router-ignore", true);
+            hero.add(print);
+        }
         return hero;
     }
 

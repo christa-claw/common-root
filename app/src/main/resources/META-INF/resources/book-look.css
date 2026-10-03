@@ -1,0 +1,105 @@
+/* book-look.css — the typeset look of a printed Bible, on screen.
+ *
+ * ONE stylesheet for both places that show it: the print designer's preview
+ * (edition-designer.html, scoped by .cols-preview) and the reader for a
+ * signed-in user (scoped by .book-look). They are the same rules, so the reader
+ * cannot drift from the page it is meant to look like.
+ *
+ * Fonts are self-hosted, all under the SIL Open Font Licence (licence texts sit
+ * beside the files in /print-fonts/): EB Garamond for Latin, Greek and Cyrillic,
+ * Ezra SIL for Hebrew, Scheherazade New for Arabic. unicode-range means a face
+ * is only downloaded when a page actually contains its script.
+ */
+
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-400-normal.woff2") format("woff2"); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:"EB Garamond"; font-style:italic; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-400-italic.woff2") format("woff2"); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:700; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-700-normal.woff2") format("woff2"); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-ext-400-normal.woff2") format("woff2"); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:"EB Garamond"; font-style:italic; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-ext-400-italic.woff2") format("woff2"); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:700; font-display:swap;
+  src:url("/print-fonts/eb-garamond-latin-ext-700-normal.woff2") format("woff2"); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-cyrillic-400-normal.woff2") format("woff2"); unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face{ font-family:"EB Garamond"; font-style:italic; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-cyrillic-400-italic.woff2") format("woff2"); unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:700; font-display:swap;
+  src:url("/print-fonts/eb-garamond-cyrillic-700-normal.woff2") format("woff2"); unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-greek-400-normal.woff2") format("woff2"); unicode-range:U+0370-03FF; }
+@font-face{ font-family:"EB Garamond"; font-style:italic; font-weight:400; font-display:swap;
+  src:url("/print-fonts/eb-garamond-greek-400-italic.woff2") format("woff2"); unicode-range:U+0370-03FF; }
+@font-face{ font-family:"EB Garamond"; font-style:normal; font-weight:700; font-display:swap;
+  src:url("/print-fonts/eb-garamond-greek-700-normal.woff2") format("woff2"); unicode-range:U+0370-03FF; }
+@font-face{ font-family:"Ezra SIL Web"; font-display:swap;
+  src:url("/print-fonts/SILEOT.ttf") format("truetype");
+  unicode-range:U+0590-05FF, U+FB1D-FB4F; }
+@font-face{ font-family:"Scheherazade Web"; font-display:swap;
+  src:url("/print-fonts/ScheherazadeNew-Regular.ttf") format("truetype");
+  unicode-range:U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+
+/* ── the accents (the same five as the print designer) ──────────────────── */
+.book-look{ --bk-accent:#9e2b20;                       /* rubric red — the default */
+  --bk-font:"EB Garamond","Ezra SIL Web","Scheherazade Web",Georgia,"Times New Roman",serif;
+  --bk-fs:18px; --bk-lead:1.75; --lh:calc(var(--bk-fs) * var(--bk-lead));
+  --cap:3.7em; }
+.book-look.accent-rubric{ --bk-accent:#9e2b20; }
+.book-look.accent-black{  --bk-accent:#1a1a1a; }
+.book-look.accent-indigo{ --bk-accent:#23366b; }
+.book-look.accent-sepia{  --bk-accent:#74502c; }
+.book-look.accent-forest{ --bk-accent:#1f5136; }
+.cols-preview{ --bk-font:"EB Garamond","Ezra SIL Web","Scheherazade Web",Georgia,serif; }
+
+/* ── a true drop cap ────────────────────────────────────────────────────── */
+/* Two lines deep: --cap is worked out from the leading (cap height = one
+   leading plus the body's own cap height), so it holds at any size and in any
+   script — the arithmetic build_pdf.py uses. */
+.cols-preview .cn, .book-look .cn{ float:left; font-family:"EB Garamond",Georgia,serif;
+  font-weight:700; font-size:var(--cap,2.9em); line-height:.78;
+  margin:.06em .07em -.02em 0; color:var(--bk-accent,inherit); }
+.cols-preview.rtl .cn, .book-look [dir="rtl"] .cn{ float:right; margin:.06em 0 -.02em .07em; }
+
+/* Verse numbers: small, raised, and quiet — there are thirty times as many of
+   them as chapter numerals, and colouring them would busy the page. !important
+   because the reader sets its own inline size and colour on them. */
+.cols-preview .vn, .book-look .vn{ font-family:"EB Garamond",Georgia,serif;
+  font-size:.6em !important; vertical-align:super; color:#333 !important; }
+
+/* ── the book opening: one ruled line across the whole measure ────────────── */
+.cols-preview .bkw, .book-look .bkw{ display:flex; align-items:center; gap:.9em;
+  font-family:var(--bk-font); font-weight:700; letter-spacing:.18em; font-size:1.05em;
+  text-transform:uppercase; height:var(--lh); line-height:1; margin:var(--lh) 0 0;
+  padding:0; color:var(--bk-accent,inherit); white-space:nowrap; }
+.cols-preview .bkw.first, .book-look .bkw.first{ margin-top:0; }
+.cols-preview .bkw::before, .cols-preview .bkw::after,
+.book-look .bkw::before, .book-look .bkw::after{
+  content:""; flex:1 1 0; height:0; border-top:1.2px solid currentColor; }
+.cols-preview.rtl .bkw, .book-look [dir="rtl"] .bkw{ letter-spacing:0; text-transform:none; font-size:1.15em; }
+/* The long title: a gloss on the name, not a second shout of it. */
+.cols-preview .bl, .book-look .bl{ text-align:center; font-family:var(--bk-font);
+  font-style:italic; font-size:.86em; line-height:var(--lh); height:var(--lh);
+  margin:0; color:var(--bk-accent,inherit); }
+.cols-preview .gapline, .book-look .gapline{ height:var(--lh); }
+.cols-preview .be, .book-look .be{ height:var(--lh); margin:0; display:flex; align-items:center; }
+.cols-preview .be::before, .book-look .be::before{ content:""; width:100%; height:0;
+  border-top:1.1px solid currentColor; }
+
+/* ── the reader only ────────────────────────────────────────────────────── */
+.book-look .ch-text{ font-family:var(--bk-font) !important; font-size:var(--bk-fs) !important;
+  line-height:var(--bk-lead) !important; color:#151515; hyphens:auto; -webkit-hyphens:auto;
+  display:flow-root; }
+/* One empty line between chapters. */
+.book-look .chapter-group + .chapter-group{ margin-top:var(--lh); }
+.book-look .chapter-group{ padding-bottom:0 !important; position:relative; }
+/* The play button, which used to sit beside the "Book N" heading, moves to the
+   corner of the chapter now that the heading has become a drop cap. */
+.book-look .bk-audio{ position:absolute; top:-2px; right:0; z-index:1; opacity:.55; }
+.book-look .bk-audio:hover, .book-look .bk-audio:focus-within{ opacity:1; }
+/* The reference the old heading carried, kept for screen readers and for the
+   code that finds the chapter on screen; invisible to the eye. */
+.book-look .bk-sr{ position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap; }

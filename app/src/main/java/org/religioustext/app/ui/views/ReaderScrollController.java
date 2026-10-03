@@ -297,7 +297,10 @@ final class ReaderScrollController {
                         if (el) {
                             const bar = root.firstElementChild;
                             const off = bar ? bar.offsetHeight : 0;
-                            root.scrollTop += el.getBoundingClientRect().top
+                            // A chapter that opens a book lands on the book's rule
+                            // and title (book look), not on its first line.
+                            const a = (el.previousElementSibling && el.previousElementSibling.classList.contains('bk-open')) ? el.previousElementSibling : el;
+                            root.scrollTop += a.getBoundingClientRect().top
                                             - root.getBoundingClientRect().top - off;
                         }
                         else root.scrollTop = 0;
@@ -332,7 +335,8 @@ final class ReaderScrollController {
                 if (el) {
                     const bar = root.firstElementChild;
                     const off = bar ? bar.offsetHeight : 0;
-                    const target = root.scrollTop + el.getBoundingClientRect().top
+                    const a = (el.previousElementSibling && el.previousElementSibling.classList.contains('bk-open')) ? el.previousElementSibling : el;
+                    const target = root.scrollTop + a.getBoundingClientRect().top
                                  - root.getBoundingClientRect().top - off;
                     root.scrollTo({top: target, behavior: ($3 === 'true') ? 'smooth' : 'auto'});
                 }

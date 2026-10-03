@@ -22,6 +22,7 @@ import jakarta.annotation.security.RolesAllowed;
 import org.religioustext.app.i18n.LocaleUtil;
 import org.religioustext.app.model.DisplayOptions;
 import org.religioustext.app.model.DisplayOptions.OrderMode;
+import org.religioustext.app.model.user.ReaderLook;
 import org.religioustext.app.model.user.UserPreferences;
 import org.religioustext.app.service.CommentQueryService;
 import org.religioustext.app.service.TextQueryService;
@@ -112,6 +113,76 @@ public class PreferencesView extends VerticalLayout {
         orderSel.setValue(existing == null ? OrderMode.CANONICAL
             : ReaderLink.orderFromToken(existing.getDefaultOrder()));
 
+        // ── Reader look ───────────────────────────────────────────────
+        // The typeset "book" look the print designer previews, for signed-in
+        // readers; signed-out readers always get the classic reader and never
+        // see this page. Null in the row means "the default" (book, rubric, on).
+        final ReaderLook look = ReaderLook.of(true, existing);
+        final Select<String> lookSel = new Select<>();
+        lookSel.setLabel(t("prefs.readerLook"));
+        lookSel.setItems(ReaderLook.BOOK, ReaderLook.CLASSIC);
+        lookSel.setItemLabelGenerator(v -> t("prefs.look." + v));
+        lookSel.setWidth("320px");
+        lookSel.setValue(look.book() ? ReaderLook.BOOK : ReaderLook.CLASSIC);
+
+        // The accent is a row of swatches, as on the print designer's page —
+        // the colour is the choice, so it is shown rather than named in a list.
+        final String[] accentChoice = { look.accent() };
+        final java.util.Map<String, String> accentHex = java.util.Map.of(
+            "rubric", "#9e2b20", "black", "#1a1a1a", "indigo", "#23366b",
+            "sepia", "#74502c", "forest", "#1f5136");
+        final Span accentLabel = new Span(t("prefs.readerAccent"));
+        accentLabel.getStyle().set("font-size", "var(--lumo-font-size-s)")
+            .set("color", "var(--lumo-secondary-text-color)").set("font-weight", "500");
+        final Span accentName = new Span(t("prefs.accent." + accentChoice[0]));
+        accentName.getStyle().set("font-size", "var(--lumo-font-size-s)")
+            .set("color", "var(--lumo-body-text-color)");
+        final HorizontalLayout swatches = new HorizontalLayout();
+        swatches.setPadding(false);
+        swatches.setSpacing(false);
+        swatches.getStyle().set("gap", "10px").set("margin-top", "4px");
+        swatches.getElement().setAttribute("role", "radiogroup");
+        swatches.getElement().setAttribute("aria-label", t("prefs.readerAccent"));
+        final java.util.Map<String, Button> swatchButtons = new java.util.LinkedHashMap<>();
+        final Runnable paintSwatches = () -> swatchButtons.forEach((a, b) -> {
+            final boolean on = a.equals(accentChoice[0]);
+            b.getStyle().set("box-shadow", on
+                ? "0 0 0 2px var(--lumo-base-color), 0 0 0 4px " + accentHex.get(a) : "none");
+            b.getElement().setAttribute("aria-checked", String.valueOf(on));
+        });
+        for (final String a : ReaderLook.ACCENTS) {
+            final Button b = new Button();
+            b.getStyle().set("background", accentHex.get(a)).set("min-width", "28px")
+                .set("width", "28px").set("height", "28px").set("padding", "0")
+                .set("border-radius", "50%").set("margin", "0");
+            b.getElement().setAttribute("role", "radio");
+            b.getElement().setAttribute("aria-label", t("prefs.accent." + a));
+            b.setTooltipText(t("prefs.accent." + a));
+            b.addClickListener(e -> {
+                accentChoice[0] = a;
+                accentName.setText(t("prefs.accent." + a));
+                paintSwatches.run();
+            });
+            swatchButtons.put(a, b);
+            swatches.add(b);
+        }
+        paintSwatches.run();
+        final VerticalLayout accentBlock = new VerticalLayout(accentLabel, swatches, accentName);
+        accentBlock.setPadding(false);
+        accentBlock.setSpacing(false);
+        accentBlock.setWidth("320px");
+        accentBlock.setAlignItems(Alignment.START);
+        swatchButtons.values().forEach(b -> b.setEnabled(look.book()));
+        final Checkbox titlesBox = new Checkbox(t("prefs.longTitles"), look.longTitles());
+        titlesBox.setEnabled(look.book());
+        lookSel.addValueChangeListener(e -> {
+            final boolean book = ReaderLook.BOOK.equals(e.getValue());
+            swatchButtons.values().forEach(b -> b.setEnabled(book));
+            accentBlock.getStyle().set("opacity", book ? "1" : "0.5");
+            titlesBox.setEnabled(book);
+        });
+        accentBlock.getStyle().set("opacity", look.book() ? "1" : "0.5");
+
         // ── Booleans ──────────────────────────────────────────────────
         final Checkbox panelBox = new Checkbox(t("prefs.showPanel"),
             existing != null && existing.isShowCommentsPanel());
@@ -168,7 +239,7 @@ public class PreferencesView extends VerticalLayout {
         // them in a fixed 320px, left-aligned column so they share the same left
         // edge as the 320px selects above.
         final VerticalLayout boolGroup =
-            new VerticalLayout(panelBox, markersBox, resumeBox, locationBlock);
+            new VerticalLayout(titlesBox, panelBox, markersBox, resumeBox, locationBlock);
         boolGroup.setPadding(false);
         boolGroup.setSpacing(false);
         boolGroup.setWidth("320px");
@@ -217,6 +288,9 @@ public class PreferencesView extends VerticalLayout {
                         ? null : bible[2].toLowerCase());
                     p.setDefaultMode(ReaderLink.modeToken(modeSel.getValue()));
                     p.setDefaultOrder(ReaderLink.orderToken(orderSel.getValue()));
+                    p.setReaderStyle(lookSel.getValue());
+                    p.setReaderAccent(accentChoice[0]);
+                    p.setReaderLongTitles(Boolean.TRUE.equals(titlesBox.getValue()));
                     p.setShowCommentsPanel(Boolean.TRUE.equals(panelBox.getValue()));
                     p.setShowCommentMarkers(Boolean.TRUE.equals(markersBox.getValue()));
                     p.setResumeEnabled(Boolean.TRUE.equals(resumeBox.getValue()));
@@ -244,7 +318,7 @@ public class PreferencesView extends VerticalLayout {
             e -> getUI().ifPresent(ui -> ui.navigate("profile")));
         profile.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        add(title, intro, bibleBox, modeSel, orderSel,
+        add(title, intro, bibleBox, modeSel, orderSel, lookSel, accentBlock,
             boolGroup, mutedBox, langSel, save, profile, back, aBuildInfo.pinned());
     }
 

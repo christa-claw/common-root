@@ -45,6 +45,17 @@ public class SecurityConfig extends VaadinWebSecurity {
                 new AntPathRequestMatcher("/site.webmanifest"),
                 new AntPathRequestMatcher("/icons/**"),
                 new AntPathRequestMatcher("/images/**"),
+                // The typeset look's stylesheet and self-hosted fonts: used by the
+                // print designer page, which is public, as well as the reader.
+                new AntPathRequestMatcher("/book-look.css"),
+                // The print designer is a static page linked from public edition
+                // pages; without this it falls through to Vaadin's router, which
+                // answers "Could not navigate to 'edition-designer.html'". The
+                // defaults endpoint is public too: it returns {} for a signed-out
+                // visitor and the reader's own preferences for a signed-in one.
+                new AntPathRequestMatcher("/edition-designer.html"),
+                new AntPathRequestMatcher("/designer/defaults"),
+                new AntPathRequestMatcher("/print-fonts/**"),
                 // Generated chapter audio (mp3 + its per-verse offsets JSON),
                 // served by AudioStaticConfig at /audio/*. Without this the
                 // filter chain 302s them to /login: <audio> gets a redirect to

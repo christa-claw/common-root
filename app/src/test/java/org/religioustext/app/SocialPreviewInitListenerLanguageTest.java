@@ -31,10 +31,10 @@ class SocialPreviewInitListenerLanguageTest {
             "/reader/unknown/, , en",
             "/, lang=invalid, en",
     })
-    void testExtractLanguage(final String aPath, final String aQuery, final String aExpected) {
+    void testExtractLanguage(final String aPath, final String aQuery, final String anExpected) {
         final String actualQuery = "(empty)".equals(aQuery) ? "" : aQuery;
         final String result = SocialPreviewInitListener.extractLanguage(aPath, actualQuery);
-        assertEquals(aExpected, result, "Failed for path=" + aPath + ", query=" + actualQuery);
+        assertEquals(anExpected, result, "Failed for path=" + aPath + ", query=" + actualQuery);
     }
 
     @Test

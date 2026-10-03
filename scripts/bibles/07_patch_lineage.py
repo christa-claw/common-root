@@ -45,29 +45,100 @@ YEARS = {
     "FB1642": "1642",  "LUT1545": "1545", "AGR1548": "1548",
     "RVR09":  "1909",  "SYN":  "1876", "CUV":    "1919", "SVD": "1865",
     "IRVHIN": "2019",  "YTC":  "2023", "NASB": "2020", "LUT1912": "1912",
-    "JFB":    "2026",
+    "JFB":    "2026",  "LXX": "1851", "TYN": "1534", "LXXE": "1851",
 }
 
-# abbreviation -> ordered parent abbreviations (main line first)
+# abbreviation -> ordered parent abbreviations. Two rules, in this order:
+#   1. REAL SOURCES FIRST, main line first among them — the text the translators
+#      actually worked from leads.
+#   2. ORIGINAL-LANGUAGE WITNESSES LAST. A witness (@original='true' — TR, WLC)
+#      is the floor the ladder rests on, not a book anyone held; it belongs at
+#      the bottom of the group, below every genuine source. AGR1548 broke this
+#      until 2026-09-25 and rendered Greek above the Vulgate that Agricola
+#      actually used.
 LINEAGE = {
     "WEB":    ["ASV"],             # WEB is a revision of the ASV
     "ASV":    ["RV"],              # American edition of the Revised Version
     "RV":     ["KJV"],             # the RV is formally a revision of the KJV
-    "KJV":    ["GNV", "TR", "WLC"],  # Geneva's influence + TR (NT) + Masoretic (OT)
-    "GNV":    ["TR", "WLC"],       # Geneva from the Greek and Hebrew
+    # TYN added 2026-09-29, the Tier 1 rung. Something like four fifths of the
+    # KJV New Testament's wording is Tyndale's, and the Geneva NT is built on
+    # him too, so one text puts a rung under both — and therefore under RV, ASV
+    # and WEB above them. GNV leads for the KJV because it is the nearer
+    # generation and a book the translators had open; TYN follows as the deeper
+    # substrate. Witnesses last, as everywhere else.
+    "KJV":    ["GNV", "TYN", "TR", "WLC"],
+    "GNV":    ["TYN", "TR", "WLC"],
+    # TYN itself deliberately gets NO entry: Tyndale worked from Erasmus' Greek
+    # and Luther's 1522 German NT, and neither is in the corpus as a text he
+    # could have held — TR is a 1550 edition, LUT1545 a 1545 one, both
+    # postdating 1534. The originals floor supplies the Greek, which is the
+    # honest stopping point. This is the case the module docstring already
+    # describes: an edition whose antecedents are absent roots where the corpus
+    # runs out.
     "DRA":    ["VUL"],             # Douay-Rheims translated from the Vulgate
-    # VUL deliberately has NO recorded parent: Jerome's Hebrew/Greek sources
-    # aren't in the corpus, and the WLC is only a Masoretic WITNESS — the
-    # original-language floor supplies it, clearly marked as such.
+    # VUL -> LXX (added 2026-09-29, with the maintainer). This REVERSES the
+    # earlier decision that VUL should have no recorded parent. That decision
+    # was made when the corpus held no Greek Old Testament, so the only
+    # candidate rung was the WLC — a Masoretic WITNESS, and the wrong one:
+    # Jerome went back to the Hebraica veritas for the protocanon precisely to
+    # get away from the Greek. The Brenton LXX changes the position, because
+    # part of the Vulgate is genuinely Greek-derived and always was: the
+    # Psalter carried in the Vulgate is the Gallicanum, made from the Greek of
+    # the Hexapla and never revised to Jerome's own iuxta Hebraeos version, and
+    # Wisdom, Sirach, Baruch and 1-2 Maccabees were left standing as Old Latin
+    # translated from the Greek. So the LXX is a real source for a real part of
+    # this book, not a witness. The Hebrew still appears beneath it, supplied by
+    # the originals floor, which is the honest shape: Greek for the parts that
+    # came through Greek, Hebrew underneath for the parts that did not.
+    "VUL":    ["LXX"],
+    # LXXE -> LXX (2026-09-29). Brenton printed the Greek and his own English
+    # facing translation in the same 1851 volume, so this is about as literal a
+    # parent as the corpus contains: one man, one book, the English made from
+    # the Greek on the opposite page. Not a witness — a source.
+    "LXXE":   ["LXX"],
+    # The Clementine is a recension of Jerome's text, not a new translation, so
+    # it reaches the Greek the same way VUL does — through VUL, one rung down.
+    "VULC":   ["VUL"],
+    # SYN -> LXX. The 1876 Synodal Old Testament was made from the Masoretic
+    # text but follows the Septuagint at a great many points, and it stands in
+    # the Slavonic tradition (Ostrog 1581, Elizabeth 1751), which is wholly
+    # LXX-derived — the Elizabeth Bible is still queued as the intermediate
+    # rung, and when it lands SYN should point at it instead and let ELIZ carry
+    # the LXX. The Hebrew arrives via the originals floor. The LXX is OT-only,
+    # so content-aware stepping simply skips this rung under the New Testament,
+    # where the Synodal text descends from the Byzantine line instead (BYZ1904
+    # is in the corpus and is the obvious next rung to add here).
+    "SYN":    ["LXX"],
+    # LXX itself deliberately has NO recorded parent, for the reason VUL used to
+    # have none: its Hebrew Vorlage is not in the corpus and was demonstrably
+    # not the Masoretic text — that is the whole scholarly interest of the
+    # thing. The WLC is a witness a millennium younger, so it belongs under the
+    # LXX as the originals floor already puts it, and nowhere else.
+    # The 1890 Shanghai missionary conference set the English Revised Version as
+    # the base text for the Union Version, so the RV is a real dependency rather
+    # than an influence — and it is already in the corpus, which is why this rung
+    # costs one line and no ingest. It turns /read/zh's bare originals floor into
+    # a full chain: CUV -> RV -> KJV -> GNV -> the Greek and Hebrew beneath.
+    # RV alone: the committees worked from the originals too, but the rungs below
+    # RV already carry the TR and WLC witnesses, so naming them here would just
+    # duplicate the step down.
+    "CUV":    ["RV"],              # Union Version 1919, on the English RV
     "KR3338": ["FB1776"],          # Finnish church-Bible line
     "FB1776": ["FB1642"],          # 1776 is a revision of the 1642 Biblia
     "FB1642": ["AGR1548", "LUT1545"],  # 1642: Agricola's Finnish revised (main
                                        # line), Luther open on the table
-    # Agricola triangulated: Luther's German, Erasmus' Greek (TR witness) and
-    # the Vulgate (the Swedish NT too, but that's not in the corpus). Decided
-    # with the maintainer 2026-08-10 — the 08-05 plan deferred Luther only because
-    # the corpus didn't hold LUT1545 yet.
-    "AGR1548": ["LUT1545", "TR", "VUL"],
+    # Agricola triangulated: Luther's German, the Vulgate, and Erasmus' Greek
+    # (the Swedish NT too, but that's not in the corpus). Decided with the
+    # maintainer 2026-08-10 — the 08-05 plan deferred Luther only because the
+    # corpus didn't hold LUT1545 yet.
+    #
+    # VUL BEFORE TR (fixed 2026-09-25). The Vulgate is a book Agricola had on
+    # the table; TR is a witness standing in for "the Greek Erasmus printed".
+    # The dates say so themselves: the TR edition is 1550 and Agricola is 1548,
+    # so the rung cannot be a literal source — a parent postdating its child is
+    # exactly what marks a witness. Putting it last also restores the pattern
+    # every other entry follows (see KJV: GNV, then TR and WLC).
+    "AGR1548": ["LUT1545", "VUL", "TR"],
     "LUT1545": ["TR", "WLC"],      # Luther: Erasmus' Greek (TR witness) + Hebrew
     "LUT1912": ["LUT1545"],        # 1912 is a revision of Luther's 1545 text
 }

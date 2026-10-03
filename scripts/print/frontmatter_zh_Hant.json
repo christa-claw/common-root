@@ -1,0 +1,28 @@
+{
+  "_note": "Front matter of a Traditional Chinese print edition. DRAFT, written by Claude and not yet read by a native speaker: have a Chinese reader check it before it goes to a printer. The same words are what build_cjk_font.py cuts the font for, so a change here means rebuilding the font.",
+  "title": "聖經",
+  "order": {
+    "canonical": "正典次序",
+    "chronological": "事件次序",
+    "writing": "成書次序",
+    "tanakh": "希伯來次序"
+  },
+  "continued": "（續）",
+  "headings": {
+    "about": "關於本書的編排",
+    "rights": "來源與版權"
+  },
+  "about": {
+    "canonical": "各卷書依傳統印刷聖經的次序排列。",
+    "chronological": "本書各卷各章的次序與一般聖經不同，是依各段經文所記載之事大致發生的先後排列：因此約伯記排在創世記第十一章與第十二章之間，而相傳為摩西所作的詩篇第九十篇，則置於摩西離世之處，而不是在四百頁之後。某一卷書若在書中多次出現，標題會註明「續」。這個事件次序是學者的重構，有些地方尚有爭議；它只是一種閱讀的方式，並不是對經文本身的論斷。",
+    "tanakh": "希伯來聖經自己的次序：妥拉（律法書）、先知書、聖卷，並以歷代志而不是瑪拉基書作結。這是這些書卷被編集的次序，也是新約時代的讀者所熟悉的次序。",
+    "writing": "本書各卷依其寫成的先後排列，既不依其所記事件的先後，也不依其傳統的位置。依批判學術的共識，每一卷排在學者一般認為它形成現有樣貌的年代區間的中點：因此阿摩司書靠近開頭，申命記排在創世記之前，約翰福音則近乎最後。經歷數世紀才成書的書卷，按其最後的形式定位；以賽亞書與撒迦利亞書的各部分年代分別推定，因此出現多次，標題註明「續」。若依傳統的作者歸屬，例如摩西作五經、大衛作詩篇，會得出不同的次序，本書不採用。年代的推定有些地方尚有爭議；它只是一種閱讀的方式，並不是對經文本身的論斷。"
+  },
+  "rights": "經文：{edition}。這個譯本屬於公有領域：沒有版權持有人，也沒有每冊的授權費。由 Common Root（common-root.org）依結構化的經文資料庫排版。字體為思源宋體（Noto Serif TC），依 SIL 開放字型授權使用；授權全文隨本檔案附上。",
+  "edition_names": {
+    "bible-zh-cuv1919": "和合本（1919年版，「神」版）"
+  },
+  "credits": {
+    "bible-zh-cuv1919": "電子版經文據中文維基文庫（zh.wikisource.org）《聖經（和合本）》整理。該轉錄由維基文庫的貢獻者完成，依 CC BY-SA 4.0 授權提供；底本為1919年版。"
+  }
+}

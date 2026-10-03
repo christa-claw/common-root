@@ -378,6 +378,58 @@ def concat(parts, target):
             pathlib.Path(p).unlink(missing_ok=True)
 
 
+def _seg_path(base, tag):
+    """Path for one leaf of a (possibly split) segment. tag "" is the segment's
+       own file; a non-empty tag names one half of a duration-triggered split."""
+    return base if not tag else base.with_suffix(f".sub{tag}.mp3")
+
+
+def synth_segment_with_retry(speechsdk, cfg, verses, voice, lang, base,
+                              tag="", depth=0, max_depth=4):
+    """Like synth_segment, but for the handful of segments where
+       SEGMENT_CHARS_BY_LANG's estimate still isn't conservative enough: Azure
+       cancels with "exceeded configured maximum media duration" (its hard
+       ~10-minute per-request ceiling) even though the segment was under the
+       character limit computed for its language (seen 2026-09-18/25 on
+       ja-JP-KeitaNeural and es-ES-AlvaroNeural segments sized right up against
+       their limit). Rather than lose the whole chapter — and the characters
+       Azure already billed for it — to that one segment, halve it at a verse
+       boundary and retry each half, joining the results with the same ffmpeg
+       concat the top-level segments use, so a chapter that needed this is
+       indistinguishable from one that didn't.
+
+       Gives up (re-raising the original error) once a half is down to a
+       single verse, or after max_depth halvings, so a verse that is itself
+       too long still surfaces as a normal chapter failure rather than
+       recursing forever."""
+    path = _seg_path(base, tag)
+    try:
+        return synth_segment(speechsdk, cfg, build_ssml(verses, voice, lang), path)
+    except Exception as exc:
+        if ("maximum media duration" not in str(exc)
+                or len(verses) < 2 or depth >= max_depth):
+            raise
+        mid = len(verses) // 2
+        left_tag, right_tag = tag + "a", tag + "b"
+        left_path, right_path = _seg_path(base, left_tag), _seg_path(base, right_tag)
+        try:
+            left_marks, left_dur = synth_segment_with_retry(
+                speechsdk, cfg, verses[:mid], voice, lang, base,
+                left_tag, depth + 1, max_depth)
+            right_marks, right_dur = synth_segment_with_retry(
+                speechsdk, cfg, verses[mid:], voice, lang, base,
+                right_tag, depth + 1, max_depth)
+            concat([str(left_path), str(right_path)], path)
+        except Exception:
+            left_path.unlink(missing_ok=True)
+            right_path.unlink(missing_ok=True)
+            raise
+        marks = dict(left_marks)
+        for mark, off in right_marks.items():
+            marks[mark] = left_dur + off
+        return marks, left_dur + right_dur
+
+
 def load_ledger(path):
     p = pathlib.Path(path)
     if not p.exists():
@@ -611,8 +663,8 @@ def main():
                 for i, seg in enumerate(
                         segments_for(verses, segment_chars_for(lang))):
                     part = mp3.with_suffix(f".part{i}.mp3")
-                    marks, dur = synth_segment(
-                        speechsdk, cfg, build_ssml(seg, voice, lang), part)
+                    marks, dur = synth_segment_with_retry(
+                        speechsdk, cfg, seg, voice, lang, part)
                     # Shift this segment's marks past everything already made.
                     for mark, off in marks.items():
                         offsets[mark[1:]] = elapsed + off

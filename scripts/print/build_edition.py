@@ -64,9 +64,17 @@ NS = "declare namespace rt='http://religioustext.org/schema/1.0'; "
 # The corpus stamps one global sequence attribute per ordering. They are
 # denormalised onto the verse precisely so a whole edition can be streamed in
 # any order without walking the tree.
+STAMPERS = {
+    "canonical":     "scripts/bibles/04_stamp_canonical.py",
+    "chronological": "scripts/bibles/05_stamp_chronological.py",
+    "tanakh":        "scripts/bibles/06_stamp_tanakh.py",
+    "writing":       "scripts/bibles/06b_stamp_writing.py",
+}
+
 ORDERINGS = {
     "canonical":     "globalCanonicalSeq",
     "chronological": "globalChronologicalSeq",
+    "writing":       "globalWritingSeq",
     "narrative":     "globalNarrativeSeq",
     "tanakh":        "globalTanakhSeq",
 }
@@ -128,7 +136,7 @@ def stream_verses(doc, ordering, books=None, limit=None):
         raise CorpusError(
             f"'{doc}' has no verses stamped with @{attr}, so the {ordering} "
             f"ordering cannot be produced. Stamped orderings: {stamped}. "
-            f"Run the matching stamper (e.g. stamp_chronological.py "
+            f"Run the matching stamper ({STAMPERS.get(ordering, 'stamp_*.py')} "
             f"--translation {doc}) and check it reports a non-zero count.")
 
     book_pred = ""

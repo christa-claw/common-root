@@ -98,7 +98,8 @@ public class CorpusDownloadController {
      *  again here. See the class comment; adding one to the corpus means adding it
      *  to this list, or the next download quietly ships it. */
     private static final List<String> SEQUENCE_ATTRIBUTES = List.of(
-        "globalCanonicalSeq", "globalChronologicalSeq", "globalTanakhSeq");
+        "globalCanonicalSeq", "globalChronologicalSeq", "globalTanakhSeq",
+        "globalWritingSeq");
 
     private final RestTemplate restTemplate;
     private final BaseXProperties baseX;

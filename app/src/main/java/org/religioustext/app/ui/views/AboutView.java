@@ -56,6 +56,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             , buildHero()
             , buildHowToSection()
             , buildDisplayModesSection()
+            , buildReadingOrdersSection()
             , buildChapterVerseProblemsSection()
             , buildQuranSection()
             , buildAvailableTextsSection()
@@ -349,6 +350,13 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
     private void addModeCard(final Div aContainer, final String aMode, final String aSubtitle,
                              final String aBody, final String anAccentColor,
                              final String aReaderHref) {
+        addModeCard(aContainer, aMode, aSubtitle, aBody, anAccentColor, aReaderHref,
+            t("about.modes.openInReader"));
+    }
+
+    private void addModeCard(final Div aContainer, final String aMode, final String aSubtitle,
+                             final String aBody, final String anAccentColor,
+                             final String aReaderHref, final String aTooltip) {
         final Div card = new Div();
         card.getStyle()
             .set("background", "white").set("border-radius", "8px")
@@ -379,7 +387,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         // The whole card links into the reader opened in this mode — the About
         // page describes the mode, the reader demonstrates it.
         final Anchor open = new Anchor(aReaderHref, card);
-        open.getElement().setAttribute("title", t("about.modes.openInReader"));
+        open.getElement().setAttribute("title", aTooltip);
         open.addClassName("mode-card-link");
         open.getStyle()
             .set("text-decoration", "none").set("color", "inherit")
@@ -388,6 +396,51 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         aContainer.add(open);
     }
 
+
+    // ── Reading orders ────────────────────────────────────────────────
+
+    /** The four orders the reader can arrange the Bible in. Each card opens the
+     *  reader in that order, at a passage where the order is easiest to see:
+     *  Genesis 1 (traditional), Psalm 90 (event order puts it at the death of
+     *  Moses), Amos 1 (writing order opens on it), 2 Chronicles 36 (the Hebrew
+     *  Bible ends there). */
+    private Div buildReadingOrdersSection() {
+        final Div s = section("white");
+        s.add(sectionTitle(t("about.orders.title")));
+
+        final Paragraph intro = prose(t("about.orders.intro"));
+        intro.getStyle().set("margin", "12px 0 32px");
+        s.add(intro);
+
+        final Div grid = new Div();
+        grid.getStyle()
+            .set("display", "grid")
+            .set("grid-template-columns", "repeat(auto-fit, minmax(300px, 1fr))")
+            .set("gap", "24px");
+        final String open = t("about.orders.openInReader");
+
+        addModeCard(grid, t("about.orders.canonical.label"), t("about.orders.canonical.subtitle"),
+            para2("about.orders.canonical.p1", "about.orders.canonical.p2"), "#1a3a5c",
+            orderHref("GEN.1", "canon"), open);
+        addModeCard(grid, t("about.orders.events.label"), t("about.orders.events.subtitle"),
+            para2("about.orders.events.p1", "about.orders.events.p2"), "#2e6da4",
+            orderHref("PSA.90", "chrono"), open);
+        addModeCard(grid, t("about.orders.writing.label"), t("about.orders.writing.subtitle"),
+            para2("about.orders.writing.p1", "about.orders.writing.p2"), "#8b4513",
+            orderHref("AMO.1", "writing"), open);
+        addModeCard(grid, t("about.orders.tanakh.label"), t("about.orders.tanakh.subtitle"),
+            para2("about.orders.tanakh.p1", "about.orders.tanakh.p2"), "#c9a84c",
+            orderHref("2CH.36", "tanakh"), open);
+
+        s.add(grid);
+        return s;
+    }
+
+    /** Reader deep link at a passage in a given reading order. Src-less, like the
+     *  mode links, so the column resolves to the reader's own default edition. */
+    private static String orderHref(final String aRef, final String anOrderToken) {
+        return "/reader?c1.ref=" + aRef + "&c1.order=" + anOrderToken;
+    }
 
     // ── Chapter & verse problems ──────────────────────────────────────
 
@@ -641,6 +694,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         addTextCard(grid, "BES",    "Biblia en Español Sencillo", t("about.lang.spanish"),         "—",    "CC BY 4.0",                     "✅");
         addTextCard(grid, "BSB",    "Berean Standard Bible",      t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "CUV",    "Chinese Union Version",      t("about.lang.chinese"),         "1919", t("about.license.publicDomain"), "✅");
+        addTextCard(grid, "CUV1919", "Chinese Union Version, 1919 text", t("about.lang.chinese"),   "1919", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "DBY",    "Darby (1885)",               t("about.lang.french"),          "1885", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "DIO",    "Diodati 1649",               t("about.lang.italian"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "DRA",    "Douay-Rheims 1899",          t("about.lang.englishCatholic"), "—",    t("about.license.publicDomain"), "✅");
@@ -659,11 +713,13 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         addTextCard(grid, "NBLA",   "Nueva Biblia de las Américas", t("about.lang.spanish"),       "—",    t("about.license.licensed"),     "✅");
         addTextCard(grid, "NIV",    "New International Version",  t("about.lang.english"),         "2011", t("about.license.licensed"),     "✅");
         addTextCard(grid, "OLCIM",  "Baibal Olcim",               t("about.lang.matuChin"),        "—",    t("about.license.publicDomain"), "✅");
+        addTextCard(grid, "ONAV",   "Open New Arabic Version",    t("about.lang.arabic"),          "2012", "CC BY-SA 4.0",                  "✅");
         addTextCard(grid, "PDDPT",  "Palabra de Dios para Ti",    t("about.lang.spanish"),         "—",    "CC BY-SA 4.0",                  "✅");
         addTextCard(grid, "RV",     "Revised Version 1885",       t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "RVR09",  "Reina Valera 1909",          t("about.lang.spanish"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SV1917", "Svenska 1917",               t("about.lang.swedish"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SVD",    "Smith & Van Dyck",           t("about.lang.arabic"),          "1865", t("about.license.publicDomain"), "✅");
+        addTextCard(grid, "SVD-E",  "Smith & Van Dyck (eBible text)", t("about.lang.arabic"),      "1865", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SYN",    "Synodal",                    t("about.lang.russian"),         "1876", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "VBL",    "Versión Biblia Libre",       t("about.lang.spanish"),         "—",    "CC BY-SA 4.0",                  "✅");
         addTextCard(grid, "WEB",    "World English Bible",        t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
@@ -901,6 +957,11 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         final Span meta = new Span(aLanguage + (aYear.equals("—") ? "" : " · " + aYear) + " · " + aLicense);
         meta.getStyle().set("font-size", "12px").set("color", "#888");
         info.add(nameSpan, meta);
+        // An edition that can be printed gets room under its details for a link
+        // to the print page (drawn below as a corner overlay: a second <a> inside
+        // the card's own anchor would be invalid).
+        final boolean printable = EditionInfoView.PRINT_READY.contains(anAbbr);
+        if (printable) card.getStyle().set("padding-bottom", "38px");
 
         final Span statusSpan = new Span(aStatus);
         statusSpan.getStyle().set("font-size", "16px");
@@ -936,6 +997,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             open.getStyle().set("flex", "1 1 auto");
             wrapper.add(open);
             if (editionInfo != null) wrapper.add(infoCorner(anAbbr));
+            if (printable) wrapper.add(printCorner(anAbbr));
             aContainer.add(wrapper);
         } else {
             aContainer.add(open);
@@ -960,6 +1022,26 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
      *               map key and the {@code /edition/:abbr} route parameter
      * @return an anchor to that edition's info page
      */
+    /** "Can be printed" — a direct link to the print page with this edition
+     *  already chosen. Pinned to the card's bottom-left, in the room made for it
+     *  by the card's extra bottom padding. */
+    private Anchor printCorner(final String anAbbr) {
+        final Anchor print = new Anchor(
+            "/edition-designer.html?source=" + anAbbr, "\uD83D\uDCD6 " + t("about.texts.printable"));
+        print.getElement().setAttribute("title", t("about.texts.printable.hint"));
+        print.getStyle()
+            .set("position", "absolute").set("bottom", "9px").set("left", "16px")
+            .set("font-size", "11px").set("font-weight", "600").set("line-height", "1")
+            .set("color", "#8a5a12").set("background", "#fbf3e2")
+            .set("padding", "4px 9px").set("border-radius", "10px")
+            .set("text-decoration", "none");
+        print.addClassName("text-card-print");
+        // A static page, not a Vaadin route: let the browser navigate to it
+        // instead of the client router (see EditionInfoView).
+        print.getElement().setAttribute("router-ignore", true);
+        return print;
+    }
+
     private Anchor infoCorner(final String anAbbr) {
         final String slug =
             EditionInfo.slugFor(anAbbr, LocaleUtil.currentLocale().getLanguage());

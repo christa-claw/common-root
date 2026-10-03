@@ -58,10 +58,10 @@ public class LandingPageView extends VerticalLayout implements HasUrlParameter<S
     }
 
     @Override
-    public void setParameter(final BeforeEvent aEvent, final String aParameter) {
+    public void setParameter(final BeforeEvent anEvent, final String aParameter) {
         page = aParameter == null ? null : LandingPage.PAGES.get(aParameter);
         if (page == null) {
-            aEvent.rerouteToError(NotFoundException.class);
+            anEvent.rerouteToError(NotFoundException.class);
             return;
         }
         removeAll();

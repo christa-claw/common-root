@@ -58,8 +58,8 @@ public class LandingSeoListener implements VaadinServiceInitListener {
     private static final Logger log = LoggerFactory.getLogger(LandingSeoListener.class);
 
     @Override
-    public void serviceInit(final ServiceInitEvent aEvent) {
-        aEvent.addIndexHtmlRequestListener(this::injectLandingTags);
+    public void serviceInit(final ServiceInitEvent anEvent) {
+        anEvent.addIndexHtmlRequestListener(this::injectLandingTags);
     }
 
     private void injectLandingTags(final IndexHtmlResponse aResponse) {

@@ -94,7 +94,8 @@ def parse_usfm(text, path, verses, warn):
             try: chapter = int(re.match(r"\\c\s+(\d+)", line).group(1))
             except Exception: chapter = 0
             continue
-        vm = re.match(r"\\v\s+(\d+)(?:[-\u2013,]\d+)?\s*(.*)$", line)  # "1" or bridged "1-2" -> first
+        # "1" or bridged "1-2" -> first; the dash may follow an invisible RLM/LRM (ONAV Acts 15:25-26)
+        vm = re.match(r"\\v\s+(\d+)(?:[\u200e\u200f]?[-\u2013,]\d+)?\s*(.*)$", line)
         if vm:
             flush()
             verse, buf = int(vm.group(1)), [vm.group(2)]

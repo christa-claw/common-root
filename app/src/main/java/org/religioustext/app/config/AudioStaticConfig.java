@@ -66,10 +66,10 @@ public class AudioStaticConfig {
 
     public AudioStaticConfig(
             @Value("${commonroot.audio.index:/srv/audio/index.json}") final String aManifestPath,
-            @Value("${commonroot.audio.dir:}") final String aAudioDir) {
-        this.root = (aAudioDir == null || aAudioDir.isBlank())
+            @Value("${commonroot.audio.dir:}") final String anAudioDir) {
+        this.root = (anAudioDir == null || anAudioDir.isBlank())
                 ? Paths.get(aManifestPath).toAbsolutePath().getParent()
-                : Paths.get(aAudioDir).toAbsolutePath();
+                : Paths.get(anAudioDir).toAbsolutePath();
         if (root == null || !Files.isDirectory(root)) {
             LOG.warn("audio directory not present at {} — /audio/* will 404", root);
         } else {

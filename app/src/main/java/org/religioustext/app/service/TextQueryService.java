@@ -71,6 +71,7 @@ public class TextQueryService {
         final String orderAttr = switch (anOrderMode) {
             case CHRONOLOGICAL -> "xs:integer(($b/rt:chapter[1]/rt:verse[1]/@globalChronologicalSeq, $b/rt:chapter[1]/rt:verse[1]/@globalCanonicalSeq)[1])";
             case TANAKH        -> "xs:integer(($b/rt:chapter[1]/rt:verse[1]/@globalTanakhSeq, $b/rt:chapter[1]/rt:verse[1]/@globalCanonicalSeq)[1])";
+            case WRITING       -> "xs:integer(($b/rt:chapter[1]/rt:verse[1]/@globalWritingSeq, $b/rt:chapter[1]/rt:verse[1]/@globalCanonicalSeq)[1])";
             default            -> "xs:integer($b/@canonicalOrder)";
         };
         final String xquery = NS_DECL
@@ -133,7 +134,7 @@ public class TextQueryService {
             + "string($v/@chapterNumber),string($v/@chapterTitle),"
             + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
             + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
-            + "$code"
+            + "$code,string($v/@globalWritingSeq)"
             + "),'|||')";
 
         return executeQuery(xquery).stream()
@@ -150,6 +151,7 @@ public class TextQueryService {
         final String orderAttr = switch (anOptions.getOrderMode()) {
             case CHRONOLOGICAL -> "@globalChronologicalSeq";
             case TANAKH        -> "@globalTanakhSeq";
+            case WRITING       -> "@globalWritingSeq";
             default            -> "@globalCanonicalSeq";
         };
 
@@ -164,7 +166,8 @@ public class TextQueryService {
             + "string($v/@number),string($v/@bookName),string($v/@bookAltName),"
             + "string($v/@chapterNumber),string($v/@chapterTitle),"
             + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
-            + "string($v/@globalNarrativeSeq),string($v/@note),string($v)"
+            + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
+            + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq)"
             + "),'|||')";
 
         return executeQuery(xquery).stream()
@@ -192,6 +195,7 @@ public class TextQueryService {
         return switch (anOrderMode) {
             case CHRONOLOGICAL -> "@globalChronologicalSeq";
             case TANAKH        -> "@globalTanakhSeq";
+            case WRITING       -> "@globalWritingSeq";
             default            -> "@globalCanonicalSeq";
         };
     }
@@ -219,7 +223,7 @@ public class TextQueryService {
         + "string($v/@chapterNumber),string($v/@chapterTitle),"
         + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
         + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
-        + "string($v/ancestor::rt:book/@code)"
+        + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq)"
         + "),'|||')";
 
     /**
@@ -466,6 +470,7 @@ public class TextQueryService {
             .note(partAt(parts, 8))
             .content(partAt(parts, 9))
             .bookCode(partAt(parts, 10))
+            .globalWritingSeq(parseIntegerSafe(parts, 11))
             .build();
     }
 

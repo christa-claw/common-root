@@ -67,6 +67,11 @@ final class VerseWindowRenderer {
          *  Applied to the inline bubbles here so a muted voice leaves no trace in
          *  the text \u2014 not merely absent from the panel's list. */
         java.util.Set<String> mutedVoices();
+        /** True when the reader is dressed in the typeset "book" look (a signed-in
+         *  reader who has not chosen the classic one). */
+        boolean bookLook();
+        /** The traditional long title to set under a book's rule, or null. */
+        String longTitle(ColState aState, String aBookName);
     }
 
     private final TextQueryService    queryService;
@@ -204,6 +209,25 @@ final class VerseWindowRenderer {
         final Div sep = new Div();
         sep.getElement().setAttribute("data-book", aBookName);
         sep.getElement().setAttribute("data-separator", "true");
+        if (host.bookLook()) {
+            sep.addClassName("bk-open");
+            // One ruled line across the measure, the book's traditional title
+            // under it, then one empty line — as the print designer sets it.
+            // Styling is all in book-look.css, shared with that page.
+            final Div rule = new Div(host.bookHeading(aState, aBookName));
+            rule.addClassName("bkw");
+            sep.add(rule);
+            final String longTitle = host.longTitle(aState, aBookName);
+            if (longTitle != null && !longTitle.isBlank()) {
+                final Div bl = new Div(longTitle);
+                bl.addClassName("bl");
+                sep.add(bl);
+            }
+            final Div gap = new Div();
+            gap.addClassName("gapline");
+            sep.add(gap);
+            return sep;
+        }
         sep.getStyle()
             .set("display", "flex")
             .set("align-items", "center")
@@ -230,6 +254,7 @@ final class VerseWindowRenderer {
                                   final int aChapter, final List<VerseRef> theVerses,
                                   final int aSeq, final boolean aWithHeading) {
         final Div div = new Div();
+        div.addClassName("chapter-group");
         div.getElement().setAttribute("data-book", aBookName);
         div.getElement().setAttribute("data-chapter", String.valueOf(aChapter));
         div.getElement().setAttribute("data-seq", String.valueOf(aSeq));
@@ -280,7 +305,27 @@ final class VerseWindowRenderer {
             return div;
         }
 
-        if (aWithHeading && opts.isShowChapters()) {
+        // The book look swaps the "Book N" line for a drop cap: the chapter number
+        // sits in the text, two lines deep, and the reference stays in the DOM for
+        // screen readers and for the code that finds the chapter on screen.
+        final boolean bookLook = host.bookLook();
+        boolean dropCap = false;
+        if (aWithHeading && opts.isShowChapters() && bookLook) {
+            final H2 ref = new H2(host.bookHeading(aState, aBookName) + " " + aChapter);
+            ref.getElement().setAttribute("data-chapter-heading", "true");
+            ref.addClassName("bk-sr");
+            div.add(ref);
+            final String audioBook = theVerses.isEmpty() ? null : theVerses.get(0).getBookCode();
+            final com.vaadin.flow.component.Component audio =
+                (audioBook == null || audioBook.isBlank())
+                    ? null : host.audioControl(aState, audioBook, aChapter);
+            if (audio != null) {
+                final Div corner = new Div(audio);
+                corner.addClassName("bk-audio");
+                div.add(corner);
+            }
+            dropCap = true;
+        } else if (aWithHeading && opts.isShowChapters()) {
             // Full reference (book + chapter), not just "Chapter N". In
             // chronological order books legitimately interleave (Psalms among
             // Samuel, Chronicles beside Samuel), and a bare "Chapter 7" gives no
@@ -309,10 +354,16 @@ final class VerseWindowRenderer {
         }
 
         final Div text = new Div();
+        text.addClassName("ch-text");
         text.getStyle()
             .set("line-height", "1.8")
             .set("text-align", "justify")
             .set("overflow-wrap", "break-word");
+        if (dropCap) {
+            final Span cap = new Span(String.valueOf(aChapter));
+            cap.addClassName("cn");
+            text.add(cap);
+        }
 
         // The signed-in reader's identity first — the comment fetch overlays their own
         // comments (including private drafts) on the public map.
@@ -353,6 +404,7 @@ final class VerseWindowRenderer {
                 primary.getStyle().set("line-height", "1.9").set("font-size", "1.25em");
                 if (opts.isShowVerses()) {
                     final Span num = new Span(verse.getVerseNumber() + " ");
+                num.addClassName("vn");
                     num.getStyle().set("font-size", "10px")
                         .set("color", "var(--lumo-secondary-text-color)")
                         .set("vertical-align", "super");
@@ -506,6 +558,7 @@ final class VerseWindowRenderer {
             }
             if (anOptions.isShowVerses()) {
                 final Span num = new Span(verse.getVerseNumber() + " ");
+                num.addClassName("vn");
                 num.getStyle()
                     .set("font-size", "10px")
                     .set("color", "var(--lumo-secondary-text-color)")
@@ -779,6 +832,16 @@ final class VerseWindowRenderer {
             .filter(e -> e.hasAttribute("data-chapter-heading"))
             .findFirst()
             .ifPresent(com.vaadin.flow.dom.Element::removeFromParent);
+        // Book look: the corner play button and the drop cap go with it.
+        aGroup.getElement().getChildren()
+            .filter(e -> e.getClassList().contains("bk-audio"))
+            .toList().forEach(com.vaadin.flow.dom.Element::removeFromParent);
+        aGroup.getElement().getChildren()
+            .filter(e -> e.getClassList().contains("ch-text"))
+            .findFirst()
+            .ifPresent(t -> t.getChildren()
+                .filter(c -> c.getClassList().contains("cn"))
+                .toList().forEach(com.vaadin.flow.dom.Element::removeFromParent));
     }
 
     private List<com.vaadin.flow.component.Component> renderedGroups(final ColState aState) {
