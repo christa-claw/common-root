@@ -72,6 +72,33 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-10-03
+
+### Added
+- **Open New Arabic Version (ONAV) can be printed.** It is the first licensed,
+  right-to-left edition on the order page: the book carries Biblica's credit and
+  its CC BY-SA 4.0 licence, and a rearranged order says so on its rights page.
+  The rights package now supports licensed editions and right-to-left binding.
+- **The order page's preview is set from the edition you choose.** It fetches
+  real passages of that edition from the new `/designer/sample` endpoint — the
+  opening, a book boundary and the closing page, in the chosen order — with the
+  edition's own book names and script. The "Example text" toggle, and the
+  embedded WEB, Hebrew and Arabic samples behind it, are gone.
+- The KJV's translator footnotes now come back as comments under the KJV column.
+
+### Fixed
+- **KJV verse text.** Translator footnotes had been flattened into 5,844 verses
+  ("…and it was so.1.30 life: Heb. a living soul"). They are taken out of the
+  text, using eBible's KJV 1769 USFM as the witness, and kept as 6,959 notes.
+  Anything printed from the KJV before this has them in the text.
+- The stamp scripts (chronological, Tanakh, writing) refused chapters that hold
+  several verses with the same number, which left 5,328 verses of the Septuagint
+  without a sequence. A repeated number is now addressed by its occurrence.
+
+### Changed
+- The print list is kept in one place on the server (`PrintEditions`); the info
+  pages' print link and the preview endpoint both follow it.
+
 ## [0.9.0] — 2026-10-03
 
 First tagged as 0.8.12, then re-released as 0.9.0 before it was deployed: print-ready

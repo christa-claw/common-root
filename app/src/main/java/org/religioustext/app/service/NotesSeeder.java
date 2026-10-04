@@ -75,6 +75,9 @@ public class NotesSeeder {
         // Footnotes and cross-references lifted out of the verse text by
         // scripts/bibles/09_extract_inline_notes.py (the inline footnote leak).
         "WEB", new NotesEdition("World English Bible", "Note", "bible-web"),
+        // The KJV's marginal readings ("Heb. a living soul") and cross-references,
+        // lifted out of the verse text the same way.
+        "KJV", new NotesEdition("King James Version", "Note", "bible-kjv-1611"),
         // The translators' own margin notes of the 1919 Chinese Union Version,
         // taken out of the verse text by scripts/bibles/01_fetch_wikisource_cuv.py.
         "CUV1919", new NotesEdition("和合本 1919", "註", "bible-zh-cuv1919"));

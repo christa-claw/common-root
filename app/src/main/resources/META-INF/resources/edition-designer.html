@@ -336,14 +336,6 @@
     <div>
       <div class="card preview-card">
         <h2>Preview <span class="chip derived" style="margin-left:4px">Approximate</span></h2>
-        <div class="field" style="margin:0 0 12px">
-          <label>Example text <span style="color:var(--ink-faint)">— how other scripts set</span></label>
-          <div class="seg" id="example">
-            <button data-v="en" aria-pressed="true">English</button>
-            <button data-v="he" lang="he" aria-pressed="false">עברית</button>
-            <button data-v="ar" lang="ar" aria-pressed="false">العربية</button>
-          </div>
-        </div>
         <div class="page-wrap"><div class="page" id="page">
           <div class="rh" id="rh">GENESIS 1</div>
           <div class="cols-preview" id="cols-preview"></div>
@@ -429,7 +421,23 @@
     { id:"kjv", abbr:"KJV", name:"King James Version", lang:"en", language:"English",
       source:"bible-kjv-1611", rights:"PD — not in the UK",
       warn:"<b>KJV is not free in the UK.</b> Perpetual Crown copyright. " +
-           "Printing in the Netherlands is fine; selling into Britain is not." }
+           "Printing in the Netherlands is fine; selling into Britain is not." },
+    { id:"onav", abbr:"ONAV", name:"Open New Arabic Version", lang:"ar", language:"Arabic",
+      source:"bible-ar-onav", rights:"CC BY-SA 4.0 — Biblica",
+      warn:"<b>Licensed, not public domain.</b> Biblica's Open New Arabic Version is " +
+           "CC BY-SA 4.0. The book carries Biblica's credit and the licence. In any " +
+           "order but the traditional one it is an adaptation under the same licence: " +
+           "it says the books were rearranged and does not use the Biblica name. " +
+           "A right-to-left book, bound on the right.",
+      notice:function(ordering){
+        return "The text is the Open New Arabic Version, © 1988, 1997, 2012 Biblica, Inc., " +
+          "used under the Creative Commons Attribution-ShareAlike 4.0 International " +
+          "licence (creativecommons.org/licenses/by-sa/4.0)." +
+          (ordering === "canonical" ? "" :
+            " The order of the books has been rearranged from the original, which " +
+            "makes this book a derivative of it.") +
+          " The original work by Biblica, Inc. is available for free at www.biblica.com " +
+          "and open.bible. This book is itself offered under the same licence."; } }
   ];
   function edition(id){
     for (var i = 0; i < EDITIONS.length; i++) if (EDITIONS[i].id === id) return EDITIONS[i];
@@ -460,7 +468,7 @@
 
   var state = { translation:"web", ordering:"chronological", canon:"66",
                 mode:"CHAPTERS_VERSES", trim:"standard", body:8.8, margin:12,
-                head:"split", titles:"long", accent:"black", example:"en",
+                head:"split", titles:"long", accent:"black",
                 construction:"hardcover", cover:"paper-matt", qty:25 };
 
   // The reader's own DisplayMode enum, verbatim, so the two surfaces agree.
@@ -487,196 +495,128 @@
   var ACCENT_HEX = { black:"#1a1a1a", rubric:"#9e2b20", indigo:"#23366b",
                      sepia:"#74502c", forest:"#1f5136" };
 
-  // World English Bible — public domain, so the preview shows the real product
-  // rather than filler. Pages carry their real page number (n): recto or verso
-  // decides which side the gutter is on and what the running head says.
-  var EN_PAGES = [
-    { label:"Genesis opens", head:"GENESIS 1", headBook:"GENESIS",
-      headChapters:"1", blocks:[
-      { book:"GENESIS", long:"The First Book of Moses, called Genesis",
-        chapter:1, verses:[
-        [1,"In the beginning, God created the heavens and the earth."],
-        [2,"Now the earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters."],
-        [3,"God said, “Let there be light,” and there was light."],
-        [4,"God saw the light, and saw that it was good. God divided the light from the darkness."],
-        [5,"God called the light “day”, and the darkness he called “night”. There was evening and there was morning, the first day."],
-        [6,"God said, “Let there be an expanse in the middle of the waters, and let it divide the waters from the waters.”"],
-        [7,"God made the expanse, and divided the waters which were under the expanse from the waters which were above the expanse; and it was so."],
-        [8,"God called the expanse “sky”. There was evening and there was morning, a second day."],
-        [9,"God said, “Let the waters under the sky be gathered together to one place, and let the dry land appear;” and it was so."],
-        [10,"God called the dry land “earth”, and the gathering together of the waters he called “seas”. God saw that it was good."],
-        [11,"God said, “Let the earth yield grass, herbs yielding seed, and fruit trees bearing fruit after their kind, with their seeds in it, on the earth;” and it was so."],
-        [12,"The earth yielded grass, herbs yielding seed after their kind, and trees bearing fruit, with their seeds in it, after their kind; and God saw that it was good."],
-        [13,"There was evening and there was morning, a third day."],
-        [14,"God said, “Let there be lights in the expanse of the sky to divide the day from the night; and let them be for signs to mark seasons, days, and years;"],
-        [15,"and let them be for lights in the expanse of the sky to give light on the earth;” and it was so."],
-        [16,"God made the two great lights: the greater light to rule the day, and the lesser light to rule the night. He also made the stars."],
-        [17,"God set them in the expanse of the sky to give light to the earth,"],
-        [18,"and to rule over the day and over the night, and to divide the light from the darkness. God saw that it was good."],
-        [19,"There was evening and there was morning, a fourth day."],
-        [20,"God said, “Let the waters abound with living creatures, and let birds fly above the earth in the open expanse of the sky.”"],
-        [21,"God created the large sea creatures and every living creature that moves, with which the waters swarmed, after their kind, and every winged bird after its kind. God saw that it was good."],
-        [22,"God blessed them, saying, “Be fruitful, and multiply, and fill the waters in the seas, and let birds multiply on the earth.”"],
-        [23,"There was evening and there was morning, a fifth day."],
-        [24,"God said, “Let the earth produce living creatures after their kind, livestock, creeping things, and animals of the earth after their kind;” and it was so."],
-        [25,"God made the animals of the earth after their kind, and the livestock after their kind, and everything that creeps on the ground after its kind. God saw that it was good."],
-        [26,"God said, “Let’s make man in our image, after our likeness. Let them have dominion over the fish of the sea, and over the birds of the sky, and over the livestock, and over all the earth, and over every creeping thing that creeps on the earth.”"],
-        [27,"God created man in his own image. In God’s image he created him; male and female he created them."],
-        [28,"God blessed them. God said to them, “Be fruitful, multiply, fill the earth, and subdue it. Have dominion over the fish of the sea, over the birds of the sky, and over every living thing that moves on the earth.”"],
-        [29,"God said, “Behold, I have given you every herb yielding seed, which is on the surface of all the earth, and every tree, which bears fruit yielding seed. It will be your food."]
-      ]}
-    ]},
-    { label:"Running text", head:"GENESIS 1–2", headBook:"GENESIS",
-      headChapters:"1–2", blocks:[
-      { verses:[
-        [30,"To every animal of the earth, and to every bird of the sky, and to everything that creeps on the earth, in which there is life, I have given every green herb for food;” and it was so."],
-        [31,"God saw everything that he had made, and behold, it was very good. There was evening and there was morning, a sixth day."]
-      ]},
-      { chapter:2, verses:[
-        [1,"The heavens, the earth, and all their vast array were finished."],
-        [2,"On the seventh day God finished his work which he had done; and he rested on the seventh day from all his work which he had done."],
-        [3,"God blessed the seventh day, and made it holy, because he rested in it from all his work of creation which he had done."],
-        [4,"This is the history of the generations of the heavens and of the earth when they were created, in the day that Yahweh God made the earth and the heavens."],
-        [5,"No plant of the field was yet in the earth, and no herb of the field had yet sprung up; for Yahweh God had not caused it to rain on the earth. There was not a man to till the ground,"],
-        [6,"but a mist went up from the earth, and watered the whole surface of the ground."],
-        [7,"Yahweh God formed man from the dust of the ground, and breathed into his nostrils the breath of life; and man became a living soul."],
-        [8,"Yahweh God planted a garden eastward, in Eden, and there he put the man whom he had formed."],
-        [9,"Out of the ground Yahweh God made every tree to grow that is pleasant to the sight, and good for food, including the tree of life in the middle of the garden and the tree of the knowledge of good and evil."],
-        [10,"A river went out of Eden to water the garden; and from there it was parted, and became the source of four rivers."],
-        [11,"The name of the first is Pishon: it flows through the whole land of Havilah, where there is gold;"],
-        [12,"and the gold of that land is good. Bdellium and onyx stone are also there."],
-        [13,"The name of the second river is Gihon. It is the same river that flows through the whole land of Cush."],
-        [14,"The name of the third river is Hiddekel. This is the one which flows in front of Assyria. The fourth river is the Euphrates."],
-        [15,"Yahweh God took the man, and put him into the garden of Eden to cultivate and keep it."],
-        [16,"Yahweh God commanded the man, saying, “You may freely eat of every tree of the garden;"],
-        [17,"but you shall not eat of the tree of the knowledge of good and evil; for in the day that you eat of it, you will surely die.”"],
-        [18,"Yahweh God said, “It is not good for the man to be alone. I will make him a helper comparable to him.”"],
-        [19,"Out of the ground Yahweh God formed every animal of the field, and every bird of the sky, and brought them to the man to see what he would call them. Whatever the man called every living creature became its name."],
-        [20,"The man gave names to all livestock, and to the birds of the sky, and to every animal of the field; but for man there was not found a helper comparable to him."],
-        [21,"Yahweh God caused the man to fall into a deep sleep. As the man slept, he took one of his ribs, and closed up the flesh in its place."],
-        [22,"Yahweh God made a woman from the rib which he had taken from the man, and brought her to the man."],
-        [23,"The man said, “This is now bone of my bones, and flesh of my flesh. She will be called ‘woman’, because she was taken out of Man.”"],
-        [24,"Therefore a man will leave his father and his mother, and will join with his wife, and they will be one flesh."],
-        [25,"The man and his wife were both naked, and they were not ashamed."]
-      ]}
-    ]},
-    { label:"The chronological seam", head:"DEUTERONOMY 34 – PSALM 90",
-      headBook:"DEUTERONOMY – JOSHUA",
-      headChapters:"DEUTERONOMY 34 – JOSHUA 1", seam:true, blocks:[
-      { verses:[
-        [5,"So Moses the servant of Yahweh died there in the land of Moab, according to Yahweh’s word."],
-        [6,"He buried him in the valley in the land of Moab opposite Beth Peor, but no man knows where his tomb is to this day."],
-        [7,"Moses was one hundred twenty years old when he died. His eye was not dim, nor his strength gone."],
-        [8,"The children of Israel wept for Moses in the plains of Moab thirty days, until the days of weeping in the mourning for Moses were ended."],
-        [9,"Joshua the son of Nun was full of the spirit of wisdom; for Moses had laid his hands on him. The children of Israel listened to him, and did as Yahweh commanded Moses."],
-        [10,"Since then, there has not arisen a prophet in Israel like Moses, whom Yahweh knew face to face,"],
-        [11,"in all the signs and the wonders which Yahweh sent him to do in the land of Egypt, to Pharaoh, and to all his servants, and to all his land,"],
-        [12,"and in all the mighty hand, and in all the awesome deeds, which Moses did in the sight of all Israel."]
-      ]},
-      { book:"PSALMS", long:"The Book of Psalms", chapter:90,
-        note:"A Prayer of Moses, the man of God.", verses:[
-        [1,"Lord, you have been our dwelling place for all generations."],
-        [2,"Before the mountains were born, before you had formed the earth and the world, even from everlasting to everlasting, you are God."],
-        [3,"You turn man to destruction, saying, “Return, you children of men.”"],
-        [4,"For a thousand years in your sight are just like yesterday when it is past, like a watch in the night."],
-        [5,"You sweep them away as they sleep. In the morning they sprout like new grass."],
-        [6,"In the morning it sprouts and springs up. By evening, it is withered and dry."],
-        [7,"For we are consumed in your anger. We are troubled in your wrath."],
-        [8,"You have set our iniquities before you, our secret sins in the light of your presence."],
-        [9,"For all our days have passed away in your wrath. We bring our years to an end as a sigh."],
-        [10,"The days of our years are seventy, or even by reason of strength eighty years; yet their pride is but labor and sorrow, for it passes quickly, and we fly away."],
-        [11,"Who knows the power of your anger, your wrath according to the fear that is due to you?"],
-        [12,"So teach us to count our days, that we may gain a heart of wisdom."],
-        [13,"Relent, Yahweh! How long? Have compassion on your servants!"],
-        [14,"Satisfy us in the morning with your loving kindness, that we may rejoice and be glad all our days."],
-        [15,"Make us glad for as many days as you have afflicted us, for as many years as we have seen evil."],
-        [16,"Let your work appear to your servants; your glory to their children."],
-        [17,"Let the favor of the Lord our God be on us; establish the work of our hands for us; yes, establish the work of our hands."]
-      ]},
-      { book:"JOSHUA", long:"The Book of Joshua", chapter:1, verses:[
-        [1,"Now after the death of Moses the servant of Yahweh, Yahweh spoke to Joshua the son of Nun, Moses’ servant, saying,"],
-        [2,"“Moses my servant is dead. Now therefore arise, go across this Jordan, you, and all these people, to the land which I am giving to them, even to the children of Israel."],
-        [3,"I have given you every place that the sole of your foot will tread on, as I told Moses."],
-        [4,"From the wilderness, and this Lebanon, even to the great river, the river Euphrates, all the land of the Hittites, and to the great sea toward the going down of the sun, shall be your border."],
-        [5,"No man will be able to stand before you all the days of your life. As I was with Moses, so I will be with you. I will not fail you nor forsake you."],
-        [6,"Be strong and courageous; for you shall cause this people to inherit the land which I swore to their fathers to give them."],
-        [7,"Only be strong and very courageous. Be careful to observe to do according to all the law which Moses my servant commanded you. Don’t turn from it to the right hand or to the left, that you may have good success wherever you go."],
-        [8,"This book of the law shall not depart from your mouth, but you shall meditate on it day and night, that you may observe to do according to all that is written in it; for then you shall make your way prosperous, and then you shall have good success."],
-        [9,"Haven’t I commanded you? Be strong and courageous. Don’t be afraid. Don’t be dismayed, for Yahweh your God is with you wherever you go.”"],
-        [10,"Then Joshua commanded the officers of the people, saying,"],
-        [11,"“Pass through the middle of the camp, and command the people, saying, ‘Prepare food; for within three days you are to pass over this Jordan, to go in to possess the land which Yahweh your God gives you to possess it.’”"]
-      ]}
-    ]}
-  ];
-  EN_PAGES[0].n = 3;  EN_PAGES[1].n = 4;  EN_PAGES[2].n = 211;
-  EN_PAGES[2].only = "chronological";      // the event-order seam
-  // The first two pages of the book: single column, full measure.
-  var EN_FRONT = [
+  // The preview is set from real passages of the EDITION being ordered, fetched
+  // from /designer/sample: the opening of the Bible, a book boundary, and the
+  // closing page, in whichever order is chosen. Nothing here is a stand-in text,
+  // so what the page shows is what the book will print — in the edition's own
+  // script, with its own book names. Pages carry their real page number (n):
+  // recto or verso decides which side the gutter is on and what the running
+  // head says.
+  var SAMPLES = {}, samplePending = {};
+  // How each script sets, relative to the Latin body size.
+  var SCRIPTS = {
+    en: { dir:"ltr", size:1,    lead:1.205 },
+    he: { dir:"rtl", size:1.14, lead:1.5,
+          font:'"Ezra SIL Web","SBL Hebrew","Times New Roman",serif' },
+    ar: { dir:"rtl", size:1.19, lead:1.57,
+          font:'"Scheherazade Web","Amiri","Geeza Pro",serif' }
+  };
+  function exampleFor(ed){
+    var sc = SCRIPTS[ed.lang] || SCRIPTS.en;
+    return { lang:ed.lang, dir:sc.dir, size:sc.size, lead:sc.lead, font:sc.font,
+             source:ed.name };
+  }
+  // The sample for an edition, fetched once; the preview redraws when it lands.
+  function sampleFor(ed){
+    var s = SAMPLES[ed.abbr];
+    if (!s && !samplePending[ed.abbr] && window.fetch) {
+      samplePending[ed.abbr] = true;
+      fetch("/designer/sample?source=" + encodeURIComponent(ed.abbr),
+            { headers:{ Accept:"application/json" } })
+        .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+        .then(function(d){ SAMPLES[ed.abbr] = d; })
+        .catch(function(){ SAMPLES[ed.abbr] = { failed:true }; })
+        .then(function(){ samplePending[ed.abbr] = false; render(); });
+    }
+    return s && s.chapters ? s : null;
+  }
+
+  var FRONT = [
     { n:1, label:"Title page", front:"title", blocks:[] },
     { n:2, label:"About this arrangement", front:"about", blocks:[] }];
-  // The last page: the columns end level and ONE rule runs the width of the
-  // page, closing the Bible. Books in the middle do not get one.
-  var EN_END = { n:1023, label:"The end of the Bible", end:true,
-    head:"REVELATION 22", headBook:"REVELATION", headChapters:"22",
-    blocks:[{ verses:[[8, "Now I, John, am the one who heard and saw these things. When I heard and saw, I fell down to worship before the feet of the angel who had shown me these things."], [9, "He said to me, “You must not do that! I am a fellow bondservant with you and with your brothers, the prophets, and with those who keep the words of this book. Worship God.”"], [10, "He said to me, “Don’t seal up the words of the prophecy of this book, for the time is at hand."], [11, "He who acts unjustly, let him act unjustly still. He who is filthy, let him be filthy still. He who is righteous, let him do righteousness still. He who is holy, let him be holy still.”"], [12, "“Behold, I am coming soon! My reward is with me, to repay to each man according to his work."], [13, "I am the Alpha and the Omega, the First and the Last, the Beginning and the End."], [14, "Blessed are those who do his commandments, that they may have the right to the tree of life, and may enter in by the gates into the city."], [15, "Outside are the dogs, the sorcerers, the sexually immoral, the murderers, the idolaters, and everyone who loves and practices falsehood."], [16, "I, Jesus, have sent my angel to testify these things to you for the assemblies. I am the root and the offspring of David, the Bright and Morning Star.”"], [17, "The Spirit and the bride say, “Come!” He who hears, let him say, “Come!” He who is thirsty, let him come. He who desires, let him take the water of life freely."], [18, "I testify to everyone who hears the words of the prophecy of this book: if anyone adds to them, God will add to him the plagues which are written in this book."], [19, "If anyone takes away from the words of the book of this prophecy, God will take away his part from the tree of life, and out of the holy city, which are written in this book."], [20, "He who testifies these things says, “Yes, I am coming soon.” Amen! Yes, come, Lord Jesus!"], [21, "The grace of the Lord Jesus Christ be with all the saints. Amen."]]}] };
-  // Writing order opens on Amos, not Genesis, and closes on 2 Peter, not
-  // Revelation; its boundary page puts the end of Numbers beside Malachi, which
-  // is the whole argument of the order in one spread.
-  var WR_PAGES = [
-    { n:3, label:"Amos opens", head:"AMOS 1–2", headBook:"AMOS", headChapters:"1–2",
-      blocks:[{ book:"AMOS", chapter:1, verses:[[1, "The words of Amos, who was among the herdsmen of Tekoa, which he saw concerning Israel in the days of Uzziah king of Judah and in the days of Jeroboam the son of Joash, king of Israel, two years before the earthquake."], [2, "He said: “Yahweh will roar from Zion, and utter his voice from Jerusalem; and the pastures of the shepherds will mourn, and the top of Carmel will wither.”"], [3, "Yahweh says: “For three transgressions of Damascus, yes, for four, I will not turn away its punishment, because they have threshed Gilead with threshing instruments of iron;"], [4, "but I will send a fire into the house of Hazael, and it will devour the palaces of Ben Hadad."], [5, "I will break the bar of Damascus, and cut off the inhabitant from the valley of Aven, and him who holds the scepter from the house of Eden; and the people of Syria shall go into captivity to Kir,” says Yahweh."], [6, "Yahweh says: “For three transgressions of Gaza, yes, for four, I will not turn away its punishment, because they carried away captive the whole community, to deliver them up to Edom;"], [7, "but I will send a fire on the wall of Gaza, and it will devour its palaces."], [8, "I will cut off the inhabitant from Ashdod, and him who holds the scepter from Ashkelon; and I will turn my hand against Ekron; and the remnant of the Philistines will perish,” says the Lord Yahweh."], [9, "Yahweh says: “For three transgressions of Tyre, yes, for four, I will not turn away its punishment; because they delivered up the whole community to Edom, and didn’t remember the brotherly covenant;"], [10, "but I will send a fire on the wall of Tyre, and it will devour its palaces.”"], [11, "Yahweh says: “For three transgressions of Edom, yes, for four, I will not turn away its punishment, because he pursued his brother with the sword and cast off all pity, and his anger raged continually, and he kept his wrath forever;"], [12, "but I will send a fire on Teman, and it will devour the palaces of Bozrah.”"], [13, "Yahweh says: “For three transgressions of the children of Ammon, yes, for four, I will not turn away its punishment, because they have ripped open the pregnant women of Gilead, that they may enlarge their border."], [14, "But I will kindle a fire in the wall of Rabbah, and it will devour its palaces, with shouting in the day of battle, with a storm in the day of the whirlwind;"], [15, "and their king will go into captivity, he and his princes together,” says Yahweh."]]},
-              { chapter:2, verses:[[1, "Yahweh says: “For three transgressions of Moab, yes, for four, I will not turn away its punishment, because he burned the bones of the king of Edom into lime;"], [2, "but I will send a fire on Moab, and it will devour the palaces of Kerioth; and Moab will die with tumult, with shouting, and with the sound of the trumpet;"], [3, "and I will cut off the judge from among them, and will kill all its princes with him,” says Yahweh."], [4, "Yahweh says: “For three transgressions of Judah, yes, for four, I will not turn away its punishment, because they have rejected Yahweh’s law, and have not kept his statutes, and their lies have led them astray, after which their fathers walked;"], [5, "but I will send a fire on Judah, and it will devour the palaces of Jerusalem.”"], [6, "Yahweh says: “For three transgressions of Israel, yes, for four, I will not turn away its punishment, because they have sold the righteous for silver, and the needy for a pair of sandals;"], [7, "They trample the heads of the poor into the dust of the earth and deny justice to the oppressed. A man and his father use the same maiden, to profane my holy name."], [8, "They lay themselves down beside every altar on clothes taken in pledge. In the house of their God they drink the wine of those who have been fined."], [9, "Yet I destroyed the Amorite before them, whose height was like the height of the cedars, and he was strong as the oaks; yet I destroyed his fruit from above, and his roots from beneath."], [10, "Also I brought you up out of the land of Egypt and led you forty years in the wilderness, to possess the land of the Amorite."], [11, "I raised up some of your sons for prophets, and some of your young men for Nazirites. Isn’t this true, you children of Israel?” says Yahweh."], [12, "“But you gave the Nazirites wine to drink, and commanded the prophets, saying, ‘Don’t prophesy!’"], [13, "Behold, I will crush you in your place, as a cart crushes that is full of grain."], [14, "Flight will perish from the swift. The strong won’t strengthen his force. The mighty won’t deliver himself."], [15, "He who handles the bow won’t stand. He who is swift of foot won’t escape. He who rides the horse won’t deliver himself."], [16, "He who is courageous among the mighty will flee away naked on that day,” says Yahweh."]]}] },
-    { n:211, label:"Where the Torah falls", seam:true,
-      head:"NUMBERS 36 – MALACHI 1", headBook:"NUMBERS – MALACHI",
-      headChapters:"NUMBERS 36 – MALACHI 1",
-      note:"On this basis the Pentateuch reached its present form after most of the prophets, so the end of Numbers sits beside Malachi. Each book opens on a rule across the page, over columns that end level.",
-      blocks:[{ verses:[[5, "Moses commanded the children of Israel according to Yahweh’s word, saying, “The tribe of the sons of Joseph speak what is right."], [6, "This is the thing which Yahweh commands concerning the daughters of Zelophehad, saying, ‘Let them be married to whom they think best, only they shall marry into the family of the tribe of their father."], [7, "So shall no inheritance of the children of Israel move from tribe to tribe; for the children of Israel shall all keep the inheritance of the tribe of his fathers."], [8, "Every daughter who possesses an inheritance in any tribe of the children of Israel shall be wife to one of the family of the tribe of her father, that the children of Israel may each possess the inheritance of his fathers."], [9, "So shall no inheritance move from one tribe to another tribe; for the tribes of the children of Israel shall each keep his own inheritance.’”"], [10, "The daughters of Zelophehad did as Yahweh commanded Moses:"], [11, "for Mahlah, Tirzah, Hoglah, Milcah, and Noah, the daughters of Zelophehad, were married to their father’s brothers’ sons."], [12, "They were married into the families of the sons of Manasseh the son of Joseph. Their inheritance remained in the tribe of the family of their father."], [13, "These are the commandments and the ordinances which Yahweh commanded by Moses to the children of Israel in the plains of Moab by the Jordan at Jericho."]]},
-              { book:"MALACHI", chapter:1, verses:[[1, "A revelation, Yahweh’s word to Israel by Malachi."], [2, "“I have loved you,” says Yahweh. Yet you say, “How have you loved us?” “Wasn’t Esau Jacob’s brother?” says Yahweh, “Yet I loved Jacob;"], [3, "but Esau I hated, and made his mountains a desolation, and gave his heritage to the jackals of the wilderness.”"], [4, "Whereas Edom says, “We are beaten down, but we will return and build the waste places,” Yahweh of Armies says, “They shall build, but I will throw down; and men will call them ‘The Wicked Land,’ even the people against whom Yahweh shows wrath forever.”"], [5, "Your eyes will see, and you will say, “Yahweh is great—even beyond the border of Israel!”"], [6, "“A son honors his father, and a servant his master. If I am a father, then where is my honor? And if I am a master, where is the respect due me?” says Yahweh of Armies to you priests who despise my name. “You say, ‘How have we despised your name?’"], [7, "You offer polluted bread on my altar. You say, ‘How have we polluted you?’ In that you say, ‘Yahweh’s table is contemptible.’"], [8, "When you offer the blind for sacrifice, isn’t that evil? And when you offer the lame and sick, isn’t that evil? Present it now to your governor! Will he be pleased with you? Or will he accept your person?” says Yahweh of Armies."], [9, "“Now, please entreat the favor of God, that he may be gracious to us. With this, will he accept any of you?” says Yahweh of Armies."], [10, "“Oh that there were one among you who would shut the doors, that you might not kindle fire on my altar in vain! I have no pleasure in you,” says Yahweh of Armies, “neither will I accept an offering at your hand."], [11, "For from the rising of the sun even to its going down, my name is great among the nations, and in every place incense will be offered to my name, and a pure offering; for my name is great among the nations,” says Yahweh of Armies."], [12, "“But you profane it when you say, ‘Yahweh’s table is polluted, and its fruit, even its food, is contemptible.’"], [13, "You say also, ‘Behold, what a weariness it is!’ And you have sniffed at it”, says Yahweh of Armies; “and you have brought that which was taken by violence, the lame, and the sick; thus you bring the offering. Should I accept this at your hand?” says Yahweh."], [14, "“But the deceiver is cursed who has in his flock a male, and vows and sacrifices to the Lord a defective thing; for I am a great King,” says Yahweh of Armies, “and my name is awesome among the nations.”"]]}] }
-  ];
-  var WR_END = { n:1023, label:"The end of the Bible", end:true,
-    head:"2 PETER 3", headBook:"2 PETER", headChapters:"3",
-    blocks:[{ verses:[[7, "But the heavens that exist now and the earth, by the same word have been stored up for fire, being reserved against the day of judgment and destruction of ungodly men."], [8, "But don’t forget this one thing, beloved, that one day is with the Lord as a thousand years, and a thousand years as one day."], [9, "The Lord is not slow concerning his promise, as some count slowness; but he is patient with us, not wishing that anyone should perish, but that all should come to repentance."], [10, "But the day of the Lord will come as a thief in the night, in which the heavens will pass away with a great noise, and the elements will be dissolved with fervent heat; and the earth and the works that are in it will be burned up."], [11, "Therefore, since all these things will be destroyed like this, what kind of people ought you to be in holy living and godliness,"], [12, "looking for and earnestly desiring the coming of the day of God, which will cause the burning heavens to be dissolved, and the elements will melt with fervent heat?"], [13, "But, according to his promise, we look for new heavens and a new earth, in which righteousness dwells."], [14, "Therefore, beloved, seeing that you look for these things, be diligent to be found in peace, without defect and blameless in his sight."], [15, "Regard the patience of our Lord as salvation; even as our beloved brother Paul also, according to the wisdom given to him, wrote to you,"], [16, "as also in all of his letters, speaking in them of these things. In those, there are some things that are hard to understand, which the ignorant and unsettled twist, as they also do to the other Scriptures, to their own destruction."], [17, "You therefore, beloved, knowing these things beforehand, beware, lest being carried away with the error of the wicked, you fall from your own steadfastness."], [18, "But grow in the grace and knowledge of our Lord and Savior Jesus Christ. To him be the glory both now and forever. Amen."]]}] };
-  // The pages the English example shows depend on the order chosen: in writing
-  // order the Bible neither opens on Genesis nor ends on Revelation.
-  function enPages(){
-    if (state.ordering === "writing") return EN_FRONT.concat(WR_PAGES, [WR_END]);
-    return EN_FRONT.concat(EN_PAGES.filter(function(p){
-      return !p.only || p.only === state.ordering; }), [EN_END]);
-  }
-  function pagesFor(ex){ return ex.pagesFn ? ex.pagesFn() : ex.pages; }
 
-  // Other scripts, from the public-domain originals the corpus already holds:
-  // the Westminster Leningrad Codex and the Smith & Van Dyck Arabic. They are
-  // here to show how the layout holds in right-to-left setting; neither is an
-  // orderable edition yet.
-  var HE = {"gen1": [[1, "בְּרֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַשָּׁמַ֖יִם וְאֵ֥ת הָאָֽרֶץ׃"], [2, "וְהָאָ֗רֶץ הָיְתָ֥ה תֹ֨הוּ֙ וָבֹ֔הוּ וְחֹ֖שֶׁךְ עַל־פְּנֵ֣י תְה֑וֹם וְר֣וּחַ אֱלֹהִ֔ים מְרַחֶ֖פֶת עַל־פְּנֵ֥י הַמָּֽיִם׃"], [3, "וַיֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י א֑וֹר וַֽיְהִי־אֽוֹר׃"], [4, "וַיַּ֧רְא אֱלֹהִ֛ים אֶת־הָא֖וֹר כִּי־ט֑וֹב וַיַּבְדֵּ֣ל אֱלֹהִ֔ים בֵּ֥ין הָא֖וֹר וּבֵ֥ין הַחֹֽשֶׁךְ׃"], [5, "וַיִּקְרָ֨א אֱלֹהִ֤ים ׀ לָאוֹר֙ י֔וֹם וְלַחֹ֖שֶׁךְ קָ֣רָא לָ֑יְלָה וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם אֶחָֽד׃ פ"], [6, "וַיֹּ֣אמֶר אֱלֹהִ֔ים יְהִ֥י רָקִ֖יעַ בְּת֣וֹךְ הַמָּ֑יִם וִיהִ֣י מַבְדִּ֔יל בֵּ֥ין מַ֖יִם לָמָֽיִם׃"], [7, "וַיַּ֣עַשׂ אֱלֹהִים֮ אֶת־הָרָקִיעַ֒ וַיַּבְדֵּ֗ל בֵּ֤ין הַמַּ֨יִם֙ אֲשֶׁר֙ מִתַּ֣חַת לָרָקִ֔יעַ וּבֵ֣ין הַמַּ֔יִם אֲשֶׁ֖ר מֵעַ֣ל לָרָקִ֑יעַ וַֽיְהִי־כֵֽן׃"], [8, "וַיִּקְרָ֧א אֱלֹהִ֛ים לָֽרָקִ֖יעַ שָׁמָ֑יִם וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם שֵׁנִֽי׃ פ"], [9, "וַיֹּ֣אמֶר אֱלֹהִ֗ים יִקָּו֨וּ הַמַּ֜יִם מִתַּ֤חַת הַשָּׁמַ֨יִם֙ אֶל־מָק֣וֹם אֶחָ֔ד וְתֵרָאֶ֖ה הַיַּבָּשָׁ֑ה וַֽיְהִי־כֵֽן׃"], [10, "וַיִּקְרָ֨א אֱלֹהִ֤ים ׀ לַיַּבָּשָׁה֙ אֶ֔רֶץ וּלְמִקְוֵ֥ה הַמַּ֖יִם קָרָ֣א יַמִּ֑ים וַיַּ֥רְא אֱלֹהִ֖ים כִּי־טֽוֹב׃"], [11, "וַיֹּ֣אמֶר אֱלֹהִ֗ים תַּֽדְשֵׁ֤א הָאָ֨רֶץ֙ דֶּ֔שֶׁא עֵ֚שֶׂב מַזְרִ֣יעַ זֶ֔רַע עֵ֣ץ פְּרִ֞י עֹ֤שֶׂה פְּרִי֙ לְמִינ֔וֹ אֲשֶׁ֥ר זַרְעוֹ־ב֖וֹ עַל־הָאָ֑רֶץ וַֽיְהִי־כֵֽן׃"], [12, "וַתּוֹצֵ֨א הָאָ֜רֶץ דֶּ֠שֶׁא עֵ֣שֶׂב מַזְרִ֤יעַ זֶ֨רַע֙ לְמִינֵ֔הוּ וְעֵ֧ץ עֹֽשֶׂה־פְּרִ֛י אֲשֶׁ֥ר זַרְעוֹ־ב֖וֹ לְמִינֵ֑הוּ וַיַּ֥רְא אֱלֹהִ֖ים כִּי־טֽוֹב׃"], [13, "וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם שְׁלִישִֽׁי׃ פ"], [14, "וַיֹּ֣אמֶר אֱלֹהִ֗ים יְהִ֤י מְאֹרֹת֙ בִּרְקִ֣יעַ הַשָּׁמַ֔יִם לְהַבְדִּ֕יל בֵּ֥ין הַיּ֖וֹם וּבֵ֣ין הַלָּ֑יְלָה וְהָי֤וּ לְאֹתֹת֙ וּלְמ֣וֹעֲדִ֔ים וּלְיָמִ֖ים וְשָׁנִֽים׃"], [15, "וְהָי֤וּ לִמְאוֹרֹת֙ בִּרְקִ֣יעַ הַשָּׁמַ֔יִם לְהָאִ֖יר עַל־הָאָ֑רֶץ וַֽיְהִי־כֵֽן׃"], [16, "וַיַּ֣עַשׂ אֱלֹהִ֔ים אֶת־שְׁנֵ֥י הַמְּאֹרֹ֖ת הַגְּדֹלִ֑ים אֶת־הַמָּא֤וֹר הַגָּדֹל֙ לְמֶמְשֶׁ֣לֶת הַיּ֔וֹם וְאֶת־הַמָּא֤וֹר הַקָּטֹן֙ לְמֶמְשֶׁ֣לֶת הַלַּ֔יְלָה וְאֵ֖ת הַכּוֹכָבִֽים׃"], [17, "וַיִּתֵּ֥ן אֹתָ֛ם אֱלֹהִ֖ים בִּרְקִ֣יעַ הַשָּׁמָ֑יִם לְהָאִ֖יר עַל־הָאָֽרֶץ׃"], [18, "וְלִמְשֹׁל֙ בַּיּ֣וֹם וּבַלַּ֔יְלָה וּֽלֲהַבְדִּ֔יל בֵּ֥ין הָא֖וֹר וּבֵ֣ין הַחֹ֑שֶׁךְ וַיַּ֥רְא אֱלֹהִ֖ים כִּי־טֽוֹב׃"], [19, "וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם רְבִיעִֽי׃ פ"], [20, "וַיֹּ֣אמֶר אֱלֹהִ֔ים יִשְׁרְצ֣וּ הַמַּ֔יִם שֶׁ֖רֶץ נֶ֣פֶשׁ חַיָּ֑ה וְעוֹף֙ יְעוֹפֵ֣ף עַל־הָאָ֔רֶץ עַל־פְּנֵ֖י רְקִ֥יעַ הַשָּׁמָֽיִם׃"], [21, "וַיִּבְרָ֣א אֱלֹהִ֔ים אֶת־הַתַּנִּינִ֖ם הַגְּדֹלִ֑ים וְאֵ֣ת כָּל־נֶ֣פֶשׁ הַֽחַיָּ֣ה ׀ הָֽרֹמֶ֡שֶׂת אֲשֶׁר֩ שָׁרְצ֨וּ הַמַּ֜יִם לְמִֽינֵהֶ֗ם וְאֵ֨ת כָּל־ע֤וֹף כָּנָף֙ לְמִינֵ֔הוּ וַיַּ֥רְא אֱלֹהִ֖ים כִּי־טֽוֹב׃"], [22, "וַיְבָ֧רֶךְ אֹתָ֛ם אֱלֹהִ֖ים לֵאמֹ֑ר פְּר֣וּ וּרְב֗וּ וּמִלְא֤וּ אֶת־הַמַּ֨יִם֙ בַּיַּמִּ֔ים וְהָע֖וֹף יִ֥רֶב בָּאָֽרֶץ׃"], [23, "וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם חֲמִישִֽׁי׃ פ"], [24, "וַיֹּ֣אמֶר אֱלֹהִ֗ים תּוֹצֵ֨א הָאָ֜רֶץ נֶ֤פֶשׁ חַיָּה֙ לְמִינָ֔הּ בְּהֵמָ֥ה וָרֶ֛מֶשׂ וְחַֽיְתוֹ־אֶ֖רֶץ לְמִינָ֑הּ וַֽיְהִי־כֵֽן׃"], [25, "וַיַּ֣עַשׂ אֱלֹהִים֩ אֶת־חַיַּ֨ת הָאָ֜רֶץ לְמִינָ֗הּ וְאֶת־הַבְּהֵמָה֙ לְמִינָ֔הּ וְאֵ֛ת כָּל־רֶ֥מֶשׂ הָֽאֲדָמָ֖ה לְמִינֵ֑הוּ וַיַּ֥רְא אֱלֹהִ֖ים כִּי־טֽוֹב׃"], [26, "וַיֹּ֣אמֶר אֱלֹהִ֔ים נַֽעֲשֶׂ֥ה אָדָ֛ם בְּצַלְמֵ֖נוּ כִּדְמוּתֵ֑נוּ וְיִרְדּוּ֩ בִדְגַ֨ת הַיָּ֜ם וּבְע֣וֹף הַשָּׁמַ֗יִם וּבַבְּהֵמָה֙ וּבְכָל־הָאָ֔רֶץ וּבְכָל־הָרֶ֖מֶשׂ הָֽרֹמֵ֥שׂ עַל־הָאָֽרֶץ׃"], [27, "וַיִּבְרָ֨א אֱלֹהִ֤ים ׀ אֶת־הָֽאָדָם֙ בְּצַלְמ֔וֹ בְּצֶ֥לֶם אֱלֹהִ֖ים בָּרָ֣א אֹת֑וֹ זָכָ֥ר וּנְקֵבָ֖ה בָּרָ֥א אֹתָֽם׃"], [28, "וַיְבָ֣רֶךְ אֹתָם֮ אֱלֹהִים֒ וַיֹּ֨אמֶר לָהֶ֜ם אֱלֹהִ֗ים פְּר֥וּ וּרְב֛וּ וּמִלְא֥וּ אֶת־הָאָ֖רֶץ וְכִבְשֻׁ֑הָ וּרְד֞וּ בִּדְגַ֤ת הַיָּם֙ וּבְע֣וֹף הַשָּׁמַ֔יִם וּבְכָל־חַיָּ֖ה הָֽרֹמֶ֥שֶׂת עַל־הָאָֽרֶץ׃"], [29, "וַיֹּ֣אמֶר אֱלֹהִ֗ים הִנֵּה֩ נָתַ֨תִּי לָכֶ֜ם אֶת־כָּל־עֵ֣שֶׂב ׀ זֹרֵ֣עַ זֶ֗רַע אֲשֶׁר֙ עַל־פְּנֵ֣י כָל־הָאָ֔רֶץ וְאֶת־כָּל־הָעֵ֛ץ אֲשֶׁר־בּ֥וֹ פְרִי־עֵ֖ץ זֹרֵ֣עַ זָ֑רַע לָכֶ֥ם יִֽהְיֶ֖ה לְאָכְלָֽה׃"], [30, "וּֽלְכָל־חַיַּ֣ת הָ֠אָרֶץ וּלְכָל־ע֨וֹף הַשָּׁמַ֜יִם וּלְכֹ֣ל ׀ רוֹמֵ֣שׂ עַל־הָאָ֗רֶץ אֲשֶׁר־בּוֹ֙ נֶ֣פֶשׁ חַיָּ֔ה אֶת־כָּל־יֶ֥רֶק עֵ֖שֶׂב לְאָכְלָ֑ה וַֽיְהִי־כֵֽן׃"], [31, "וַיַּ֤רְא אֱלֹהִים֙ אֶת־כָּל־אֲשֶׁ֣ר עָשָׂ֔ה וְהִנֵּה־ט֖וֹב מְאֹ֑ד וַֽיְהִי־עֶ֥רֶב וַֽיְהִי־בֹ֖קֶר י֥וֹם הַשִּׁשִּֽׁי׃ פ"]], "gen50": [[15, "וַיִּרְא֤וּ אֲחֵֽי־יוֹסֵף֙ כִּי־מֵ֣ת אֲבִיהֶ֔ם וַיֹּ֣אמְר֔וּ ל֥וּ יִשְׂטְמֵ֖נוּ יוֹסֵ֑ף וְהָשֵׁ֤ב יָשִׁיב֙ לָ֔נוּ אֵ֚ת כָּל־הָ֣רָעָ֔ה אֲשֶׁ֥ר גָּמַ֖לְנוּ אֹתֽוֹ׃"], [16, "וַיְצַוּ֕וּ אֶל־יוֹסֵ֖ף לֵאמֹ֑ר אָבִ֣יךָ צִוָּ֔ה לִפְנֵ֥י מוֹת֖וֹ לֵאמֹֽר׃"], [17, "כֹּֽה־תֹאמְר֣וּ לְיוֹסֵ֗ף אָ֣נָּ֡א שָׂ֣א נָ֠א פֶּ֣שַׁע אַחֶ֤יךָ וְחַטָּאתָם֙ כִּי־רָעָ֣ה גְמָל֔וּךָ וְעַתָּה֙ שָׂ֣א נָ֔א לְפֶ֥שַׁע עַבְדֵ֖י אֱלֹהֵ֣י אָבִ֑יךָ וַיֵּ֥בְךְּ יוֹסֵ֖ף בְּדַבְּרָ֥ם אֵלָֽיו׃"], [18, "וַיֵּלְכוּ֙ גַּם־אֶחָ֔יו וַֽיִּפְּל֖וּ לְפָנָ֑יו וַיֹּ֣אמְר֔וּ הִנֶּ֥נּֽוּ לְךָ֖ לַעֲבָדִֽים׃"], [19, "וַיֹּ֧אמֶר אֲלֵהֶ֛ם יוֹסֵ֖ף אַל־תִּירָ֑אוּ כִּ֛י הֲתַ֥חַת אֱלֹהִ֖ים אָֽנִי׃"], [20, "וְאַתֶּ֕ם חֲשַׁבְתֶּ֥ם עָלַ֖י רָעָ֑ה אֱלֹהִים֙ חֲשָׁבָ֣הּ לְטֹבָ֔ה לְמַ֗עַן עֲשֹׂ֛ה כַּיּ֥וֹם הַזֶּ֖ה לְהַחֲיֹ֥ת עַם־רָֽב׃"], [21, "וְעַתָּה֙ אַל־תִּירָ֔אוּ אָנֹכִ֛י אֲכַלְכֵּ֥ל אֶתְכֶ֖ם וְאֶֽת־טַפְּכֶ֑ם וַיְנַחֵ֣ם אוֹתָ֔ם וַיְדַבֵּ֖ר עַל־לִבָּֽם׃"], [22, "וַיֵּ֤שֶׁב יוֹסֵף֙ בְּמִצְרַ֔יִם ה֖וּא וּבֵ֣ית אָבִ֑יו וַיְחִ֣י יוֹסֵ֔ף מֵאָ֥ה וָעֶ֖שֶׂר שָׁנִֽים׃"], [23, "וַיַּ֤רְא יוֹסֵף֙ לְאֶפְרַ֔יִם בְּנֵ֖י שִׁלֵּשִׁ֑ים גַּ֗ם בְּנֵ֤י מָכִיר֙ בֶּן־מְנַשֶּׁ֔ה יֻלְּד֖וּ עַל־בִּרְכֵּ֥י יוֹסֵֽף׃"], [24, "וַיֹּ֤אמֶר יוֹסֵף֙ אֶל־אֶחָ֔יו אָנֹכִ֖י מֵ֑ת וֵֽאלֹהִ֞ים פָּקֹ֧ד יִפְקֹ֣ד אֶתְכֶ֗ם וְהֶעֱלָ֤ה אֶתְכֶם֙ מִן־הָאָ֣רֶץ הַזֹּ֔את אֶל־הָאָ֕רֶץ אֲשֶׁ֥ר נִשְׁבַּ֛ע לְאַבְרָהָ֥ם לְיִצְחָ֖ק וּֽלְיַעֲקֹֽב׃"], [25, "וַיַּשְׁבַּ֣ע יוֹסֵ֔ף אֶת־בְּנֵ֥י יִשְׂרָאֵ֖ל לֵאמֹ֑ר פָּקֹ֨ד יִפְקֹ֤ד אֱלֹהִים֙ אֶתְכֶ֔ם וְהַעֲלִתֶ֥ם אֶת־עַצְמֹתַ֖י מִזֶּֽה׃"], [26, "וַיָּ֣מָת יוֹסֵ֔ף בֶּן־מֵאָ֥ה וָעֶ֖שֶׂר שָׁנִ֑ים וַיַּחַנְט֣וּ אֹת֔וֹ וַיִּ֥ישֶׂם בָּאָר֖וֹן בְּמִצְרָֽיִם׃"]], "exo1": [[1, "וְאֵ֗לֶּה שְׁמוֹת֙ בְּנֵ֣י יִשְׂרָאֵ֔ל הַבָּאִ֖ים מִצְרָ֑יְמָה אֵ֣ת יַעֲקֹ֔ב אִ֥ישׁ וּבֵית֖וֹ בָּֽאוּ׃"], [2, "רְאוּבֵ֣ן שִׁמְע֔וֹן לֵוִ֖י וִיהוּדָֽה׃"], [3, "יִשָּׂשכָ֥ר זְבוּלֻ֖ן וּבְנְיָמִֽן׃"], [4, "דָּ֥ן וְנַפְתָּלִ֖י גָּ֥ד וְאָשֵֽׁר׃"], [5, "וַֽיְהִ֗י כָּל־נֶ֛פֶשׁ יֹצְאֵ֥י יֶֽרֶךְ־יַעֲקֹ֖ב שִׁבְעִ֣ים נָ֑פֶשׁ וְיוֹסֵ֖ף הָיָ֥ה בְמִצְרָֽיִם׃"], [6, "וַיָּ֤מָת יוֹסֵף֙ וְכָל־אֶחָ֔יו וְכֹ֖ל הַדּ֥וֹר הַהֽוּא׃"], [7, "וּבְנֵ֣י יִשְׂרָאֵ֗ל פָּר֧וּ וַֽיִּשְׁרְצ֛וּ וַיִּרְבּ֥וּ וַיַּֽעַצְמ֖וּ בִּמְאֹ֣ד מְאֹ֑ד וַתִּמָּלֵ֥א הָאָ֖רֶץ אֹתָֽם׃ פ"], [8, "וַיָּ֥קָם מֶֽלֶךְ־חָדָ֖שׁ עַל־מִצְרָ֑יִם אֲשֶׁ֥ר לֹֽא־יָדַ֖ע אֶת־יוֹסֵֽף׃"], [9, "וַיֹּ֖אמֶר אֶל־עַמּ֑וֹ הִנֵּ֗ה עַ֚ם בְּנֵ֣י יִשְׂרָאֵ֔ל רַ֥ב וְעָצ֖וּם מִמֶּֽנּוּ׃"], [10, "הָ֥בָה נִֽתְחַכְּמָ֖ה ל֑וֹ פֶּן־יִרְבֶּ֗ה וְהָיָ֞ה כִּֽי־תִקְרֶ֤אנָה מִלְחָמָה֙ וְנוֹסַ֤ף גַּם־הוּא֙ עַל־שֹׂ֣נְאֵ֔ינוּ וְנִלְחַם־בָּ֖נוּ וְעָלָ֥ה מִן־הָאָֽרֶץ׃"], [11, "וַיָּשִׂ֤ימוּ עָלָיו֙ שָׂרֵ֣י מִסִּ֔ים לְמַ֥עַן עַנֹּת֖וֹ בְּסִבְלֹתָ֑ם וַיִּ֜בֶן עָרֵ֤י מִסְכְּנוֹת֙ לְפַרְעֹ֔ה אֶת־פִּתֹ֖ם וְאֶת־רַעַמְסֵֽס׃"], [12, "וְכַאֲשֶׁר֙ יְעַנּ֣וּ אֹת֔וֹ כֵּ֥ן יִרְבֶּ֖ה וְכֵ֣ן יִפְרֹ֑ץ וַיָּקֻ֕צוּ מִפְּנֵ֖י בְּנֵ֥י יִשְׂרָאֵֽל׃"], [13, "וַיַּעֲבִ֧דוּ מִצְרַ֛יִם אֶת־בְּנֵ֥י יִשְׂרָאֵ֖ל בְּפָֽרֶךְ׃"], [14, "וַיְמָרְר֨וּ אֶת־חַיֵּיהֶ֜ם בַּעֲבֹדָ֣ה קָשָׁ֗ה בְּחֹ֨מֶר֙ וּבִלְבֵנִ֔ים וּבְכָל־עֲבֹדָ֖ה בַּשָּׂדֶ֑ה אֵ֚ת כָּל־עֲבֹ֣דָתָ֔ם אֲשֶׁר־עָבְד֥וּ בָהֶ֖ם בְּפָֽרֶךְ׃"], [15, "וַיֹּ֨אמֶר֙ מֶ֣לֶךְ מִצְרַ֔יִם לַֽמְיַלְּדֹ֖ת הָֽעִבְרִיֹּ֑ת אֲשֶׁ֨ר שֵׁ֤ם הָֽאַחַת֙ שִׁפְרָ֔ה וְשֵׁ֥ם הַשֵּׁנִ֖ית פּוּעָֽה׃"], [16, "וַיֹּ֗אמֶר בְּיַלֶּדְכֶן֙ אֶת־הָֽעִבְרִיּ֔וֹת וּרְאִיתֶ֖ן עַל־הָאָבְנָ֑יִם אִם־בֵּ֥ן הוּא֙ וַהֲמִתֶּ֣ן אֹת֔וֹ וְאִם־בַּ֥ת הִ֖יא וָחָֽיָה׃"], [17, "וַתִּירֶ֤אןָ הַֽמְיַלְּדֹת֙ אֶת־הָ֣אֱלֹהִ֔ים וְלֹ֣א עָשׂ֔וּ כַּאֲשֶׁ֛ר דִּבֶּ֥ר אֲלֵיהֶ֖ן מֶ֣לֶךְ מִצְרָ֑יִם וַתְּחַיֶּ֖יןָ אֶת־הַיְלָדִֽים׃"], [18, "וַיִּקְרָ֤א מֶֽלֶךְ־מִצְרַ֨יִם֙ לַֽמְיַלְּדֹ֔ת וַיֹּ֣אמֶר לָהֶ֔ן מַדּ֥וּעַ עֲשִׂיתֶ֖ן הַדָּבָ֣ר הַזֶּ֑ה וַתְּחַיֶּ֖יןָ אֶת־הַיְלָדִֽים׃"], [19, "וַתֹּאמַ֤רְןָ הַֽמְיַלְּדֹת֙ אֶל־פַּרְעֹ֔ה כִּ֣י לֹ֧א כַנָּשִׁ֛ים הַמִּצְרִיֹּ֖ת הָֽעִבְרִיֹּ֑ת כִּֽי־חָי֣וֹת הֵ֔נָּה בְּטֶ֨רֶם תָּב֧וֹא אֲלֵהֶ֛ן הַמְיַלֶּ֖דֶת וְיָלָֽדוּ׃"], [20, "וַיֵּ֥יטֶב אֱלֹהִ֖ים לַֽמְיַלְּדֹ֑ת וַיִּ֧רֶב הָעָ֛ם וַיַּֽעַצְמ֖וּ מְאֹֽד׃"], [21, "וַיְהִ֕י כִּֽי־יָֽרְא֥וּ הַֽמְיַלְּדֹ֖ת אֶת־הָאֱלֹהִ֑ים וַיַּ֥עַשׂ לָהֶ֖ם בָּתִּֽים׃"], [22, "וַיְצַ֣ו פַּרְעֹ֔ה לְכָל־עַמּ֖וֹ לֵאמֹ֑ר כָּל־הַבֵּ֣ן הַיִּלּ֗וֹד הַיְאֹ֨רָה֙ תַּשְׁלִיכֻ֔הוּ וְכָל־הַבַּ֖ת תְּחַיּֽוּן׃ ס"]]};
-  var AR = {"gen1": [[1, "في البدء خلق الله السموات والارض."], [2, "وكانت الارض خربة وخالية وعلى وجه الغمر ظلمة وروح الله يرف على وجه المياه."], [3, "وقال الله ليكن نور فكان نور."], [4, "وراى الله النور انه حسن. وفصل الله بين النور والظلمة."], [5, "ودعا الله النور نهارا والظلمة دعاها ليلا. وكان مساء وكان صباح يوما واحدا"], [6, "وقال الله ليكن جلد في وسط المياه. وليكن فاصلا بين مياه ومياه."], [7, "فعمل الله الجلد وفصل بين المياه التي تحت الجلد والمياه التي فوق الجلد. وكان كذلك."], [8, "ودعا الله الجلد سماء. وكان مساء وكان صباح يوما ثانيا"], [9, "وقال الله لتجتمع المياه تحت السماء الى مكان واحد ولتظهر اليابسة. وكان كذلك."], [10, "ودعا الله اليابسة ارضا. ومجتمع المياه دعاه بحارا. ورأى الله ذلك انه حسن."], [11, "وقال الله لتنبت الارض عشبا وبقلا يبزر بزرا وشجرا ذا ثمر يعمل ثمرا كجنسه بزره فيه على الارض. وكان كذلك."], [12, "فاخرجت الارض عشبا وبقلا يبزر بزرا كجنسه وشجرا يعمل ثمرا بزره فيه كجنسه. ورأى الله ذلك انه حسن."], [13, "وكان مساء وكان صباح يوما ثالثا"], [14, "وقال الله لتكن انوار في جلد السماء لتفصل بين النهار والليل. وتكون لآيات واوقات وايام وسنين."], [15, "وتكون انوارا في جلد السماء لتنير على الارض. وكان كذلك."], [16, "فعمل الله النورين العظيمين. النور الاكبر لحكم النهار والنور الاصغر لحكم الليل. والنجوم."], [17, "وجعلها الله في جلد السماء لتنير على الارض"], [18, "ولتحكم على النهار والليل ولتفصل بين النور والظلمة. ورأى الله ذلك انه حسن."], [19, "وكان مساء وكان صباح يوما رابعا"], [20, "وقال الله لتفض المياه زحافات ذات نفس حية وليطر طير فوق الارض على وجه جلد السماء."], [21, "فخلق الله التنانين العظام وكل ذوات الانفس الحية الدبّابة التي فاضت بها المياه كاجناسها وكل طائر ذي جناح كجنسه. ورأى الله ذلك انه حسن."], [22, "وباركها الله قائلا اثمري واكثري واملإي المياه في البحار. وليكثر الطير على الارض."], [23, "وكان مساء وكان صباح يوما خامسا"], [24, "وقال الله لتخرج الارض ذوات انفس حية كجنسها. بهائم ودبابات ووحوش ارض كاجناسها. وكان كذلك."], [25, "فعمل الله وحوش الارض كاجناسها والبهائم كاجناسها وجميع دبابات الارض كاجناسها. ورأى الله ذلك انه حسن."], [26, "وقال الله نعمل الانسان على صورتنا كشبهنا. فيتسلطون على سمك البحر وعلى طير السماء وعلى البهائم وعلى كل الارض وعلى جميع الدبابات التي تدب على الارض."], [27, "فخلق الله الانسان على صورته. على صورة الله خلقه. ذكرا وانثى خلقهم."], [28, "وباركهم الله وقال لهم اثمروا واكثروا واملأوا الارض واخضعوها وتسلطوا على سمك البحر وعلى طير السماء وعلى كل حيوان يدبّ على الارض."], [29, "وقال الله اني قد اعطيتكم كل بقل يبزر بزرا على وجه كل الارض وكل شجر فيه ثمر شجر يبزر بزرا. لكم يكون طعاما."], [30, "ولكل حيوان الارض وكل طير السماء وكل دبّابة على الارض فيها نفس حية اعطيت كل عشب اخضر طعاما. وكان كذلك"], [31, "ورأى الله كل ما عمله فاذا هو حسن جدا. وكان مساء وكان صباح يوما سادسا"]], "gen50": [[15, "ولما رأى اخوة يوسف ان اباهم قد مات قالوا لعل يوسف يضطهدنا ويرد علينا جميع الشر الذي صنعنا به."], [16, "فاوصوا الى يوسف قائلين ابوك اوصى قبل موته قائلا."], [17, "هكذا تقولون ليوسف آه اصفح عن ذنب اخوتك وخطيتهم فانهم صنعوا بك شرا. فالآن اصفح عن ذنب عبيد اله ابيك. فبكى يوسف حين كلموه."], [18, "وأتى اخوته ايضا ووقعوا امامه وقالوا ها نحن عبيدك."], [19, "فقال لهم يوسف لا تخافوا. لانه هل انا مكان الله."], [20, "انتم قصدتم لي شرا. اما الله فقصد به خيرا لكي يفعل كما اليوم. ليحيي شعبا كثيرا."], [21, "فالآن لا تخافوا. انا اعولكم واولادكم. فعزّاهم وطيب قلوبهم"], [22, "وسكن يوسف في مصر هو وبيت ابيه. وعاش يوسف مئة وعشر سنين."], [23, "ورأى يوسف لافرايم اولاد الجيل الثالث. واولاد ماكير بن منسّى ايضا ولدوا على ركبتيّ يوسف."], [24, "وقال يوسف لاخوته انا اموت. ولكن الله سيفتقدكم ويصعدكم من هذه الارض الى الارض التي حلف لابراهيم واسحق ويعقوب."], [25, "واستحلف يوسف بني اسرائيل قائلا الله سيفتقدكم. فتصعدون عظامي من هنا."], [26, "ثم مات يوسف وهو ابن مئة وعشر سنين. فحنطوه ووضع في تابوت في مصر"]], "exo1": [[1, "وهذه اسماء بني اسرائيل الذين جاءوا الى مصر. مع يعقوب جاء كل انسان وبيته."], [2, "رأوبين وشمعون ولاوي ويهوذا"], [3, "ويسّاكر وزبولون وبنيامين"], [4, "ودان ونفتالي وجاد واشير."], [5, "وكانت جميع نفوس الخارجين من صلب يعقوب سبعين نفسا. ولكن يوسف كان في مصر."], [6, "ومات يوسف وكل اخوته وجميع ذلك الجيل."], [7, "واما بنو اسرائيل فاثمروا وتوالدوا ونموا وكثروا كثيرا جدا وامتلأت الارض منهم"], [8, "ثم قام ملك جديد على مصر لم يكن يعرف يوسف."], [9, "فقال لشعبه هوذا بنو اسرائيل شعب اكثر واعظم منا."], [10, "هلم نحتال لهم لئلا ينموا فيكون اذا حدثت حرب انهم ينضمون الى اعدائنا ويحاربوننا ويصعدون من الارض."], [11, "فجعلوا عليهم رؤساء تسخير لكي يذلّوهم باثقالهم. فبنوا لفرعون مدينتي مخازن فيثوم ورعمسيس."], [12, "ولكن بحسبما اذلّوهم هكذا نموا وامتدّوا. فاختشوا من بني اسرائيل."], [13, "فاستعبد المصريون بني اسرائيل بعنف."], [14, "ومرّروا حياتهم بعبودية قاسية في الطين واللبن وفي كل عمل في الحقل. كل عملهم الذي عملوه بواسطتهم عنفا"], [15, "وكلم ملك مصر قابلتي العبرانيات اللتين اسم احداهما شفرة واسم الاخرى فوعة."], [16, "وقال حينما تولّدان العبرانيات وتنظرانهنّ على الكراسي. ان كان ابنا فاقتلاه وان كانت بنتا فتحيا."], [17, "ولكن القابلتين خافتا الله ولم تفعلا كما كلمهما ملك مصر. بل استحيتا الاولاد."], [18, "فدعا ملك مصر القابلتين وقال لهما لماذا فعلتما هذا الامر واستحييتما الاولاد."], [19, "فقالت القابتان لفرعون ان النساء العبرانيات لسن كالمصريات. فانهنّ قويات يلدن قبل ان تاتيهنّ القابلة."], [20, "فاحسن الله الى القابلتين. ونما الشعب وكثر جدا."], [21, "وكان اذ خافت القابلتان الله انه صنع لهما بيوتا."], [22, "ثم امر فرعون جميع شعبه قائلا كل ابن يولد تطرحونه في النهر. لكن كل بنت تستحيونها"]]};
-  function rtlPages(d, names, heads){
-    return [
-      { n:3, label:names.gen + " — the opening", head:heads.gen1, headBook:names.gen,
-        headChapters:"1", blocks:[{ book:names.gen, chapter:1, verses:d.gen1 }] },
-      { n:57, label:"A book boundary", head:heads.seam, headBook:heads.seamBook,
-        headChapters:heads.seam, seam:true, blocks:[
-          { verses:d.gen50 },
-          { book:names.exo, chapter:1, verses:d.exo1 }] }
-    ];
+  // The pages the example shows depend on the order chosen: in writing order the
+  // Bible neither opens on Genesis nor ends on Revelation.
+  function buildPages(sample, ordering){
+    var cased = (SCRIPTS[sample.lang] || SCRIPTS.en).dir !== "rtl";
+    var nm = function(c){
+      var n = (sample.names && sample.names[c]) || c;
+      return cased ? n.toUpperCase() : n;
+    };
+    // A block of one chapter, verses from..to. `opens` makes it begin a book
+    // (a rule across the page); `nocap` is a continuation with no chapter numeral.
+    var block = function(code, chapter, from, to, o){
+      o = o || {};
+      var key = code + "." + chapter;
+      var vs = ((sample.chapters && sample.chapters[key]) || []).filter(function(v){
+        return (from == null || v[0] >= from) && (to == null || v[0] <= to); });
+      if (!vs.length) return null;
+      var b = { verses:vs };
+      if (!o.nocap) b.chapter = chapter;
+      if (o.opens) {
+        b.book = nm(code);
+        if (sample.long && sample.long[code]) b.long = sample.long[code];
+      }
+      if (!o.nocap && (from == null || from <= 1) && sample.titles && sample.titles[key])
+        b.note = sample.titles[key];
+      return b;
+    };
+    var page = function(p, blocks){
+      p.blocks = blocks.filter(Boolean);
+      return p.blocks.length ? p : null;
+    };
+    var pages;
+    if (ordering === "writing") {
+      pages = [
+        page({ n:3, label:"The first book opens", head:nm("AMO") + " 1–2",
+               headBook:nm("AMO"), headChapters:"1–2" },
+             [block("AMO", 1, null, null, { opens:true }), block("AMO", 2)]),
+        page({ n:211, label:"Where the Torah falls", seam:true,
+               head:nm("NUM") + " 36 – " + nm("MAL") + " 1",
+               headBook:nm("NUM") + " – " + nm("MAL"),
+               headChapters:nm("NUM") + " 36 – " + nm("MAL") + " 1",
+               note:"On this basis the Pentateuch reached its present form after most of the prophets, so the end of Numbers sits beside Malachi. Each book opens on a rule across the page, over columns that end level." },
+             [block("NUM", 36, 5, 13, { nocap:true }), block("MAL", 1, null, null, { opens:true })]),
+        page({ n:1023, label:"The end of the Bible", end:true,
+               head:nm("2PE") + " 3", headBook:nm("2PE"), headChapters:"3" },
+             [block("2PE", 3, 7, 18, { nocap:true })])
+      ];
+    } else {
+      var seam = ordering === "chronological"
+        ? page({ n:211, label:"The chronological seam", seam:true,
+                 head:nm("DEU") + " 34 – " + nm("PSA") + " 90",
+                 headBook:nm("DEU") + " – " + nm("JOS"),
+                 headChapters:nm("DEU") + " 34 – " + nm("JOS") + " 1" },
+               [block("DEU", 34, 5, 12, { nocap:true }),
+                block("PSA", 90, null, null, { opens:true }),
+                block("JOS", 1, 1, 11, { opens:true })])
+        : page({ n:57, label:"A book boundary", seam:true,
+                 head:nm("GEN") + " 50 – " + nm("EXO") + " 1",
+                 headBook:nm("GEN") + " – " + nm("EXO"),
+                 headChapters:nm("GEN") + " 50 – " + nm("EXO") + " 1",
+                 note:"A book boundary: the two columns end level, one rule runs the whole page with the book’s name in it, and one empty line follows." },
+               [block("GEN", 50, 15, 26, { nocap:true }),
+                block("EXO", 1, null, null, { opens:true })]);
+      pages = [
+        page({ n:3, label:"The Bible opens", head:nm("GEN") + " 1", headBook:nm("GEN"),
+               headChapters:"1" },
+             [block("GEN", 1, 1, 29, { opens:true })]),
+        page({ n:4, label:"Running text", head:nm("GEN") + " 1–2", headBook:nm("GEN"),
+               headChapters:"1–2" },
+             [block("GEN", 1, 30, 31, { nocap:true }), block("GEN", 2)]),
+        seam,
+        page({ n:1023, label:"The end of the Bible", end:true,
+               head:nm("REV") + " 22", headBook:nm("REV"), headChapters:"22" },
+             [block("REV", 22, 8, 21, { nocap:true })])
+      ];
+    }
+    return FRONT.concat(pages.filter(Boolean));
   }
-  var EXAMPLES = {
-    en: { lang:"en", dir:"ltr", size:1,    lead:1.205, pagesFn:enPages },
-    he: { lang:"he", dir:"rtl", size:1.14, lead:1.5,
-          font:'"Ezra SIL Web","SBL Hebrew","Times New Roman",serif',
-          source:"Westminster Leningrad Codex",
-          pages:rtlPages(HE, { gen:"בראשית", exo:"שמות" },
-                         { gen1:"בראשית 1", seam:"בראשית 50 – שמות 1",
-                           seamBook:"בראשית – שמות" }) },
-    ar: { lang:"ar", dir:"rtl", size:1.19, lead:1.57,
-          font:'"Scheherazade Web","Amiri","Geeza Pro",serif',
-          source:"Smith & Van Dyck",
-          pages:rtlPages(AR, { gen:"التكوين", exo:"الخروج" },
-                         { gen1:"التكوين 1", seam:"التكوين 50 – الخروج 1",
-                           seamBook:"التكوين – الخروج" }) }
-  };
-  var lastExample = "en";
+  function currentPages(){
+    var s = sampleFor(edition(state.translation));
+    return s ? buildPages(s, state.ordering) : [];
+  }
+  var lastEditionId = null;
   var pageIndex = 0;
 
   function interp(map, x, idx){
@@ -751,9 +691,12 @@
     return '<div class="ft-h">About this arrangement</div>' +
            '<p class="ft-p">' + ABOUT[state.ordering] + '</p>' +
            '<div class="ft-h" style="margin-top:1.4em">Source and rights</div>' +
-           '<p class="ft-p">Text: ' + edition(state.translation).source + '. This translation is ' +
-           'in the public domain: it has no rights holder and carries no per-copy ' +
-           'licence. Typeset by Common Root (common-root.org) from a structured text ' +
+           '<p class="ft-p">Text: ' + edition(state.translation).source + '. ' +
+           (edition(state.translation).notice
+              ? edition(state.translation).notice(state.ordering)
+              : 'This translation is in the public domain: it has no rights holder and ' +
+                'carries no per-copy licence.') +
+           ' Typeset by Common Root (common-root.org) from a structured text ' +
            'corpus. Set in Crimson Pro, used under the SIL Open Font Licence. The full ' +
            'text of that licence accompanies this file.</p>';
   }
@@ -765,9 +708,27 @@
      book. The text is real: WEB for the English pages, and the public-domain
      Hebrew and Arabic originals for the right-to-left ones. */
   function renderPreview(){
-    var ex = EXAMPLES[state.example];
-    if (state.example !== lastExample) { pageIndex = 0; lastExample = state.example; }
-    var pgs = pagesFor(ex);
+    var ed = edition(state.translation);
+    if (ed.id !== lastEditionId) { lastEditionId = ed.id; pageIndex = 0; }
+    var ex = exampleFor(ed);
+    var sample = sampleFor(ed);
+    if (!sample) {
+      // The passages are on their way, or could not be had: say which, rather
+      // than showing another edition's text under this one's name.
+      var failed = SAMPLES[ed.abbr] && SAMPLES[ed.abbr].failed;
+      document.getElementById("cols-preview").innerHTML = "";
+      document.getElementById("rh").hidden = true;
+      document.getElementById("page").querySelector(".folio").hidden = true;
+      document.getElementById("pg-label").textContent =
+        failed ? "The preview text could not be loaded" : "Loading the preview text…";
+      document.getElementById("pg-of").textContent = "";
+      document.getElementById("preview-note").textContent = failed
+        ? "The sample passages for " + ed.name + " could not be fetched. The order " +
+          "settings and the quote still work; only this preview is unavailable."
+        : "";
+      return;
+    }
+    var pgs = buildPages(sample, state.ordering);
     if (pageIndex >= pgs.length) pageIndex = 0;
     var pg = pgs[pageIndex];
     var g = geometry(), t = g.trim, m = MODE[state.mode];
@@ -920,15 +881,6 @@
              "width of the page. Books in the middle of the Bible do not get a " +
              "closing rule: the next book’s opening rule already says where the " +
              "last one stopped.";
-    else if (rtl)
-      note = (pg.seam
-        ? "A book boundary: the two columns end level, one rule runs the whole " +
-          "page with the book’s name in it, and one empty line follows. "
-        : "") +
-        "Set right to left from the " + ex.source + ": the first column is the " +
-        "right-hand one, the drop cap sits on the right, and the gutter is on the " +
-        "right of a recto. An example of the layout, in traditional " +
-        "order whichever order is chosen above — this edition is not on offer yet.";
     else if (pg.seam && pg.note)
       note = pg.note;
     else if (pg.seam)
@@ -945,9 +897,12 @@
              "face at 7.6 pt rather than bold, so it reads as a locator " +
              "rather than a second title.";
     else
-      note = "World English Bible, set at the chosen geometry. One empty line " +
+      note = ed.name + ", set at the chosen geometry. One empty line " +
              "between chapters; a chapter never opens on fewer than three lines " +
              "at the foot of a column, and no single line is carried over.";
+    if (rtl && !pg.front)
+      note += " Set right to left: the first column is the right-hand one, the drop " +
+              "cap sits on the right, and the gutter is on the right of a recto.";
     document.getElementById("preview-note").textContent = note;
   }
 
@@ -1052,7 +1007,7 @@
     });
   }
   ["ordering","canon","mode","trim","head","titles","accent",
-   "construction","cover","example"].forEach(function(id){ wireSeg(id, id); });
+   "construction","cover"].forEach(function(id){ wireSeg(id, id); });
   document.getElementById("translation").addEventListener("change", function(e){
     state.translation = e.target.value; render(); });
   document.getElementById("body").addEventListener("input", function(e){
@@ -1108,10 +1063,10 @@
   });
 
   document.getElementById("pg-prev").addEventListener("click", function(){
-    var n = pagesFor(EXAMPLES[state.example]).length;
+    var n = currentPages().length; if (!n) return;
     pageIndex = (pageIndex + n - 1) % n; renderPreview(); });
   document.getElementById("pg-next").addEventListener("click", function(){
-    var n = pagesFor(EXAMPLES[state.example]).length;
+    var n = currentPages().length; if (!n) return;
     pageIndex = (pageIndex + 1) % n; renderPreview(); });
 
   window.addEventListener("resize", renderPreview);

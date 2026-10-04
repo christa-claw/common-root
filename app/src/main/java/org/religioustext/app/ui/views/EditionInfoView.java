@@ -112,7 +112,8 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
      *  PRINTABLE in edition-designer.html, which in turn follows the VERIFIED
      *  entries of scripts/print/build_package.py — an edition joins all three
      *  together, when its print rights are confirmed. */
-    static final java.util.Set<String> PRINT_READY = java.util.Set.of("WEB", "KJV");
+    static final java.util.Set<String> PRINT_READY =
+        org.religioustext.app.web.PrintEditions.abbreviations();
 
     private static EditionInfo resolve(final String aParameter) {
         if (aParameter == null || aParameter.isBlank()) {

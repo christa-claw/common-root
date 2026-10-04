@@ -55,6 +55,7 @@ public class SecurityConfig extends VaadinWebSecurity {
                 // visitor and the reader's own preferences for a signed-in one.
                 new AntPathRequestMatcher("/edition-designer.html"),
                 new AntPathRequestMatcher("/designer/defaults"),
+                new AntPathRequestMatcher("/designer/sample"),
                 new AntPathRequestMatcher("/print-fonts/**"),
                 // Generated chapter audio (mp3 + its per-verse offsets JSON),
                 // served by AudioStaticConfig at /audio/*. Without this the

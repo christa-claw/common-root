@@ -102,17 +102,7 @@ def stamp_chapter(doc, book, ch, verse_seq_pairs, dry_run):
     )
     sc.xquery_update(q_delete)
 
-    inserts = []
-    for vnum, seq in verse_seq_pairs:
-        inserts.append(
-            f"let $v := db:open('religioustext','{doc}')"
-            f"/rt:text/rt:book[@name='{book_esc}']"
-            f"/rt:chapter[string(@number)='{ch}']"
-            f"/rt:verse[string(@number)='{vnum}']"
-            f" return if (exists($v)) then"
-            f" insert node attribute {ATTR} {{'{seq}'}} into $v"
-            f" else ()"
-        )
+    inserts = sc.verse_inserts(doc, book_esc, ch, verse_seq_pairs, ATTR)
     sc.xquery_update(f"declare namespace rt='{sc.NS}';" + ", ".join(inserts))
 
 

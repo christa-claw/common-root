@@ -511,6 +511,33 @@ def build_tuples(flat, ref_doc):
 
     return tuples, errors
 
+def verse_inserts(doc, book_esc, ch, verse_seq_pairs, attr):
+    """One insert expression per (verse number, seq) pair, in document order.
+
+    A verse number can occur more than once in a chapter: the Septuagint has
+    several unnumbered verses (number 0) in 451 chapters, and some editions
+    split a verse into two elements. Targeting by number alone then matches
+    several nodes and XQuery Update refuses with XUTY0005 ("Target is not a
+    single node"), leaving the whole chapter unstamped. So each pair addresses
+    the k-th element carrying that number, k counted along the pairs, which
+    arrive in document order (see get_verse_numbers).
+    """
+    seen = {}
+    out = []
+    for vnum, seq in verse_seq_pairs:
+        k = seen[vnum] = seen.get(vnum, 0) + 1
+        out.append(
+            f"let $v := (db:open('religioustext','{doc}')"
+            f"/rt:text/rt:book[@name='{book_esc}']"
+            f"/rt:chapter[string(@number)='{ch}']"
+            f"/rt:verse[string(@number)='{vnum}'])[{k}]"
+            f" return if (exists($v)) then"
+            f" insert node attribute {attr} {{'{seq}'}} into $v"
+            f" else ()"
+        )
+    return out
+
+
 def stamp_chapter_batch(doc, book, ch, verse_seq_pairs, dry_run):
     """
     Stamp an entire chapter in two XQuery Update calls:
@@ -537,17 +564,8 @@ def stamp_chapter_batch(doc, book, ch, verse_seq_pairs, dry_run):
     # Step 2: insert seq on each verse individually — but batched as a
     # sequence of independent insert statements joined with a comma.
     # Each insert targets a distinct node so no XUDY0017.
-    inserts = []
-    for vnum, seq in verse_seq_pairs:
-        inserts.append(
-            f"let $v := db:open('religioustext','{doc}')"
-            f"/rt:text/rt:book[@name='{book_esc}']"
-            f"/rt:chapter[string(@number)='{ch}']"
-            f"/rt:verse[string(@number)='{vnum}']"
-            f" return if (exists($v)) then"
-            f" insert node attribute globalChronologicalSeq {{'{seq}'}} into $v"
-            f" else ()"
-        )
+    inserts = verse_inserts(doc, book_esc, ch, verse_seq_pairs,
+                            "globalChronologicalSeq")
     q_insert = (
         f"declare namespace rt='{NS}';"
         + ", ".join(inserts)

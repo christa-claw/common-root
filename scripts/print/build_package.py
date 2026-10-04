@@ -456,7 +456,7 @@ EDITIONS = {
         "why": 'Out of copyright by age: published 1865; Van Dyck died 1895.',
         "restrictions": '⚠ Do not print from this edition. The file has no traceable source: the repository it came from replaced it, and the best-known electronic Van Dyck transcription (arabicbible.com) claims exclusive copyright. Print bible-ar-vd-ebible instead.',
     },
-        "bible-ar-vd-ebible": {
+    "bible-ar-vd-ebible": {
         "title": 'الكتاب المقدس — فان دايك (eBible)',
         "abbrev": 'SVD-E',
         "translator": 'Eli Smith, Cornelius Van Dyck, Butrus al-Bustani, Nasif al-Yaziji (Syrian Mission)',
@@ -467,7 +467,7 @@ EDITIONS = {
         "why": 'The 1865 translation is out of copyright by age (Van Dyck died 1895). '
                'eBible.org publishes this electronic text as Public Domain, crediting the '
                'Syrian Mission as translator and the American Bible Society as contributor.',
-        "restrictions": '⚠ ONE CHECK OUTSTANDING before VERIFIED: compare a sample (Genesis 1, Psalm 23, John 3, Romans 8) '
+        "restrictions": '⚠ PENDING SCAN CHECK — one check outstanding before VERIFIED: compare a sample (Genesis 1, Psalm 23, John 3, Romans 8) '
                         'with a dated 1865 scan, to confirm the vowelled text is the 1865 translation and not a later revision. '
                         'Source: https://ebible.org/details.php?id=arb-vd. Right-to-left layout: build_pdf.py (use --fonts fonts/scheherazade --font-family ScheherazadeNew).',
     },
@@ -477,7 +477,7 @@ EDITIONS = {
         "translator": 'Biblica, Inc.',
         "published": '1988, 1997, 2012',
         "publisher": 'Biblica, Inc.',
-        "status": "REVIEW",
+        "status": "VERIFIED",
         "why": 'Licensed CC BY-SA 4.0 by Biblica (https://ebible.org/arbnav/copr.htm). Printing is permitted with credit.',
         "rtl": True,
         "licence": {
@@ -487,13 +487,19 @@ EDITIONS = {
             "source": "https://ebible.org/arbnav/copr.htm",
             "credit": "The original work by Biblica, Inc. is available for free at www.biblica.com and open.bible",
         },
-        "restrictions": '⚠ CONDITIONS before VERIFIED. (1) The colophon must carry: "The original work by Biblica, Inc. is available for free at '
-                        'www.biblica.com and open.bible", the licence name and a link. (2) A reordered edition (event or writing order) is a '
-                        'derivative: it must say the text was rearranged, must NOT use the Biblica trademark, and is itself CC BY-SA 4.0. '
-                        '(3) That reading of "derivative" is ours; Biblica should confirm if the printer asks. '
-                        'Acts 15:25-26 is one bridged verse in the source. Right-to-left layout: build_pdf.py (use --fonts fonts/scheherazade --font-family ScheherazadeNew).',
+        "restrictions": 'Open licence, printable on conditions, all built into the book: '
+                        '(1) the rights page carries Biblica\'s credit line "The original work by '
+                        'Biblica, Inc. is available for free at www.biblica.com and open.bible", the '
+                        'licence name and a link; (2) every order but the canonical one is an adaptation: '
+                        'the rights page says the books were rearranged, the Biblica name is not used '
+                        'in the title, and the book is itself CC BY-SA 4.0; (3) the source\'s section '
+                        'headings and footnotes are not reproduced, so even the canonical book is '
+                        'treated as an adaptation. Marked VERIFIED 2026-10-03 on the maintainer\'s '
+                        'acceptance of that reading of "derivative"; Biblica should confirm it if the '
+                        'printer asks. Acts 15:25-26 is one bridged verse in the source. Right-to-left: '
+                        'build_pdf.py (--fonts fonts/scheherazade --font-family ScheherazadeNew).',
     },
-"bible-zh-cuv1919": {
+    "bible-zh-cuv1919": {
         "title": "新舊約全書 (國語和合譯本, 神版)",
         "abbrev": "CUV1919",
         "translator": "The Union Version committee: Calvin W. Mateer, Chauncey Goodrich, "
