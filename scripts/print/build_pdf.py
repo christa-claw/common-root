@@ -319,6 +319,141 @@ class RtlLine(Flowable):
                        (self.width - w) / 2.0, (self.leading - self.size) / 2.0)
 
 
+_ARABIC_RANGES = "\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF\u00AB\u00BB\u201C\u201D\u2013\u2014"
+_RUN = re.compile(r"[%s]+|[A-Za-z0-9\u00A9\u00AE\u2122]+" % _ARABIC_RANGES)
+
+
+def script_runs(word):
+    """[(is_arabic, text)] for one word: Arabic or Hebrew letters (and the quotes
+    and dashes that go with them) against Latin letters and digits. Punctuation that
+    belongs to neither sticks to the run before it, or after it at the start."""
+    out, pos = [], 0
+    for m in _RUN.finditer(word):
+        gap = word[pos:m.start()]
+        if gap:
+            if out:
+                out[-1] = (out[-1][0], out[-1][1] + gap)
+            else:
+                pending = gap
+        txt = m.group()
+        arabic = bool(re.match(r"[%s]" % _ARABIC_RANGES, txt))
+        if not out and pos == 0 and m.start() > 0:
+            txt = gap + txt
+        out.append((arabic, txt))
+        pos = m.end()
+    tail = word[pos:]
+    if tail:
+        if out:
+            out[-1] = (out[-1][0], out[-1][1] + tail)
+        else:
+            out.append((False, tail))
+    return out
+
+
+class RtlText(Flowable):
+    """A right-to-left paragraph: wrapped, then justified, centred or flush right.
+
+    Paragraph cannot set these (see the note above RtlChapter), so the front
+    pages of an Arabic or Hebrew book use this. A word is cut where its script
+    changes ("\u0648" and "1997" in "\u06481997"): Arabic and Hebrew runs are shaped, and
+    a run of Latin words and numbers (a web address, a licence name, an English
+    credit line) is set in its own left-to-right order inside the line. Everything
+    is placed from the right edge leftwards. Keep Latin text out of parentheses:
+    that needs the full bidirectional algorithm, which this does not run.
+    """
+
+    def __init__(self, text, font, latin, size, leading, align="justify",
+                 colour=colors.black, space_after=0, space_before=0):
+        Flowable.__init__(self)
+        self.font, self.latin, self.size, self.leading = font, latin, size, leading
+        self.align, self.colour = align, colour
+        self.space_after, self.space_before = space_after, space_before
+        self.space = stringWidth(" ", font, size) or size * 0.25
+        self.words = []                      # each word: [(is_arabic, drawable, width)]
+        for w in text.split():
+            runs = []
+            for arabic, txt in script_runs(w):
+                if arabic:
+                    sh, width = shaped(txt, font, size)
+                    runs.append((True, sh, width))
+                else:
+                    runs.append((False, txt, stringWidth(txt, latin, size)))
+            self.words.append(runs)
+        self.lines = []
+
+    def getSpaceBefore(self):
+        return self.space_before
+
+    def getSpaceAfter(self):
+        return self.space_after
+
+    @staticmethod
+    def _wwidth(word):
+        return sum(r[2] for r in word)
+
+    def wrap(self, availWidth, availHeight):
+        self.width = availWidth
+        lines, line, w = [], [], 0.0
+        for word in self.words:
+            ww = self._wwidth(word)
+            add = ww + (self.space if line else 0)
+            if line and w + add > availWidth:
+                lines.append(line)
+                line, w, add = [], 0.0, ww
+            line.append(word)
+            w += add
+        if line:
+            lines.append(line)
+        self.lines = lines
+        self.height = max(1, len(lines)) * self.leading
+        return self.width, self.height
+
+    def draw(self):
+        c = self.canv
+        c.setFillColor(self.colour)
+        for i, line in enumerate(self.lines):
+            y = self.height - (i + 1) * self.leading + self.leading * 0.3
+            # Flatten to runs, noting where a space precedes a run.
+            items = []
+            for wi, word in enumerate(line):
+                for ri, (arabic, obj, width) in enumerate(word):
+                    items.append([arabic, obj, width, wi > 0 and ri == 0])
+            spaces = sum(1 for it in items if it[3])
+            natural = sum(it[2] for it in items) + self.space * spaces
+            extra = 0.0
+            last = i == len(self.lines) - 1
+            if self.align == "justify" and not last and spaces:
+                extra = (self.width - natural) / spaces
+                natural = self.width
+            gap = self.space + extra
+            # Group consecutive Latin runs: they read left to right as one unit.
+            groups = []
+            for it in items:
+                if groups and not it[0] and not groups[-1][0][0]:
+                    groups[-1].append(it)
+                else:
+                    groups.append([it])
+            xr = (self.width if self.align in ("justify", "right")
+                  else (self.width + natural) / 2.0)
+            for g in groups:
+                if g[0][3]:
+                    xr -= gap
+                if g[0][0]:
+                    xr -= g[0][2]
+                    c.setFont(self.font, self.size)
+                    c.drawString(xr, y, g[0][1])
+                else:
+                    wg = sum(it[2] for it in g) + sum(gap for it in g[1:] if it[3])
+                    x = xr - wg
+                    c.setFont(self.latin, self.size)
+                    for k, it in enumerate(g):
+                        if k and it[3]:
+                            x += gap
+                        c.drawString(x, y, it[1])
+                        x += it[2]
+                    xr -= wg
+
+
 class RtlChapter:
     """The right-to-left counterpart of Chapter: one chapter broken into lines
     once, handed out in slices. Same interface (book, number, n, break_lines,
@@ -1441,6 +1576,28 @@ def build_story(rows, st, fonts, ordering, geom, accent="black",
     return story[:-1]
 
 
+def front_matter_rtl(st, meta, fonts):
+    """The title and about pages of a right-to-left edition, in its own language."""
+    ac = st["fhead"].textColor
+    r, b, lat = fonts["regular"], fonts["bold"], fonts["digits"]
+    centre = lambda text, font, size, lead, **k: RtlText(
+        text, font, lat, size, lead, align="center", **k)
+    return [
+        Spacer(1, 40 * mm),
+        centre(meta["title"], b, 24, 36, space_after=10),
+        centre(meta["subtitle"], r, 13, 22, space_after=6),
+        Spacer(1, 12 * mm),
+        Paragraph(meta["imprint"], st["subtitle"]),
+        PageBreak(),
+        centre(meta["h_about"], b, 11, 20, colour=ac, space_after=8),
+        RtlText(meta["about"], r, lat, 10, 17, align="justify", space_after=10),
+        Spacer(1, 6 * mm),
+        centre(meta["h_rights"], b, 11, 20, colour=ac, space_after=8),
+        RtlText(meta["rights"], r, lat, 10, 17, align="justify"),
+        PageBreak(),
+    ]
+
+
 def front_matter(st, meta):
     """Title, what this ordering is, and the source attribution.
 
@@ -1490,6 +1647,10 @@ ABOUT = {
         "the traditional order.",
 }
 
+
+FRONT_RESOURCES = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "app", "src", "main", "resources", "print")
 
 BOOKNAMES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -1583,12 +1744,15 @@ def load_frontmatter(lang):
     """The front matter in the edition's own language, or None (English). Kept in
     scripts/print/frontmatter_<lang>.json, e.g. frontmatter_zh_Hant.json; the
     same file feeds build_cjk_font.py so the font has every character it needs."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "frontmatter_" + lang.replace("-", "_") + ".json")
-    if not os.path.exists(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    name = "frontmatter_" + lang.replace("-", "_") + ".json"
+    # The app's resources first: those files are read by the order page's preview
+    # as well (/designer/sample), so one file says what the book and the preview say.
+    for d in (FRONT_RESOURCES, os.path.dirname(os.path.abspath(__file__))):
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    return None
 
 
 def main():
@@ -1781,7 +1945,15 @@ def main():
     if front:
         # The front pages in the edition's own language.
         edition = front.get("edition_names", {}).get(a.translation, src_note)
-        rights = front["rights"].format(edition=edition)
+        # A licensed edition carries its own notice (and says so when the books
+        # are rearranged); everything else gets the public-domain sentence.
+        notices = front.get("notices", {})
+        n = notices.get(a.translation)
+        if isinstance(n, dict):
+            notice = n["canonical" if a.ordering == "canonical" else "rearranged"]
+        else:
+            notice = n or notices.get("public_domain", "")
+        rights = front["rights"].format(edition=edition, notice=notice)
         credit = front.get("credits", {}).get(a.translation)
         meta.update({
             "subtitle": a.edition_name or front["order"].get(a.ordering, meta["subtitle"]),
@@ -1794,7 +1966,8 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     doc = BookDoc(a.out, geom, fonts, a.title, head_mode=a.running_head,
                   accent=a.accent)
-    story = front_matter(st, meta) + build_story(rows, st, fonts, a.ordering,
+    story = (front_matter_rtl(st, meta, fonts) if (rtl and front)
+             else front_matter(st, meta)) + build_story(rows, st, fonts, a.ordering,
                                                  geom, accent=a.accent,
                                                  book_titles=a.book_titles,
                                                  book_end=not a.no_book_end)

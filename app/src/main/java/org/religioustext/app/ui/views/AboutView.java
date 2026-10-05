@@ -718,7 +718,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         addTextCard(grid, "RV",     "Revised Version 1885",       t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "RVR09",  "Reina Valera 1909",          t("about.lang.spanish"),         "—",    t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SV1917", "Svenska 1917",               t("about.lang.swedish"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "SVD",    "Smith & Van Dyck",           t("about.lang.arabic"),          "1865", t("about.license.publicDomain"), "✅");
+        addTextCard(grid, "SVD",    "Smith & Van Dyck (older text)", t("about.lang.arabic"),          "1865", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SVD-E",  "Smith & Van Dyck (eBible text)", t("about.lang.arabic"),      "1865", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "SYN",    "Synodal",                    t("about.lang.russian"),         "1876", t("about.license.publicDomain"), "✅");
         addTextCard(grid, "VBL",    "Versión Biblia Libre",       t("about.lang.spanish"),         "—",    "CC BY-SA 4.0",                  "✅");

@@ -72,6 +72,31 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.9.2] — 2026-10-05
+
+### Added
+- **Smith & Van Dyck (eBible text) can be printed.** The 1865 Arabic translation, from
+  eBible.org, fully vowelled. Its wording was compared with the Internet Archive scan of
+  the 1872 London printing (Genesis 1:1-5, Psalm 23, John 3:16-21, Romans 8:1-4: 276 of 279
+  words identical, the rest modernised spelling); the evidence and its limits are in the
+  rights registry. The older Van Dyck card on About is now labelled "older text" and is not
+  offered for printing, because its electronic source cannot be traced.
+- **Arabic front pages.** The title and about pages of an Arabic book, and the same pages in
+  the order page's preview, are in Arabic instead of English, with the licence notice for
+  ONAV. The wording is a draft that an Arabic reader still has to check before a copy is
+  printed.
+- Japanese info pages for BES and FBV.
+
+### Fixed
+- **A space before punctuation in 916 KJV verses** ("the LORD ."), left by the first
+  footnote repair, and in 359 of its note anchors. The USFM converter turned every
+  character marker into a space; it now keeps the spacing around markers, and
+  `09_extract_inline_notes.py --respace` repairs text and anchors an earlier run left.
+
+### Changed
+- The order page's preview and print list now follow the registry of printable editions,
+  which includes the eBible Van Dyck.
+
 ## [0.9.1] — 2026-10-03
 
 ### Added

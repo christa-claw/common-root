@@ -462,14 +462,22 @@ EDITIONS = {
         "translator": 'Eli Smith, Cornelius Van Dyck, Butrus al-Bustani, Nasif al-Yaziji (Syrian Mission)',
         "published": '1865 (eBible.org file dated 2020-08-03)',
         "publisher": 'American Mission Press, Beirut; electronic text by eBible.org, contributor American Bible Society',
-        "status": "REVIEW",
+        "status": "VERIFIED",
         "rtl": True,
         "why": 'The 1865 translation is out of copyright by age (Van Dyck died 1895). '
                'eBible.org publishes this electronic text as Public Domain, crediting the '
                'Syrian Mission as translator and the American Bible Society as contributor.',
-        "restrictions": '⚠ PENDING SCAN CHECK — one check outstanding before VERIFIED: compare a sample (Genesis 1, Psalm 23, John 3, Romans 8) '
-                        'with a dated 1865 scan, to confirm the vowelled text is the 1865 translation and not a later revision. '
-                        'Source: https://ebible.org/details.php?id=arb-vd. Right-to-left layout: build_pdf.py (use --fonts fonts/scheherazade --font-family ScheherazadeNew).',
+        "restrictions": 'None known. Checked 2026-10-04 against a dated printing: the Internet Archive item '
+                        'bibleinarabic00lond (Bible in Arabic, London, Gilbert and Rivington, 1872, University of '
+                        'Toronto scan; the catalogue calls it another edition of the 1865 Beirut Smith-Van Dyck '
+                        'translation). Genesis 1:1-5 (p. 1), Psalm 23 (p. 791), John 3:16-21 (NT p. 151) and Romans '
+                        '8:1-4 (NT p. 259) were read from the page images and compared word by word, vowels and letter '
+                        'forms ignored: 276 of 279 words identical, the three differences being modernised spelling '
+                        '(\u0627\u0644\u0633\u0645\u0648\u0627\u062a / \u0627\u0644\u0633\u0645\u0627\u0648\u0627\u062a, '
+                        '\u0627\u0644\u062d\u064a\u0648\u0629 / \u0627\u0644\u062d\u064a\u0627\u0629 twice). The 1872 reprint is not the 1865 first '
+                        'printing and the reading was not done by a native reader of Arabic; four passages, not the whole Bible. '
+                        'Source: https://ebible.org/details.php?id=arb-vd. Right-to-left: build_pdf.py '
+                        '(--fonts fonts/scheherazade --font-family ScheherazadeNew).',
     },
     "bible-ar-onav": {
         "title": 'الترجمة العربية الجديدة المفتوحة (Open New Arabic Version)',

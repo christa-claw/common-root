@@ -187,6 +187,81 @@ def leaked_form(raw, kinds):
     return inner(RE_NOTE.sub(sub, raw))
 
 
+def legacy_clean(raw):
+    """The verse as the converter produced it BEFORE 2026-10-04, when every
+    character marker (\\nd, \\add ...) became a space: "the \\nd LORD\\nd*." came
+    out "the LORD .". Kept only so --respace can recognise that exact output."""
+    t = usfm.RE_NOTE.sub("", raw)
+    t = usfm.RE_FIG.sub("", t)
+    t = usfm.RE_WORD.sub(r"\1", t)
+    t = usfm.RE_CHAR.sub(" ", t).replace("~", " ")
+    return usfm.RE_SPACE.sub(" ", t).strip()
+
+
+def respace(a, raw, verses):
+    """Put right the spacing a first run of this script left behind.
+
+    The first KJV repair wrote the USFM's clean text, and the converter then put
+    a space where every character marker had been: 915 verses read "the LORD ."
+    (the pre-repair backup had none). A verse is rewritten ONLY when it holds
+    exactly that old output, so nothing anyone has edited since is touched, and the
+    ledger's anchors (which quote the words before each note) are recomputed
+    from the corrected text. Note ids and note text do not change, so the
+    seeder updates the existing comments in place."""
+    fixes, kept = [], 0
+    for code, _bn, ch, vs, text in verses:
+        r = raw.get((code, ch, vs))
+        if r is None:
+            continue
+        new = usfm.clean(r)
+        if text == new:
+            kept += 1
+            continue
+        if nows(text) == nows(new) and text == legacy_clean(r):
+            fixes.append((code, ch, vs, new))
+    print(f"  already correct                  {kept}")
+    print(f"  holding the old spacing (REWRITE) {len(fixes)}")
+    for code, ch, vs, new in fixes[:a.show]:
+        print(f"    {code} {ch}:{vs}  ...{new[-60:]}")
+
+    ledger_fixed = 0
+    ledger = None
+    if a.ledger and os.path.exists(a.ledger):
+        with io.open(a.ledger, encoding="utf-8") as f:
+            ledger = json.load(f)
+        for n in ledger["notes"]:
+            ref = n["verse_refs"][0]
+            r = raw.get((ref["code"], ref["chapter"], ref["verse"]))
+            if r is None:
+                continue
+            for kinds in (("f", "fe"), ("f", "fe", "x")):
+                found = notes_of(r, kinds)
+                i = n["note_index"]
+                if i < len(found) and found[i][1] == n["text"]:
+                    if found[i][2] != n["anchor"]:
+                        ledger_fixed += 1
+                        n["anchor"] = found[i][2]
+                    break
+        print(f"  ledger anchors to correct         {ledger_fixed}")
+
+    if not a.apply:
+        print("\nDry run - nothing written. Re-run with --apply.")
+        return
+    if fixes:
+        os.makedirs(a.backup_dir, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        backup = os.path.join(a.backup_dir, f"{a.id}-before-respace-{stamp}.xml")
+        with io.open(backup, "w", encoding="utf-8") as f:
+            f.write(sc.xquery(f"serialize(db:open('religioustext','{a.id}.xml'))"))
+        print(f"\nBacked up {a.id} to {backup} ({os.path.getsize(backup)} bytes)")
+        apply_updates(a.id, fixes)
+    if ledger is not None and ledger_fixed:
+        with io.open(a.ledger, "w", encoding="utf-8") as f:
+            json.dump(ledger, f, ensure_ascii=False, indent=1)
+            f.write("\n")
+        print(f"Rewrote {a.ledger} ({ledger_fixed} anchors corrected)")
+
+
 def corpus_verses(doc):
     q = (NS + f"for $b in db:open('religioustext','{doc}.xml')//rt:book "
          f"for $v in $b//rt:verse "
@@ -235,15 +310,22 @@ def main():
                     help="also rewrite verses that differ from the USFM for any "
                          "other reason (truncation, revision), and ledger every "
                          "note in the USFM, not just the leaked ones")
+    ap.add_argument("--respace", action="store_true",
+                    help="only repair the spacing an earlier run left (see respace()); "
+                         "with --ledger, also corrects that ledger's anchors in place")
     ap.add_argument("--show", type=int, default=8,
                     help="how many unresolved verses to print")
     a = ap.parse_args()
-    if a.apply and not a.ledger:
+    if a.apply and not a.ledger and not a.respace:
         ap.error("--apply needs --ledger: the notes must land somewhere")
 
     raw = read_usfm(a.usfm)
     verses = corpus_verses(a.id)
     print(f"{a.id}: {len(verses)} corpus verses, {len(raw)} USFM verses")
+
+    if a.respace:
+        respace(a, raw, verses)
+        return
 
     own_marker = lambda ch, vs: re.compile(rf"(?<!\d){ch}[:.]{vs}\.?\s")
     kinds_all = ("f", "fe", "x")

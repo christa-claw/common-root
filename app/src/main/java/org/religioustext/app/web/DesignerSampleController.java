@@ -99,8 +99,55 @@ public class DesignerSampleController {
         out.put("long", longTitles);
         out.put("titles", titles);
         out.put("chapters", chapters);
+        final Map<String, Object> front = frontMatter(anEdition);
+        if (front != null) out.put("front", front);
         return out;
     }
+
+    /**
+     * The title and about pages in the edition's own language, from the same
+     * {@code print/frontmatter_<lang>.json} the PDF generator reads, so the preview
+     * and the printed book say the same thing. Null for a language with no file
+     * (its front pages are English, as in the book).
+     *
+     * <p>The rights text is returned with its pieces, and the page assembles it,
+     * because what it says depends on the reading order: a licensed edition's
+     * notice changes when the books are rearranged.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> frontMatter(final PrintEditions.Edition anEdition) {
+        try (InputStream in = DesignerSampleController.class
+                .getResourceAsStream("/print/frontmatter_" + anEdition.lang() + ".json")) {
+            if (in == null) return null;
+            final Map<String, Object> f = MAPPER.readValue(in, Map.class);
+            final Map<String, Object> out = new LinkedHashMap<>();
+            out.put("title", f.get("title"));
+            out.put("order", f.get("order"));
+            out.put("headings", f.get("headings"));
+            out.put("about", f.get("about"));
+            out.put("rights", f.get("rights"));
+            final Map<String, Object> notices = (Map<String, Object>) f.getOrDefault("notices", Map.of());
+            final Object mine = notices.get(anEdition.id());
+            final Map<String, Object> notice = new LinkedHashMap<>();
+            if (mine instanceof Map<?, ?> m) {
+                notice.put("canonical", m.get("canonical"));
+                notice.put("rearranged", m.get("rearranged"));
+            } else {
+                final Object one = mine != null ? mine : notices.get("public_domain");
+                notice.put("canonical", one);
+                notice.put("rearranged", one);
+            }
+            out.put("notice", notice);
+            final Map<String, Object> names = (Map<String, Object>) f.getOrDefault("edition_names", Map.of());
+            out.put("editionName", names.get(anEdition.id()));
+            return out;
+        } catch (final IOException e) {
+            return null;
+        }
+    }
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
+        new com.fasterxml.jackson.databind.ObjectMapper();
 
     private static Properties read(final String aPath) {
         final Properties p = new Properties();

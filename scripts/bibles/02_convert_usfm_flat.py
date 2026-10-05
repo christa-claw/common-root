@@ -54,11 +54,23 @@ RE_WORD   = re.compile(r"\\\+?w\s+([^|\\]*)(?:\|[^\\]*)?\\\+?w\*")  # \w text|gl
 RE_CHAR   = re.compile(r"\\\+?[a-z0-9]+\s*\*?")                  # any remaining \marker / \marker*
 RE_SPACE  = re.compile(r"\s+")
 
+# A character marker is "\\add" before the text and "\\add*" after it. The ONE space
+# after the opening marker belongs to the marker; the closing marker carries none,
+# so what follows it (a space, or punctuation) is real. Turning every marker into a
+# space, as this once did, set "\\nd LORD\\nd*." as "LORD ." and every italicised
+# word before a comma with a space in front of it.
+RE_CLOSE  = re.compile(r"\\\+?[a-z0-9]+\*")
+RE_OPEN   = re.compile(r"\\\+?[a-z0-9]+\s?")
+
+def strip_char_markers(text):
+    """Drop \\add \\nd \\wj \\qs etc., keep their inner text and the spacing around it."""
+    return RE_OPEN.sub("", RE_CLOSE.sub("", text))
+
 def clean(text):
     text = RE_NOTE.sub("", text)
     text = RE_FIG.sub("", text)
     text = RE_WORD.sub(r"\1", text)
-    text = RE_CHAR.sub(" ", text)      # drops \add \nd \wj \qs etc., keeps their inner text
+    text = strip_char_markers(text)
     text = text.replace("~", " ")      # USFM no-break space
     return RE_SPACE.sub(" ", text).strip()
 

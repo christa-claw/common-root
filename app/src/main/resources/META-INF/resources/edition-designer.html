@@ -422,6 +422,10 @@
       source:"bible-kjv-1611", rights:"PD — not in the UK",
       warn:"<b>KJV is not free in the UK.</b> Perpetual Crown copyright. " +
            "Printing in the Netherlands is fine; selling into Britain is not." },
+    { id:"svde", abbr:"SVD-E", name:"Smith & Van Dyck (eBible text)", lang:"ar", language:"Arabic",
+      source:"bible-ar-vd-ebible", rights:"Public domain",
+      warn:"A right-to-left book, bound on the right. The 1865 Smith and Van Dyck translation, " +
+           "fully vowelled, from eBible.org." },
     { id:"onav", abbr:"ONAV", name:"Open New Arabic Version", lang:"ar", language:"Arabic",
       source:"bible-ar-onav", rights:"CC BY-SA 4.0 — Biblica",
       warn:"<b>Licensed, not public domain.</b> Biblica's Open New Arabic Version is " +
@@ -680,7 +684,31 @@
   var ORDER_LABEL = {"chronological": "Event order", "writing": "Writing order", "canonical": "Canonical order", "tanakh": "Tanakh order", "narrative": "Narrative order"};
   var ABOUT = {"writing": "The books of this Bible are arranged by when they were written, not by the order of the events they tell and not by their traditional place. Each book stands at the middle of the range of years in which scholars generally hold it to have reached its present form, on the critical consensus: so Amos comes near the beginning, Deuteronomy comes before Genesis, and the Gospel of John is among the last. A book that grew over centuries is placed by its final form, and Isaiah and Zechariah, whose parts are dated separately, are entered more than once; the heading says <i>continued</i>. Traditional attribution — Moses as the author of the Pentateuch, David of the Psalms — would give a different order, and this one does not follow it. The dating is disputed in places; it is a way of reading, not a claim about the text.", "chronological": "The books and chapters of this Bible are not in the order you will find in any other. They are arranged by when the events they describe are generally held to have happened, so that Job stands between Genesis 11 and Genesis 12, and Psalm 90 — ascribed to Moses — falls at the death of Moses rather than four hundred pages later. Where a book is entered more than once, the heading says <i>continued</i>. The dating behind this order is a scholarly reconstruction and is disputed in places; it is a way of reading, not a claim about the text.", "canonical": "The books stand in their traditional printed order.", "tanakh": "The Hebrew Bible’s own order: Torah, Prophets, Writings, ending at Chronicles rather than Malachi. This is the sequence the books were gathered in, and the one the New Testament’s readers would have known."};
 
-  function frontHtml(kind, topPx){
+  // The front pages in the edition's own language when it has them (Arabic does),
+  // from the same file the printed book is set from. Other editions: English.
+  function localFrontHtml(kind, topPx, f, ex, ed){
+    var wrap = function(inner){
+      return '<div dir="' + ex.dir + '" lang="' + ex.lang + '"' +
+        ' style="letter-spacing:0;text-transform:none' + (ex.font ? ';font-family:' + ex.font.replace(/"/g, "'") : '') + '">' + inner + '</div>';
+    };
+    var esc = function(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+    if (kind === "title") {
+      return wrap('<div class="ft-title" style="margin-top:' + topPx + 'px">' + esc(f.title) + '</div>' +
+                  '<div class="ft-sub" style="font-style:normal">' +
+                  esc(f.order[state.ordering] || "") + '</div>' +
+                  '<div class="ft-imp" dir="ltr">common-root.org</div>');
+    }
+    var notice = (f.notice && (state.ordering === "canonical" ? f.notice.canonical : f.notice.rearranged)) || "";
+    var rights = String(f.rights).replace("{edition}", f.editionName || ed.source)
+                                 .replace("{notice}", notice);
+    return wrap('<div class="ft-h">' + esc(f.headings.about) + '</div>' +
+                '<p class="ft-p">' + esc(f.about[state.ordering] || "") + '</p>' +
+                '<div class="ft-h" style="margin-top:1.4em">' + esc(f.headings.rights) + '</div>' +
+                '<p class="ft-p">' + esc(rights) + '</p>');
+  }
+
+  function frontHtml(kind, topPx, sample, ex, ed){
+    if (sample && sample.front) return localFrontHtml(kind, topPx, sample.front, ex, ed);
     if (kind === "title") {
       var ord = ORDER_LABEL[state.ordering] ||
                 (state.ordering.charAt(0).toUpperCase() + state.ordering.slice(1) + " order");
@@ -805,7 +833,7 @@
     };
 
     if (pg.front) {
-      html = frontHtml(pg.front, mmToPx(40));
+      html = frontHtml(pg.front, mmToPx(40), sample, ex, ed);
     } else {
       // Cut the page into stretches of text and the page-wide things between
       // them: a book opening runs the whole width, so the text above it is

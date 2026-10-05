@@ -6,8 +6,8 @@ _Tutki tekstejä, jotka muovaavat maailmaamme._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.9.1 |
-| Generated | 2026-10-03 |
+| Version | 0.9.2 |
+| Generated | 2026-10-05 |
 <!-- /AUTOGEN:meta -->
 
 ## Mikä se on
@@ -81,7 +81,95 @@ avautuu oikein toisessa.
 ## Saatavilla olevat tekstit
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
+| Document | Language | Books | Verses |
+|---|---|---|---|
+| `bible-ar-onav` |  | 66 | 31103 |
+| `bible-ar-vandyck` |  | 66 | 31102 |
+| `bible-ar-vd-ebible` |  | 66 | 31104 |
+| `bible-asv-1901` |  | 66 | 31102 |
+| `bible-bes` |  | 66 | 31103 |
+| `bible-bsb` |  | 66 | 31086 |
+| `bible-byz1904-1904` |  | 27 | 7958 |
+| `bible-de-1545` |  | 66 | 31170 |
+| `bible-de-elberfelder` |  | 66 | 31102 |
+| `bible-de-textbibel-1906` |  | 66 | 31157 |
+| `bible-diaglott-il-1864` |  | 27 | 7955 |
+| `bible-dra-1899` |  | 72 | 35598 |
+| `bible-en-brenton-lxx-1851` |  | 37 | 22970 |
+| `bible-en-leeser-1853` |  | 39 | 23143 |
+| `bible-en-tyndale-1534` |  | 27 | 7954 |
+| `bible-en-webster-1833` |  | 66 | 31102 |
+| `bible-en-ylt-1898` |  | 66 | 31102 |
+| `bible-fbv` |  | 66 | 31104 |
+| `bible-fi-1548` |  | 71 | 13616 |
+| `bible-fi-1642` |  | 78 | 35545 |
+| `bible-fi-1776` |  | 66 | 31102 |
+| `bible-fi-1933` |  | 78 | 35438 |
+| `bible-fr-darby` |  | 66 | 31167 |
+| `bible-fr-segond-1910` |  | 66 | 31170 |
+| `bible-gnv-1599` |  | 66 | 31090 |
+| `bible-grc-majority-nt` |  | 27 | 7953 |
+| `bible-grc-solidrock-nt` |  | 27 | 7961 |
+| `bible-grc-tischendorf-1872` |  | 27 | 7939 |
+| `bible-grc-tr` |  | 27 | 7957 |
+| `bible-he-delitzsch` |  | 66 | 31102 |
+| `bible-he-salkinson-1885` |  | 27 | 7957 |
+| `bible-he-wlc` |  | 39 | 23213 |
+| `bible-hlt-olcim` |  | 66 | 31104 |
+| `bible-irvhin-2019` |  | 66 | 31104 |
+| `bible-it-diodati-1885` |  | 66 | 31095 |
+| `bible-it-diodati` |  | 66 | 31102 |
+| `bible-it-riveduta-1927` |  | 66 | 31102 |
+| `bible-ja-freedom-2026` |  | 66 | 31098 |
+| `bible-jps1917-1917` |  | 39 | 23145 |
+| `bible-kjv-1611` |  | 80 | 36820 |
+| `bible-la-clementina-1598` |  | 66 | 31434 |
+| `bible-la-vulgate` |  | 73 | 35809 |
+| `bible-lsv` |  | 66 | 31104 |
+| `bible-lut1912-1912` |  | 66 | 31171 |
+| `bible-lxx-1851` |  | 45 | 26219 |
+| `bible-nasb-2020` |  | 66 | 31073 |
+| `bible-nbla` |  | 66 | 31090 |
+| `bible-niv-2011` |  | 66 | 30752 |
+| `bible-pddpt` |  | 66 | 31078 |
+| `bible-ru-synodal` |  | 66 | 30266 |
+| `bible-rv-1885` |  | 80 | 36873 |
+| `bible-rvr09-1909` |  | 66 | 31102 |
+| `bible-sv-1917` |  | 78 | 35350 |
+| `bible-tr-ytc-2023` |  | 66 | 31059 |
+| `bible-vbl` |  | 66 | 31102 |
+| `bible-web` |  | 80 | 37839 |
+| `bible-zh-cuv1919` |  | 66 | 31102 |
+| `bible-zh-cuv` |  | 66 | 31101 |
+| `hadith-abudawud-ar` | ar | 43 | 5274 |
+| `hadith-abudawud-en` | en | 43 | 5274 |
+| `hadith-bukhari-ar` | ar | 98 | 7589 |
+| `hadith-bukhari-en` | en | 98 | 7589 |
+| `hadith-dehlawi-ar` | ar | 1 | 40 |
+| `hadith-dehlawi-en` | en | 1 | 40 |
+| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
+| `hadith-ibnmajah-en` | en | 38 | 4343 |
+| `hadith-malik-ar` | ar | 62 | 1858 |
+| `hadith-malik-en` | en | 62 | 1858 |
+| `hadith-muslim-ar` | ar | 57 | 7563 |
+| `hadith-muslim-en` | en | 57 | 7563 |
+| `hadith-nasai-ar` | ar | 52 | 5765 |
+| `hadith-nasai-en` | en | 52 | 5765 |
+| `hadith-nawawi-ar` | ar | 1 | 42 |
+| `hadith-nawawi-en` | en | 1 | 42 |
+| `hadith-qudsi-ar` | ar | 1 | 40 |
+| `hadith-qudsi-en` | en | 1 | 40 |
+| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
+| `hadith-tirmidhi-en` | en | 49 | 3998 |
+| `lds-book-of-mormon` | en | 15 | 6604 |
+| `lds-doctrine-and-covenants` | en | 1 | 3654 |
+| `lds-pearl-of-great-price` | en | 5 | 635 |
+| `quran-ar-uthmani` | ar | 114 | 6236 |
+| `quran-en-pickthall` | en | 114 | 6236 |
+| `quran-en-yusufali` | en | 114 | 6236 |
+| `quran-ru-sablukov` | ru | 114 | 6236 |
+
+_85 translations, 1,713,080 verses total._
 <!-- /AUTOGEN:translations -->
 
 Lisää käännöksiä ja perinteitä — mukaan lukien Koraani, hadith-kokoelmat ja muita
@@ -175,13 +263,15 @@ Lähteet on järjestetty kanavan ja näkökulman mukaan:
 | Elijah Johnson Apologetics | Unknown | shorts,videos,streams |
 | Jay Dyer | Unknown | shorts,videos,streams |
 | Maybe God Podcast | Unknown | shorts,videos,streams |
+| ONE FOR ISRAEL Ministry | Unknown | shorts,videos,streams |
 | One God One Truth HQ | Unknown | shorts,videos,streams |
+| Pointing To JesusChrist | Unknown | shorts,videos,streams |
 | SO BE IT | Unknown | shorts,videos,streams |
 | Theological Apologia | Unknown | shorts,videos,streams |
 | Towards Eternity | Unknown | shorts,videos,streams |
 | Vlad Savchuk | Unknown | shorts,videos,streams |
 
-_30 channels configured._
+_32 channels configured._
 <!-- /AUTOGEN:channels -->
 
 ## Tuki

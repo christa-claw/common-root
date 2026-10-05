@@ -26,7 +26,8 @@ public final class PrintEditions {
     private static final List<Edition> ALL = List.of(
         new Edition("WEB", "bible-web", "en"),
         new Edition("KJV", "bible-kjv-1611", "en"),
-        new Edition("ONAV", "bible-ar-onav", "ar"));
+        new Edition("ONAV", "bible-ar-onav", "ar"),
+        new Edition("SVD-E", "bible-ar-vd-ebible", "ar"));
 
     private PrintEditions() { }
 
