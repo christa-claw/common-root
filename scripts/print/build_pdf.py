@@ -262,7 +262,16 @@ def shaped(word, font, size):
     return hit
 
 
-_NUMERIC = re.compile(r"^[0-9–—\-:.]+$")
+_NUMERIC = re.compile(r"^[0-9\u0660-\u0669\u2013\u2014\-:.]+$")
+
+# Arabic books number verses, chapters, pages and running heads in Arabic-Indic digits
+# (the 1872 printing this edition was checked against does). Hebrew keeps Western ones.
+ARABIC_INDIC = str.maketrans("0123456789", "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669")
+
+
+def numerals(value, arabic):
+    """`value` as text, in Arabic-Indic digits when `arabic`."""
+    return str(value).translate(ARABIC_INDIC) if arabic else str(value)
 
 
 def rtl_tokens(label, font, digits, size):
@@ -462,15 +471,16 @@ class RtlChapter:
     def __init__(self, book, number, verses, st, fonts, colour):
         self.book, self.number, self.colour = book, number, colour
         body = st["body"]
-        self.font, self.digits = fonts["regular"], fonts["digits"]
+        self.arabic = bool(st.get("_arabic_digits"))
+        self.font, self.digits = fonts["regular"], fonts["numerals"]
         self.size, self.leading = body.fontSize, body.leading
         self.space = stringWidth(" ", self.font, self.size) or self.size * 0.25
-        self.cap = CapNumeral(number, fonts["digits_bold"], body, colour,
-                              lines=DROP_CAP_LINES)
+        self.cap = CapNumeral(numerals(number, self.arabic), fonts["numerals_bold"], body,
+                              colour, lines=DROP_CAP_LINES)
         self.xpad = self.size * 0.3
         self.items = []
         for vno, text in verses:
-            num = str(vno)
+            num = numerals(vno, self.arabic)
             wn = stringWidth(num, self.digits, self.size * 0.62) + self.size * 0.12
             first = True
             for word in text.split():
@@ -935,6 +945,7 @@ class BookDoc(BaseDocTemplate):
                                  **kw)
         self.fonts = fonts
         self.rtl = bool(geom.get("rtl"))
+        self.arabic_digits = bool(geom.get("arabic_digits"))
         self.head_mode = head_mode
         self.accent = accent_colour(accent)
         self.marks = []          # (page, book, chapter), in placement order
@@ -1053,13 +1064,14 @@ class BookDoc(BaseDocTemplate):
         if label and self.rtl:
             size = 7.6
             canvas.setFillColor(self.accent)
+            label = numerals(label, self.arabic_digits)
             width = sum(t[1] for t in rtl_tokens(
-                label, self.fonts["regular"], self.fonts["digits"], size)) \
+                label, self.fonts["regular"], self.fonts["numerals"], size)) \
                 + size * 0.3 * (len(label.split()) - 1)
             # The outer margin of a right-to-left recto is on the left.
             x = doc.leftMargin if recto else w - doc.rightMargin - width
             draw_rtl_label(canvas, label, self.fonts["regular"],
-                           self.fonts["digits"], size, x,
+                           self.fonts["numerals"], size, x,
                            self.frame_h - doc.topMargin + 5 * mm)
         elif label:
             # The head is set in the REGULAR face, letterspaced, at 7.6 pt:
@@ -1079,10 +1091,10 @@ class BookDoc(BaseDocTemplate):
                              else doc.leftMargin, y)
             tx.textOut(text)
             canvas.drawText(tx)
-        canvas.setFont(self.fonts.get("digits", self.fonts["regular"]), 8)
+        canvas.setFont(self.fonts.get("numerals", self.fonts["regular"]), 8)
         canvas.setFillGray(0.25)
         canvas.drawCentredString(w / 2.0, doc.bottomMargin - 8 * mm,
-                                 str(canvas.getPageNumber()))
+                                 numerals(canvas.getPageNumber(), self.arabic_digits))
         canvas.restoreState()
 
     def handle_pageBegin(self):
@@ -1250,6 +1262,7 @@ def styles_for(fonts, body_size=8.8, leading=10.6, accent="black", lang="en"):
     return {
         "_cjk": cjk,
         "_rtl": rtl,
+        "_arabic_digits": lang.split("-")[0].lower() == "ar",
         "fhead": ParagraphStyle(
             "fhead", fontName=fb, fontSize=body_size + 1.2,
             leading=body_size + 6, alignment=TA_CENTER, textColor=ac,
@@ -1844,10 +1857,14 @@ def main():
         latin_dir = a.latin_fonts or os.path.join(
             os.path.dirname(os.path.abspath(a.fonts)), "crimson")
         lat = register_fonts(latin_dir, a.latin_family)
+        arabic = (lang or "").split("-")[0].lower() == "ar"
         fonts.update(digits=lat["regular"], digits_bold=lat["bold"],
                      latin_regular=lat["regular"], latin_italic=lat["italic"],
-                     latin_bold=lat["bold"])
+                     latin_bold=lat["bold"],
+                     numerals=fonts["regular"] if arabic else lat["regular"],
+                     numerals_bold=fonts["bold"] if arabic else lat["bold"])
         geom["rtl"] = True
+        geom["arabic_digits"] = arabic
     # Han characters are a full em square and carry far more detail than Latin
     # letters, so they are set a little larger and on much more open leading
     # (about 1.55 against 1.2) — the same text at Latin size would be dense.

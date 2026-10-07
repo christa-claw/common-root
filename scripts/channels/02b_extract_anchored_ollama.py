@@ -91,6 +91,49 @@ def ref_label(ref):
     return f"{base}:{v}" if v else base
 
 
+# Scan order, highest priority first (the maintainer's list, by YouTube handle).
+# Channels not listed run afterwards, alphabetically.
+CHANNEL_PRIORITY = [
+    "Bob of Speaker's Corner",       # @btbsoco
+    "ONE FOR ISRAEL Ministry",       # @ONEFORISRAEL
+    "SO BE IT",                      # @SOBEIT32AD
+    "GodLogic Apologetics",          # @GodLogicApologetics
+    "Apologetics Roadshow",          # @apologeticsroadshow
+    "Shamounian Explains",           # @ShamounianExplains
+    "Alpha & Omega Ministries",      # @AominOrg
+    "Elijah Johnson Apologetics",    # @Eliapologetics
+    "Apologia Studios",              # @ApologiaStudios
+    "Bible Thinker",                 # @MikeWinger
+    "Cross Examined",                # @CrossExamined
+    "One God One Truth HQ",          # @OneGodOneTruthHQ
+    "Maybe God Podcast",             # @MaybeGodPodcast
+    "Christ Over ALL",               # @ChristOverAll-1
+    "Theological Apologia",          # @Theologicalapologia
+    "DCCI Ministries",               # @DCCIMinistries
+    "Towards Eternity",              # @TowardsEternity
+    "Pointing To JesusChrist",       # @PointingtoJesusChrist
+    "JihadWatchVideo",               # @JihadWatchVideo
+    "Modern Day Debate",             # @ModernDayDebate
+    "Jay Dyer",                      # @JayDyer
+    "Hatun Tash DCCI Ministries",    # @HatunTashDCCIMinistries
+    "Mohammed Hijab",                # @MohammedHijab
+    "Ali Dawah",                     # @AliDawah
+    "DUS Dawah",                     # @DUSDawah
+    "DawahWise",                     # @DawahWise
+    "Let the Quran Speak",           # @QuranSpeaks
+    "Dr Zakir Naik",                 # @Drzakirchannel
+    "The Crucible",                  # @The_Crucible
+    "Israel Advocacy",               # @Israel_Advocacy
+    "Raymond Ibrahim",               # @RaymondIbrahim-HW
+    "Vlad Savchuk",                  # @vladhungrygen
+]
+
+
+def priority_order(channels):
+    rank = {c: i for i, c in enumerate(CHANNEL_PRIORITY)}
+    return sorted(channels, key=lambda c: (rank.get(c, len(rank)), c))
+
+
 def build_window_prompt(window, channel, tradition):
     """Prompt for ONE window. The refs are already known and verified, so the
     model is asked for the argument, not for the citation."""
@@ -266,7 +309,7 @@ def main():
 
     calls = new_entries = scanned = no_anchor = chapter_only = 0
 
-    for channel in sorted(os.listdir(TRANSCRIPTS_DIR)):
+    for channel in priority_order(os.listdir(TRANSCRIPTS_DIR)):
         cdir = os.path.join(TRANSCRIPTS_DIR, channel)
         if not os.path.isdir(cdir) or channel.startswith(".") or channel == "__pycache__":
             continue

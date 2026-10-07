@@ -23,8 +23,11 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import org.religioustext.app.i18n.LocaleUtil;
+import org.religioustext.app.service.AboutAudioIndexService;
+import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.service.UserService;
 import org.religioustext.app.ui.components.LanguageSelect;
+import org.religioustext.app.ui.components.SectionAudioPlayer;
 
 @Route("")
 @PageTitle("Common Root?")
@@ -34,13 +37,19 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
     private final BuildInfo buildInfo;
     private final AuthenticationContext authContext;
     private final UserService userService;
+    private final TextQueryService textQuery;
+    private final AboutAudioIndexService aboutAudio;
 
     public AboutView(final BuildInfo aBuildInfo,
                      final AuthenticationContext anAuthContext,
-                     final UserService aUserService) {
+                     final UserService aUserService,
+                     final TextQueryService aTextQuery,
+                     final AboutAudioIndexService anAboutAudio) {
         this.buildInfo = aBuildInfo;
+        this.textQuery = aTextQuery;
         this.authContext = anAuthContext;
         this.userService = aUserService;
+        this.aboutAudio = anAboutAudio;
         setSizeFull();
         setPadding(false);
         setSpacing(false);
@@ -104,6 +113,33 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
      *  renderers split on. */
     private String para2(final String aKey1, final String aKey2) {
         return t(aKey1) + "\n\n" + t(aKey2);
+    }
+
+    /** Listen control for one About-page section, localized to the current UI
+     *  language, or null when no narration has been generated yet for it —
+     *  "offer speech if available" means exactly that: nothing renders until
+     *  {@code scripts/audio/tts_about.py} has produced this (locale, section). */
+    private com.vaadin.flow.component.Component listenControl(final String aSectionKey) {
+        return listenControl(aSectionKey, null);
+    }
+
+    private com.vaadin.flow.component.Component listenControl(final String aSectionKey,
+                                                               final String anIconColor) {
+        final String locale = LocaleUtil.currentLocale().getLanguage();
+        final java.util.Optional<String> url = aboutAudio.mp3Url(locale, aSectionKey);
+        if (url.isEmpty()) return null;
+        return new SectionAudioPlayer(url.get(), t("about.listen"), anIconColor);
+    }
+
+    /** {@link #sectionTitle} plus its listen control, if any, on one row. */
+    private Div titleWithListen(final String aTitleKey, final String aSectionKey) {
+        final Div row = new Div();
+        row.getStyle().set("display", "flex").set("align-items", "center")
+           .set("gap", "10px").set("flex-wrap", "wrap");
+        row.add(sectionTitle(t(aTitleKey)));
+        final com.vaadin.flow.component.Component listen = listenControl(aSectionKey);
+        if (listen != null) row.add(listen);
+        return row;
     }
 
     // ── Nav bar ───────────────────────────────────────────────────────
@@ -217,7 +253,13 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("font-weight", "700").set("font-size", "16px")
             .set("padding", "12px 28px").set("border-radius", "4px").set("text-decoration", "none");
 
-        hero.add(logo, title, sub, openReader);
+        final com.vaadin.flow.component.Component heroListen = listenControl("hero", "white");
+        if (heroListen != null) {
+            heroListen.getElement().getStyle().set("margin-top", "14px").set("display", "block");
+            hero.add(logo, title, sub, openReader, heroListen);
+        } else {
+            hero.add(logo, title, sub, openReader);
+        }
         return hero;
     }
 
@@ -253,7 +295,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         final Div s = section("white");
         s.getStyle().set("padding", "56px 5%");
         final Div header = new Div();
-        header.add(sectionTitle(t("about.howto.title")));
+        header.add(titleWithListen("about.howto.title", "howto"));
         final Paragraph intro = new Paragraph(t("about.howto.intro"));
         intro.getStyle().set("color", "#555").set("margin", "12px 0 32px")
              .set("max-width", "680px").set("line-height", "1.7");
@@ -309,7 +351,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div buildDisplayModesSection() {
         final Div s = section("#f0f4f8");
-        s.add(sectionTitle(t("about.modes.title")));
+        s.add(titleWithListen("about.modes.title", "modes"));
 
         final Paragraph intro = prose(t("about.modes.intro"));
         intro.getStyle().set("margin", "12px 0 32px");
@@ -406,7 +448,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
      *  Bible ends there). */
     private Div buildReadingOrdersSection() {
         final Div s = section("white");
-        s.add(sectionTitle(t("about.orders.title")));
+        s.add(titleWithListen("about.orders.title", "orders"));
 
         final Paragraph intro = prose(t("about.orders.intro"));
         intro.getStyle().set("margin", "12px 0 32px");
@@ -446,7 +488,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div buildChapterVerseProblemsSection() {
         final Div s = section("white");
-        s.add(sectionTitle(t("about.problems.title")));
+        s.add(titleWithListen("about.problems.title", "problems"));
 
         s.add(prose(t("about.problems.intro")));
 
@@ -497,7 +539,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div buildQuranSection() {
         final Div s = section("white");
-        s.add(sectionTitle(t("about.quran.title")));
+        s.add(titleWithListen("about.quran.title", "quran"));
         s.add(prose(t("about.quran.intro")));
 
         addQuranBlock(s, t("about.quran.original.title"),
@@ -687,50 +729,80 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("grid-template-columns", "repeat(auto-fit, minmax(280px, 1fr))")
             .set("gap", "12px").set("margin-bottom", "32px");
 
+        // EVERY Bible the corpus holds gets a card. The rows below are the hand-tuned ones:
+        // they keep a chosen name, language label and licence wording. Any other Bible is
+        // derived from its catalogue row (see AboutCards), so a newly ingested edition
+        // appears here on its own and the nightly job fills in its info page later.
+        // The cards sort THEMSELVES: by the English name of the language (fixed, so the
+        // grid reads the same in every interface language), then by abbreviation. Each
+        // row is {abbreviation, name, language key, year, licence, status}; the language
+        // and licence columns are localised when shown.
+        final java.util.List<String[]> cards = new java.util.ArrayList<>();
         // Translation names, abbreviations and years are proper nouns — left as-is.
         // Only the language and licence columns are localised.
-        addTextCard(grid, "AGR1548", "Agricola 1548",             t("about.lang.finnish"),         "1548", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "ASV",    "American Standard Version",  t("about.lang.english"),         "1901", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "BES",    "Biblia en Español Sencillo", t("about.lang.spanish"),         "—",    "CC BY 4.0",                     "✅");
-        addTextCard(grid, "BSB",    "Berean Standard Bible",      t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "CUV",    "Chinese Union Version",      t("about.lang.chinese"),         "1919", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "CUV1919", "Chinese Union Version, 1919 text", t("about.lang.chinese"),   "1919", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "DBY",    "Darby (1885)",               t("about.lang.french"),          "1885", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "DIO",    "Diodati 1649",               t("about.lang.italian"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "DRA",    "Douay-Rheims 1899",          t("about.lang.englishCatholic"), "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "ELB",    "Elberfelder 1905",           t("about.lang.german"),          "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "FB1642", "Biblia 1642",                t("about.lang.finnish"),         "1642", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "FB1776", "Biblia 1776",                t("about.lang.finnish"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "FBV",    "Free Bible Version",         t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "GNV",    "Geneva Bible 1599",          t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "HEBM",   "Hebrew Bible (Masoretic OT + Delitzsch NT)", t("about.lang.hebrew"), "—", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "IRVHIN", "Indian Revised Version (IRV)", t("about.lang.hindi"),         "2019", "CC BY-SA 4.0",                  "✅");
-        addTextCard(grid, "KJV",    "King James Version",         t("about.lang.english"),         "1611", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "LSV",    "Literal Standard Version",   t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "LUT1545", "Luther Bibel 1545", t("about.lang.german"),          "1545", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "LUT1912", "Luther Bibel 1912", t("about.lang.german"),          "1912", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "NASB",   "New American Standard Bible 2020", t("about.lang.english"),         "2020", t("about.license.licensed"),     "✅");
-        addTextCard(grid, "NBLA",   "Nueva Biblia de las Américas", t("about.lang.spanish"),       "—",    t("about.license.licensed"),     "✅");
-        addTextCard(grid, "NIV",    "New International Version",  t("about.lang.english"),         "2011", t("about.license.licensed"),     "✅");
-        addTextCard(grid, "OLCIM",  "Baibal Olcim",               t("about.lang.matuChin"),        "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "ONAV",   "Open New Arabic Version",    t("about.lang.arabic"),          "2012", "CC BY-SA 4.0",                  "✅");
-        addTextCard(grid, "PDDPT",  "Palabra de Dios para Ti",    t("about.lang.spanish"),         "—",    "CC BY-SA 4.0",                  "✅");
-        addTextCard(grid, "RV",     "Revised Version 1885",       t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "RVR09",  "Reina Valera 1909",          t("about.lang.spanish"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "SV1917", "Svenska 1917",               t("about.lang.swedish"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "SVD",    "Smith & Van Dyck (older text)", t("about.lang.arabic"),          "1865", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "SVD-E",  "Smith & Van Dyck (eBible text)", t("about.lang.arabic"),      "1865", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "SYN",    "Synodal",                    t("about.lang.russian"),         "1876", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "VBL",    "Versión Biblia Libre",       t("about.lang.spanish"),         "—",    "CC BY-SA 4.0",                  "✅");
-        addTextCard(grid, "WEB",    "World English Bible",        t("about.lang.english"),         "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "YTC",    "Yorumsuz Türkçe Çeviri",     t("about.lang.turkish"),         "2023", "CC BY-ND 4.0",                  "✅");
-        // Original-language and other editions made navigable by the canonical-seq
-        // stamping pass (stamp_canonical.py). Names/abbreviations are proper nouns;
-        // only the language + licence columns are localised.
-        addTextCard(grid, "KR3338", "Kirkkoraamattu 1933/38",      t("about.lang.finnish"), "1933", t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "WLC",    "Westminster Leningrad Codex", t("about.lang.hebrew"),  "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "TR",     "Textus Receptus (NT)",        t("about.lang.greek"),   "—",    t("about.license.publicDomain"), "✅");
-        addTextCard(grid, "VUL",    "Latin Vulgate",               t("about.lang.latin"),   "—",    t("about.license.publicDomain"), "✅");
+        cards.add(new String[] {"ONAV", "Open New Arabic Version", "arabic", "2012", "CC BY-SA 4.0", "✅"});
+        cards.add(new String[] {"SVD", "Smith & Van Dyck (older text)", "arabic", "1865", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"SVD-E", "Smith & Van Dyck (eBible text)", "arabic", "1865", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"CUV", "Chinese Union Version", "chinese", "1919", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"CUV1919", "Chinese Union Version, 1919 text", "chinese", "1919", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"ASV", "American Standard Version", "english", "1901", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"BSB", "Berean Standard Bible", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"FBV", "Free Bible Version", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"GNV", "Geneva Bible 1599", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"KJV", "King James Version", "english", "1611", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"LSV", "Literal Standard Version", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"NASB", "New American Standard Bible 2020", "english", "2020", t("about.license.licensed"), "✅"});
+        cards.add(new String[] {"NIV", "New International Version", "english", "2011", t("about.license.licensed"), "✅"});
+        cards.add(new String[] {"RV", "Revised Version 1885", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"WEB", "World English Bible", "english", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"DRA", "Douay-Rheims 1899", "englishCatholic", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"AGR1548", "Agricola 1548", "finnish", "1548", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"FB1642", "Biblia 1642", "finnish", "1642", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"FB1776", "Biblia 1776", "finnish", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"KR3338", "Kirkkoraamattu 1933/38", "finnish", "1933", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"DBY", "Darby (1885)", "french", "1885", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"ELB", "Elberfelder 1905", "german", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"LUT1545", "Luther Bibel 1545", "german", "1545", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"LUT1912", "Luther Bibel 1912", "german", "1912", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"TR", "Textus Receptus (NT)", "greek", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"HEBM", "Hebrew Bible (Masoretic OT + Delitzsch NT)", "hebrew", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"WLC", "Westminster Leningrad Codex", "hebrew", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"IRVHIN", "Indian Revised Version (IRV)", "hindi", "2019", "CC BY-SA 4.0", "✅"});
+        cards.add(new String[] {"DIO", "Diodati 1649", "italian", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"VUL", "Latin Vulgate", "latin", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"OLCIM", "Baibal Olcim", "matuChin", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"SYN", "Synodal", "russian", "1876", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"BES", "Biblia en Español Sencillo", "spanish", "—", "CC BY 4.0", "✅"});
+        cards.add(new String[] {"NBLA", "Nueva Biblia de las Américas", "spanish", "—", t("about.license.licensed"), "✅"});
+        cards.add(new String[] {"PDDPT", "Palabra de Dios para Ti", "spanish", "—", "CC BY-SA 4.0", "✅"});
+        cards.add(new String[] {"RVR09", "Reina Valera 1909", "spanish", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"VBL", "Versión Biblia Libre", "spanish", "—", "CC BY-SA 4.0", "✅"});
+        cards.add(new String[] {"SV1917", "Svenska 1917", "swedish", "—", t("about.license.publicDomain"), "✅"});
+        cards.add(new String[] {"YTC", "Yorumsuz Türkçe Çeviri", "turkish", "2023", "CC BY-ND 4.0", "✅"});
+        final java.util.Set<String> curated = new java.util.HashSet<>();
+        for (final String[] c : cards) curated.add(c[0]);
+        try {
+            for (final String[] row : textQuery.listSources()) {
+                final String[] card = AboutCards.derive(row);
+                if (card != null && curated.add(card[0])) {
+                    card[4] = "public domain".equalsIgnoreCase(card[4].strip())
+                        ? t("about.license.publicDomain")
+                        : "licensed".equalsIgnoreCase(card[4].strip()) ? t("about.license.licensed") : card[4];
+                    cards.add(card);
+                }
+            }
+        } catch (final RuntimeException ex) {
+            // The catalogue could not be read: the hand-tuned cards still show.
+        }
+        cards.sort(java.util.Comparator
+            .comparing((String[] c) -> AboutCards.languageName(c[2], java.util.Locale.ENGLISH,
+                (k, l) -> getTranslation(k, l)))
+            .thenComparing(c -> c[0]));
+        for (final String[] c : cards) {
+            addTextCard(grid, c[0], c[1],
+                AboutCards.languageName(c[2], LocaleUtil.currentLocale(), (k, l) -> getTranslation(k, l)),
+                c[3], c[4], c[5]);
+        }
         s.add(grid);
 
         addLineageSection(s);
@@ -1065,7 +1137,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div buildSearchSection() {
         final Div s = section("white");
-        s.add(sectionTitle(t("about.search.title")));
+        s.add(titleWithListen("about.search.title", "search"));
         s.add(prose(t("about.search.body")));
         return s;
     }
@@ -1205,7 +1277,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
     private Div buildAboutSection() {
         final Div s = section("white");
-        s.add(sectionTitle(t("about.about.title")));
+        s.add(titleWithListen("about.about.title", "about"));
 
         s.add(prose(t("about.about.p1")));
         s.add(prose(t("about.about.p2")));

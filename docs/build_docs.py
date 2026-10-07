@@ -114,26 +114,31 @@ def gen_meta():
 
 
 def gen_channels():
-    """Channel table from channels.properties."""
+    """Channel summary from channels.properties: a count per tradition.
+
+    The per-channel list lives in channels.properties; the published document
+    carries only the counts, so it does not attach a label to each named channel.
+    """
     cfg = configparser.ConfigParser()
     cfg.read(CHANNELS_FILE)
     if "channels" not in cfg:
         return "_No channels configured._\n"
 
-    rows = []
-    for key, value in cfg["channels"].items():
+    counts = {}
+    for key in cfg["channels"]:
         if "." in key:
             continue
         folder = cfg["channels"].get(f"{key}.folder", key)
-        types  = cfg["channels"].get(f"{key}.types", "videos,streams")
-        trad   = CHANNEL_TRADITION.get(folder, "Unknown")
-        rows.append((folder, trad, types))
+        trad   = CHANNEL_TRADITION.get(folder, "Not yet classified")
+        counts[trad] = counts.get(trad, 0) + 1
 
-    rows.sort(key=lambda r: (r[1], r[0]))
-    out = ["| Channel | Tradition | Content |", "|---|---|---|"]
-    out += [f"| {f} | {t} | {ty} |" for (f, t, ty) in rows]
+    # Largest group first, "Not yet classified" always last.
+    order = sorted(counts.items(),
+                   key=lambda kv: (kv[0] == "Not yet classified", -kv[1], kv[0]))
+    out = ["| Tradition | Channels |", "|---|---|"]
+    out += [f"| {t} | {n} |" for (t, n) in order]
     out.append("")
-    out.append(f"_{len(rows)} channels configured._")
+    out.append(f"_{sum(counts.values())} channels configured._")
     return "\n".join(out) + "\n"
 
 
@@ -152,7 +157,7 @@ def gen_translations():
         'declare namespace rt="http://religioustext.org/schema/1.0";'
         f"for $doc in db:open('{BASEX_DB}')/rt:text "
         "return string-join(("
-        "  string($doc/@id), string($doc/@lang),"
+        "  string($doc/@id), string(($doc/@bcp47Language, $doc/@lang)[1]),"
         "  string(count($doc//rt:book)), string(count($doc//rt:verse))"
         "), '|')"
     )

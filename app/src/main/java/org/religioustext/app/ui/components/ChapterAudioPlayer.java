@@ -271,6 +271,18 @@ public class ChapterAudioPlayer extends Div {
         final String label = aTooltip == null ? "" : aTooltip;
         play.getElement().setAttribute("title", label);
         play.getElement().setAttribute("aria-label", label);
+        // Umami's self-hosted tracking script (see ReligiousTextsApp) already
+        // delegates clicks on any element carrying data-umami-event, including
+        // a Vaadin <vaadin-button> target where closest("a,button") misses, so
+        // no script.js change is needed here. One event fires for the FIRST
+        // play AND for every later pause/resume toggle of this same button
+        // (see the click handler in JS above) and for an auto-advanced next
+        // chapter (its button is .click()'d from the 'ended' handler) — so
+        // "audio-play" counts engagement with the control, not distinct
+        // completed listens.
+        play.getElement().setAttribute("data-umami-event", "audio-play");
+        play.getElement().setAttribute("data-umami-event-book", aBookCode);
+        play.getElement().setAttribute("data-umami-event-chapter", String.valueOf(aChapter));
         play.getStyle().set("min-width", "0").set("padding", "0")
                        .set("color", "var(--lumo-secondary-text-color)");
         play.addClickListener(e -> getElement().executeJs(

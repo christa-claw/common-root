@@ -16,7 +16,7 @@ import java.util.Map;
  * params (deliberately NOT an opaque id): self-describing, DB-free, hand-
  * authorable, crawler-readable, and reusable as a comment anchor. Shape:
  *
- *   {@code ?cols=2&sync=1&c1.src=kjv&c1.mode=titles&c1.order=chrono&c1.ref=SNG.2.16&c2...}
+ *   {@code ?c1.src=kjv&c1.ref=SNG.2.16&c1.order=chrono&c1.mode=titles&c2...}
  *
  * - src   : the source's @abbreviation lowercased (kjv, niv, q-ar, q-en, …). The
  *           token implies the column kind; ReaderView maps it to a document.
@@ -182,18 +182,22 @@ public final class ReaderLink {
      *  omitted to keep links short. */
     public static String build(final List<ColSpec> theColumns, final boolean aSyncFlag) {
         final int n = Math.min(theColumns.size(), MAX_COLUMNS);
-        final StringBuilder sb = new StringBuilder();
-        sb.append("cols=").append(n).append("&sync=").append(aSyncFlag ? 1 : 0);
+        final List<String> parts = new ArrayList<>();
+        // Shortest form: cols is inferred from the highest cK present, sync
+        // defaults on (and means nothing for a single column), mode defaults to
+        // verses — so only what differs from those defaults is written.
+        if (n > 1 && !aSyncFlag) parts.add("sync=0");
         for (int i = 0; i < n; i++) {
             final ColSpec c = theColumns.get(i);
-            final String p = "&c" + (i + 1) + ".";
-            if (c.src != null && !c.src.isBlank()) sb.append(p).append("src=").append(c.src);
-            if (c.ref != null)                     sb.append(p).append("ref=").append(c.ref.format());
+            final String p = "c" + (i + 1) + ".";
+            if (c.src != null && !c.src.isBlank()) parts.add(p + "src=" + c.src);
+            if (c.ref != null)                     parts.add(p + "ref=" + c.ref.format());
             if (c.order != null && c.order != OrderMode.CANONICAL)
-                                                   sb.append(p).append("order=").append(orderToken(c.order));
-            if (c.mode != null)                    sb.append(p).append("mode=").append(modeToken(c.mode));
-            if (c.companion > 0)                   sb.append(p).append("companion=").append(c.companion);
-            if (c.comments)                        sb.append(p).append("comments=1");
+                                                   parts.add(p + "order=" + orderToken(c.order));
+            if (c.mode != null && c.mode != DisplayMode.CHAPTERS_VERSES)
+                                                   parts.add(p + "mode=" + modeToken(c.mode));
+            if (c.companion > 0)                   parts.add(p + "companion=" + c.companion);
+            if (c.comments)                        parts.add(p + "comments=1");
             if (c.highlights != null && !c.highlights.isEmpty()) {
                 final StringBuilder hl = new StringBuilder();
                 for (final Ref r : c.highlights) {
@@ -201,10 +205,10 @@ public final class ReaderLink {
                     if (hl.length() > 0) hl.append(',');
                     hl.append(r.format());
                 }
-                if (hl.length() > 0) sb.append(p).append("hl=").append(hl);
+                if (hl.length() > 0) parts.add(p + "hl=" + hl);
             }
         }
-        return sb.toString();
+        return String.join("&", parts);
     }
 
     // ── Parse ─────────────────────────────────────────────────────────

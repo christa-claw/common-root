@@ -72,6 +72,69 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.9.5] — 2026-10-07
+
+### Fixed
+- **The public-mirror leak sweep passes again.** `tts_about.py` defaulted its output
+  directory to an absolute path on the maintainer's machine; it now takes `tts_build`'s
+  default (`COMMONROOT_AUDIO_DIR`, else `./audio`), as its sibling does, so a run on the
+  maintainer's machine needs that variable set or `--out` passed. A comment in the
+  anchored extractor that named the maintainer now says "the maintainer's list". The
+  sweep refused both, which held back the mirror's 0.9.3 and 0.9.4 releases; 0.9.5 is the
+  first mirror release since 0.9.2. No application code changed, so prod stays on 0.9.4.
+
+## [0.9.4] — 2026-10-07
+
+### Added
+- **The About page can be listened to.** Each essay section has a Listen button,
+  narrated from the interface bundles in every language. `tts_about.py` shares the
+  chapter job's ledger and budget accounting, with `about/<locale>/<section>` keys
+  that cannot collide with chapter keys; a separate `about-index.json` manifest
+  (`commonroot.audio.aboutIndex`) tells the page which sections have audio, and
+  `about.listen` was added to all 15 UI bundles.
+- **Reader chapter views reach Umami**, as an event carrying the edition, book and
+  chapter. It rides the scroll controller's existing, already-debounced chapter-change
+  callback, so it fires once per column on a genuine change rather than on every scroll,
+  and it resolves the source token to the catalogue's display name.
+- **The chapter audio play button is tagged for Umami.** It counts engagement with the
+  control (first play, every pause or resume, auto-advance), not distinct completed
+  listens.
+- Japanese info page for FB1642.
+
+### Changed
+- **Reader links stay short and the address bar is left alone.** `history.replaceState`
+  is gone, so the URL is no longer rewritten under the reader. Copy-link now keeps the end
+  of a ranged open (`EPH.5.24-28`), and `ReaderLink.build` omits `cols`, `sync` (unless a
+  multi-column `sync=0`), `mode=verses`, and `lang` when it matches the first edition's
+  language. The short form is documented in `docs/link-format.md` and covered by
+  `ReaderLinkShortFormTest`.
+- **The technical document is brought up to date.** The Web API section is rewritten as
+  shipped, and interface localization, Flyway migrations and production deployment are
+  documented, along with Quran, Hadith and LDS sourcing and the per-language audio
+  segment limits. The ingestion table's Language column, blank for every Bible because the
+  generator read `@lang` rather than the schema's `bcp47Language`, now fills in, and the
+  channel list is summarised as counts per tradition.
+
+## [0.9.3] — 2026-10-06
+
+### Added
+- An always-visible play control for chapter audio, next to the book selector — starting
+  playback no longer requires scrolling back up to the chapter heading.
+- **Every Bible in the corpus gets an About card.** 39 were hand-listed before; every other
+  ingested Bible now gets one too, derived from its catalogue row. French Ostervald (OST)
+  is the first new ingestion to rely on it — ingested earlier, uncarded until now.
+- Japanese info page for AGR1548.
+
+### Changed
+- **Arabic print books and the order-page preview use Arabic-Indic digits** (٠-٩, in the
+  script's own face) for verse numbers, chapter numerals, folios and running heads,
+  matching the 1872 printing the eBible Van Dyck was compared with. Hebrew and the Latin
+  front-page text are unchanged.
+- The About page's translation cards sort themselves by language then abbreviation, so a
+  newly added edition lands in the right place automatically.
+- The SVD and CUV info pages' 13 translations now say what the English pages already did:
+  the corpus holds more than one Arabic/Chinese Bible each.
+
 ## [0.9.2] — 2026-10-05
 
 ### Added

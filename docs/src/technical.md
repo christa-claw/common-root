@@ -4,8 +4,8 @@
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.9.2 |
-| Generated | 2026-10-05 |
+| Version | 0.9.5 |
+| Generated | 2026-10-07 |
 <!-- /AUTOGEN:meta -->
 
 > **Naming note.** The user-facing application is **Common Root?**. Internal
@@ -43,17 +43,31 @@ personal notes, and Meilisearch for full-text search (see *Full-text search*
 below — the index is derived data, rebuilt from BaseX and MySQL by
 `reindex_search.py`). The ingestion pipeline writes only to BaseX.
 
+Local development runs only BaseX and MySQL; Meilisearch exists only in
+production, where it is populated from source by the reindexer. Production adds a
+Caddy reverse proxy and a self-hosted Umami analytics instance (see *Production
+deployment*).
+
 ## Module structure
 
 ```
 religious-texts/                 (repo slug; app name is "Common Root?")
-  app/             Vaadin reader application (port 8090)
+  app/             Vaadin reader application (port 8090), Flyway migrations
   ingestion/       Ingestion pipeline (port 8091)
   schema/          Canonical XML schema (religious-text.xsd)
-  docker/          docker-compose.yml, MySQL config, init SQL
-  transcripts/     YouTube transcript pipeline + generated SQL
+  docker/          compose files (dev and prod), Caddyfile, MySQL config, init SQL
+  scripts/         ingestion and stamping (bibles/), audio, channels, publish, ops, print
+                   (print-edition builders)
+  automation/      scheduled-job entry points (e.g. the nightly audio run)
+  sources/         raw source texts and their conversions
+  orderings/       chronological and writing-order tables (YAML)
+  fonts/           fonts used for print output
+  transcripts/     YouTube transcript pipeline and the argument ledger
   docs/            Documentation sources and build pipeline
 ```
+
+Requirements: JDK 21 and Maven for the Java modules, Docker for the data stores,
+Python 3 for the ingestion and publishing scripts.
 
 ## Data model
 
@@ -133,6 +147,32 @@ The link's clipboard copy runs client-side within the button's own click event,
 so it works in browsers that restrict clipboard access outside a user gesture
 (including Safari over plain HTTP).
 
+## Interface localization
+
+The reader interface ships in **14 languages**: English, Arabic, Spanish, Finnish,
+Swedish, Russian, Chinese, French, Italian, German, Hindi, Hebrew, Turkish and
+Japanese. Each language is a `translations_<code>.properties` bundle under
+`app/src/main/resources/i18n/` beside the English base, and the supported set is
+declared once in `LocaleUtil`. Arabic and Hebrew render right-to-left. The language
+selector shows each language's flag and native name, and book names, reference
+parsing and the social-preview tags follow the chosen language.
+
+Every language has its own path (for example `/reader/fi`, `/read/zh`), and the
+`?lang=` query parameter is accepted as well. Edition information pages exist in
+every interface language.
+
+The interface strings were drafted with AI assistance. Native-speaker review is
+being carried out language by language; the first round, in Hebrew, corrected
+several terms and found a flaw in the English source text. This applies to the
+interface only: the scripture texts are existing published translations.
+
+## Schema migrations
+
+MySQL schema changes are versioned **Flyway** migrations (`V1` through `V19` at
+the time of writing) under `app/src/main/resources/db/migration/`, applied at
+startup. JPA schema handling is set to `validate`, so the application checks the
+schema against its entities rather than altering it.
+
 ## Full-text search
 
 A single **Meilisearch** container (on the internal Docker network only, never
@@ -195,9 +235,25 @@ Bible text is ingested from three kinds of source:
 
 The ingestion controller routes each translation to the correct path based on
 its configured source. The Quran is ingested separately (`ingest_quran.py`) from
-an open, no-rate-limit source: the Arabic Uthmani text and a public-domain English
-translation (Pickthall) are loaded as paired editions, each ayah stamped with both
-its canonical (mushaf) and chronological (revelation-order) sequence.
+an open, no-rate-limit source. The Arabic Uthmani text is the base edition and the
+translations load as paired editions: Pickthall (English) and Sablukov (Russian,
+1878) are public, and a further English edition is loaded but held back from the
+public list pending a rights review. Each ayah is stamped with both its canonical
+(mushaf) and chronological (revelation-order) sequence.
+
+**Hadith.** Ten collections (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn
+Majah, Malik, and the Nawawi, Qudsi and Dehlawi forty-hadith sets) are ingested by
+`03_ingest_hadith.py` from the open fawazahmed0/hadith-api dataset. Each collection
+is one Arabic base edition with an English companion, in the same schema as the
+other texts: a collection is a `text`, a section is a `book`, a hadith is a `verse`.
+The two languages align by `globalCanonicalSeq`, so the reader's companion picker
+shows the English beneath the Arabic exactly as it does for the Quran.
+
+**LDS standard works.** The Book of Mormon, Doctrine and Covenants and Pearl of
+Great Price are ingested by `03_ingest_bom.py` as three standalone documents in the
+Bible's `book > chapter > verse` shape (Doctrine and Covenants uses one book whose
+chapters are its sections). They carry a canonical sequence only; no single
+chronological ordering is imposed on them.
 
 ### Sequence stamping
 
@@ -230,95 +286,7 @@ The following reflects the current state of the BaseX database at the time this
 document was generated:
 
 <!-- AUTOGEN:translations -->
-| Document | Language | Books | Verses |
-|---|---|---|---|
-| `bible-ar-onav` |  | 66 | 31103 |
-| `bible-ar-vandyck` |  | 66 | 31102 |
-| `bible-ar-vd-ebible` |  | 66 | 31104 |
-| `bible-asv-1901` |  | 66 | 31102 |
-| `bible-bes` |  | 66 | 31103 |
-| `bible-bsb` |  | 66 | 31086 |
-| `bible-byz1904-1904` |  | 27 | 7958 |
-| `bible-de-1545` |  | 66 | 31170 |
-| `bible-de-elberfelder` |  | 66 | 31102 |
-| `bible-de-textbibel-1906` |  | 66 | 31157 |
-| `bible-diaglott-il-1864` |  | 27 | 7955 |
-| `bible-dra-1899` |  | 72 | 35598 |
-| `bible-en-brenton-lxx-1851` |  | 37 | 22970 |
-| `bible-en-leeser-1853` |  | 39 | 23143 |
-| `bible-en-tyndale-1534` |  | 27 | 7954 |
-| `bible-en-webster-1833` |  | 66 | 31102 |
-| `bible-en-ylt-1898` |  | 66 | 31102 |
-| `bible-fbv` |  | 66 | 31104 |
-| `bible-fi-1548` |  | 71 | 13616 |
-| `bible-fi-1642` |  | 78 | 35545 |
-| `bible-fi-1776` |  | 66 | 31102 |
-| `bible-fi-1933` |  | 78 | 35438 |
-| `bible-fr-darby` |  | 66 | 31167 |
-| `bible-fr-segond-1910` |  | 66 | 31170 |
-| `bible-gnv-1599` |  | 66 | 31090 |
-| `bible-grc-majority-nt` |  | 27 | 7953 |
-| `bible-grc-solidrock-nt` |  | 27 | 7961 |
-| `bible-grc-tischendorf-1872` |  | 27 | 7939 |
-| `bible-grc-tr` |  | 27 | 7957 |
-| `bible-he-delitzsch` |  | 66 | 31102 |
-| `bible-he-salkinson-1885` |  | 27 | 7957 |
-| `bible-he-wlc` |  | 39 | 23213 |
-| `bible-hlt-olcim` |  | 66 | 31104 |
-| `bible-irvhin-2019` |  | 66 | 31104 |
-| `bible-it-diodati-1885` |  | 66 | 31095 |
-| `bible-it-diodati` |  | 66 | 31102 |
-| `bible-it-riveduta-1927` |  | 66 | 31102 |
-| `bible-ja-freedom-2026` |  | 66 | 31098 |
-| `bible-jps1917-1917` |  | 39 | 23145 |
-| `bible-kjv-1611` |  | 80 | 36820 |
-| `bible-la-clementina-1598` |  | 66 | 31434 |
-| `bible-la-vulgate` |  | 73 | 35809 |
-| `bible-lsv` |  | 66 | 31104 |
-| `bible-lut1912-1912` |  | 66 | 31171 |
-| `bible-lxx-1851` |  | 45 | 26219 |
-| `bible-nasb-2020` |  | 66 | 31073 |
-| `bible-nbla` |  | 66 | 31090 |
-| `bible-niv-2011` |  | 66 | 30752 |
-| `bible-pddpt` |  | 66 | 31078 |
-| `bible-ru-synodal` |  | 66 | 30266 |
-| `bible-rv-1885` |  | 80 | 36873 |
-| `bible-rvr09-1909` |  | 66 | 31102 |
-| `bible-sv-1917` |  | 78 | 35350 |
-| `bible-tr-ytc-2023` |  | 66 | 31059 |
-| `bible-vbl` |  | 66 | 31102 |
-| `bible-web` |  | 80 | 37839 |
-| `bible-zh-cuv1919` |  | 66 | 31102 |
-| `bible-zh-cuv` |  | 66 | 31101 |
-| `hadith-abudawud-ar` | ar | 43 | 5274 |
-| `hadith-abudawud-en` | en | 43 | 5274 |
-| `hadith-bukhari-ar` | ar | 98 | 7589 |
-| `hadith-bukhari-en` | en | 98 | 7589 |
-| `hadith-dehlawi-ar` | ar | 1 | 40 |
-| `hadith-dehlawi-en` | en | 1 | 40 |
-| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
-| `hadith-ibnmajah-en` | en | 38 | 4343 |
-| `hadith-malik-ar` | ar | 62 | 1858 |
-| `hadith-malik-en` | en | 62 | 1858 |
-| `hadith-muslim-ar` | ar | 57 | 7563 |
-| `hadith-muslim-en` | en | 57 | 7563 |
-| `hadith-nasai-ar` | ar | 52 | 5765 |
-| `hadith-nasai-en` | en | 52 | 5765 |
-| `hadith-nawawi-ar` | ar | 1 | 42 |
-| `hadith-nawawi-en` | en | 1 | 42 |
-| `hadith-qudsi-ar` | ar | 1 | 40 |
-| `hadith-qudsi-en` | en | 1 | 40 |
-| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
-| `hadith-tirmidhi-en` | en | 49 | 3998 |
-| `lds-book-of-mormon` | en | 15 | 6604 |
-| `lds-doctrine-and-covenants` | en | 1 | 3654 |
-| `lds-pearl-of-great-price` | en | 5 | 635 |
-| `quran-ar-uthmani` | ar | 114 | 6236 |
-| `quran-en-pickthall` | en | 114 | 6236 |
-| `quran-en-yusufali` | en | 114 | 6236 |
-| `quran-ru-sablukov` | ru | 114 | 6236 |
-
-_85 translations, 1,713,080 verses total._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 ## Transcript & argument pipeline
@@ -350,40 +318,13 @@ Channels are configured in `channels.properties`, each tagged with a tradition
 or format:
 
 <!-- AUTOGEN:channels -->
-| Channel | Tradition | Content |
-|---|---|---|
-| Apologetics Roadshow | Christian | shorts,videos,streams |
-| GodLogic Apologetics | Christian | shorts,videos,streams |
-| Hatun Tash DCCI Ministries | Christian | shorts,videos,streams |
-| Israel Advocacy | Christian | shorts,videos,streams |
-| Shamounian Explains | Christian | shorts,videos,streams |
-| The Crucible | Christian | shorts,videos,streams |
-| JihadWatchVideo | Critical | shorts,videos,streams |
-| Raymond Ibrahim | Critical | shorts,videos,streams |
-| Ali Dawah | Islamic | shorts,videos,streams |
-| DUS Dawah | Islamic | shorts,videos,streams |
-| DawahWise | Islamic | shorts,videos,streams |
-| Dr Zakir Naik | Islamic | shorts,videos,streams |
-| Let the Quran Speak | Islamic | shorts,videos,streams |
-| Mohammed Hijab | Islamic | shorts,videos,streams |
-| Modern Day Debate | Neutral | shorts,videos,streams |
-| Alpha & Omega Ministries | Unknown | shorts,videos,streams |
-| Apologia Studios | Unknown | shorts,videos,streams |
-| Bible Thinker | Unknown | shorts,videos,streams |
-| Bob of Speaker's Corner | Unknown | shorts,videos,streams |
-| Christ Over ALL | Unknown | shorts,videos,streams |
-| Cross Examined | Unknown | shorts,videos,streams |
-| DCCI Ministries | Unknown | shorts,videos,streams |
-| Elijah Johnson Apologetics | Unknown | shorts,videos,streams |
-| Jay Dyer | Unknown | shorts,videos,streams |
-| Maybe God Podcast | Unknown | shorts,videos,streams |
-| ONE FOR ISRAEL Ministry | Unknown | shorts,videos,streams |
-| One God One Truth HQ | Unknown | shorts,videos,streams |
-| Pointing To JesusChrist | Unknown | shorts,videos,streams |
-| SO BE IT | Unknown | shorts,videos,streams |
-| Theological Apologia | Unknown | shorts,videos,streams |
-| Towards Eternity | Unknown | shorts,videos,streams |
-| Vlad Savchuk | Unknown | shorts,videos,streams |
+| Tradition | Channels |
+|---|---|
+| Christian | 6 |
+| Islamic | 6 |
+| Critical | 2 |
+| Neutral | 1 |
+| Not yet classified | 17 |
 
 _32 channels configured._
 <!-- /AUTOGEN:channels -->
@@ -402,7 +343,7 @@ an edition must produce new URLs rather than stale hits.
 
 **Where it lives.** Outside the working tree, in a directory this machine
 mounts separately (configurable via `COMMONROOT_AUDIO_INDEX`) — roughly 1.7 GB
-per Bible-sized edition, and the weekly crons abort on a dirty tree. Credentials (`tts.env`) sit beside that directory, never inside it: the whole
+per Bible-sized edition, and the scheduled jobs abort on a dirty tree. Credentials (`tts.env`) sit beside that directory, never inside it: the whole
 audio tree is public under `/audio/*`, so a secret placed there would be
 downloadable.
 
@@ -424,9 +365,14 @@ zero, so the job cannot spend money unless that variable is deliberately set. A 
 also has its own character limit, so a night generates a handful of chapters. A
 chapter already in the ledger and on disk is never regenerated.
 
-**Long chapters.** Anything over 7,500 characters is synthesised in segments split
-at verse boundaries and joined with ffmpeg into one mp3 with one offsets file;
-later segments' offsets are shifted by the joined file's measured duration.
+**Long chapters.** A chapter longer than the segment limit is synthesised in
+segments split at verse boundaries and joined with ffmpeg into one mp3 with one
+offsets file; later segments' offsets are shifted by the joined file's measured
+duration. The limit is 7,500 characters by default and lower for denser scripts,
+because a long request in those scripts can be cut off: Chinese 2,000, Hebrew
+2,400, Japanese 2,500, Arabic 2,800, Russian 5,000, German and Spanish 6,800.
+Speaking rate is set per voice rather than per language, since it is the voice
+that varies; a voice with no entry emits unchanged SSML.
 
 **Operations.** Runs unattended via `com.commonroot.nightly-tts.plist`, logging to
 `~/Library/Logs/commonroot/nightly_tts.log`. The runbook — authority for the job,
@@ -435,8 +381,8 @@ including its hard rules on budgets — is `docs/nightly-tts.md`.
 ## Running the project
 
 ```bash
-# 1. Databases
-cd docker && docker-compose up -d        # wait until both report healthy
+# 1. Data stores (BaseX + MySQL; Meilisearch is production-only)
+docker compose -f docker/docker-compose.yml up -d   # wait until both report healthy
 
 # 2. Reader application
 cd app && mvn spring-boot:run            # http://localhost:8090
@@ -447,50 +393,89 @@ curl -X POST http://localhost:8091/ingest/all
 ```
 
 The reader's landing page is the About / Help page at `/`; the reader itself is
-at `/reader`.
+at `/reader`. Requires JDK 21, Maven and Docker.
 
-## Web API (v1) — specified, not yet built
+## Web API (v1)
 
-An authenticated read-only API is specified and scheduled: `docs/api-design.md`
-holds the design reasoning and decisions, `docs/api-spec.md` the buildable v1
-specification, and `docs/api-test-cases.md` the test obligations. Summary:
+A read-only, key-authenticated API lives under `/api/v1`, with its reference at
+`/api/docs` and a Postman collection linked from it. Design reasoning is in
+`docs/api-design.md`, the specification in `docs/api-spec.md` and the test
+obligations in `docs/api-test-cases.md`. Reading the site itself needs no account;
+the API is not a reading surface.
 
-Everything lives under `/api/v1`. Access requires an account and an API key
-(`crk_…`, several per account, hash-at-rest, header-only); each key carries two
-monthly allowances — one for requests, one for download bytes — with rate-limit
-headers on every response and `429 + Retry-After` past the line. A key raises
-capacity only, never entitlement: the download licence gate keeps reading each
-text's own `@license` and knows nothing about keys.
+**Keys and quotas.** Access requires an account and an API key (`crk_…`, hashed at
+rest, shown once, up to five live per account, managed from the profile page).
+Keys travel in a header only; a key in a query string is refused even when valid.
+Each key carries two monthly allowances (requests and download bytes, calendar
+month UTC) plus a per-key burst limit, with `X-RateLimit-*` headers on every
+metered response and `429 + Retry-After` past the line. A key raises capacity only,
+never entitlement.
 
 | Route | Purpose |
 |---|---|
-| `GET /api/v1/health` | uptime signal; no auth, no quota |
-| `GET /api/v1/texts` | edition list with metadata and downloadability |
-| `GET /api/v1/texts/{src}` | one edition's metadata |
-| `GET /api/v1/texts/{src}/download` | full public-domain edition as corpus XML |
-| `GET /api/v1/texts/{src}/{ref}` | one chapter |
-| `GET /api/v1/passages?src=&refs=` | scattered verses/ranges across books |
-| `GET /api/v1/comments?ref=` | published comments by reference, no scripture |
-| `POST /api/v1/verify` | authenticity check of content claimed to be from here |
+| `GET /api/v1/health` | uptime signal, no key; 200 or 503 with a per-subsystem breakdown |
+| `GET /api/v1/texts` | edition list with metadata |
+| `GET /api/v1/texts/{token}` | one edition's metadata |
+| `GET /api/v1/texts/{token}/books` | table of contents, with the chapters that actually exist |
+| `GET /api/v1/texts/{token}/{ref}` | one chapter or passage, as JSON or corpus XML |
+| `GET /api/v1/passages?refs=` | scattered verses across books and editions, e.g. `kjv:1JN.5.7,web:1JN.5.7` |
+| `GET /api/v1/texts/{token}/download` | a whole edition as corpus XML, metered against the byte allowance |
+| `POST /api/v1/verify` | authenticity check of a saved response |
 
-Source tokens and references are the reader-link vocabulary (`kjv`, `JHN.1.1`,
-`Q.2.255` — see *Shareable links*); response formats are per-call JSON, XML
-(always a valid `religious-text.xsd` subtree, never an API dialect) or plain
-text through the reader's display modes. Responses carry an attestation tag —
-HMAC over a canonical form of the texts plus a server-held secret — so content
-taken from the API can later be verified as authentic, for any past corpus
-version, via the verify route.
+Tokens and references are the reader-link vocabulary (`kjv`, `JHN.3.16`, `Q.2.255`
+— see *Shareable links*). JSON verse text is the reader's display text; XML is the
+raw corpus element and is always a valid `religious-text.xsd` subtree, never an API
+dialect.
 
-Downloads are precomputed at corpus-publish time and streamed from disk with
-the corpus hash as ETag, so bulk traffic never reaches BaseX. When the API
-ships, the anonymous `/download` route is retired (410) and the About page's
-download wording changes in all 13 language bundles.
+**Licence gate.** Licensed editions (NIV, NASB and others) answer 403 on every
+text route whatever key is presented, so the About page's statement that they are
+not redistributed outside the platform holds for the API too. Edition metadata
+stays open.
+
+**Attestation.** Every passage response carries an HMAC over a canonical form of
+the texts (edition, reference, cleaned verses, corpus label, mint time and build)
+rather than over the wire bytes. A saved response can later be checked with
+`POST /verify`, which answers `valid` plus `corpus: current | superseded` and never
+says why a bundle failed. XML responses embed the tag as a processing instruction,
+so a saved file is self-validating. Whole-edition downloads carry no tag: a
+31,000-verse bundle cannot be verified within the `/verify` limits, so chapters and
+passages remain the attested surface.
+
+**Downloads.** A download is served with a strong ETag of the form
+`"{id}@{corpusHash}"`, so a repeat request with `If-None-Match` returns 304 and
+counts nothing. The earlier anonymous `/download/{key}` route is retired and
+answers 410 Gone with a pointer to the API.
+
+## Production deployment
+
+Production runs as Docker services behind **Caddy**, which terminates TLS and
+serves the audio files straight from disk (see *Chapter audio*). The services are:
+
+- **BaseX** — an image published to GHCR with the corpus baked in.
+- **MySQL 8.3** — the stock image, with its data on a volume.
+- **Meilisearch** — pinned to a specific version, internal network only, with its
+  indexing memory capped for the 4 GB host.
+- **App** — an image published to GHCR and selected by version tag, so the running
+  version is visible in `docker compose ps`.
+- **Umami** — self-hosted, first-party analytics on its own subdomain; no
+  third-party analytics scripts.
+
+BaseX and the app ship together: the app reads its source catalog at boot, so the
+BaseX image is deployed first and the app restarted after.
+
+**Releases.** The version lives in the module poms; between releases it carries a
+`-SNAPSHOT` suffix, and a snapshot is never promoted to production. CI builds
+production images from the release tag and refuses a snapshot build unless
+explicitly overridden, in which case it is never tagged as the latest image. Each
+release regenerates this documentation, is tagged, and is exported to a public
+mirror (Apache-2.0) as a single commit from an allow-list of paths, after a sweep
+for anything that must not leave.
 
 ## Documentation pipeline
 
 These documents are living artifacts. The markdown files in `docs/src/` are the
 single source of truth. Hand-written prose is edited directly; tables that drift
-with the project (metadata, the translation/ingestion table, the channel list)
+with the project (metadata, the translation/ingestion table, the channel summary)
 are regenerated from project state — `pom.xml`, `channels.properties`, and a live
 BaseX query — and injected between `AUTOGEN` markers.
 
@@ -543,3 +528,4 @@ suppressed.
 - Set JPA schema handling to `validate` (not `update`) in production.
 - Put the database ports (MySQL 3306, BaseX 8984) behind a firewall — they
   should not be publicly reachable.
+- Set a strong `MEILI_MASTER_KEY` in the production environment file.

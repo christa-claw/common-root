@@ -144,6 +144,12 @@ final class ColState {
     Div             content;
     Div             botSentinel;   // always last child — insert before it reliably
     Select<String>  bookSelect;
+    /** Always-visible play control, next to {@code bookSelect} in the sticky
+     *  nav bar, so starting a chapter's audio never requires scrolling back up
+     *  to its heading. Proxies the click to that chapter's own
+     *  {@code ChapterAudioPlayer} (see ReaderView#updateNavAudio); hidden
+     *  whenever the chapter on screen has no audio. */
+    com.vaadin.flow.component.button.Button navAudio;
     Select<String>     langCombo;
     ComboBox<String[]> sourceCombo;
     Span            attribution;            // source/translation + licence line under the nav
@@ -172,6 +178,10 @@ final class ColState {
     String          openedRefBook;
     int             openedRefChapter;
     int             openedRefVerse;
+    /** Inclusive end of a ranged open (e.g. EPH.5.24-28); 0 = no range. Chapter is
+     *  only meaningful for Bible columns (a Qur'an range stays within its surah). */
+    int             openedRefEndChapter;
+    int             openedRefEndVerse;
     SourceColumn    col;
 
     OrderMode order() { return col.getDisplayOptions().getOrderMode(); }

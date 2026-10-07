@@ -26,6 +26,14 @@ https://common-root.org/reader?cols=2&sync=1
 | `cols` | `1`–`9`       | Number of columns. Capped at 9. Optional — inferred otherwise.  |
 | `sync` | `1` (default) / `0` | Link the columns' scrolling. Only columns that share a reference system actually couple (see *Sync*). |
 
+**Shortest form.** The app writes the shortest link that reproduces the view:
+`cols` is omitted (inferred from the highest `cK`), `sync` only when a
+multi-column link is *unsynced* (`sync=0`), `mode` only when it is not `verses`,
+and `lang` only when the UI language differs from the first edition's own
+language. A range is kept (`c1.ref=EPH.5.24-28`). The reader never rewrites the
+address bar: the URL you arrived on is the URL you keep; Copy-link generates the
+short form on demand.
+
 ## Per-column parameters
 
 Each column `K` (1-based) uses the prefix `cK.`:

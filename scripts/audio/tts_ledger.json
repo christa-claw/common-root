@@ -1,5 +1,565 @@
 {
  "done": {
+  "about/ar/about": {
+   "chars": 663,
+   "durationMs": 66816,
+   "tier": "free"
+  },
+  "about/ar/hero": {
+   "chars": 179,
+   "durationMs": 17088,
+   "tier": "free"
+  },
+  "about/ar/howto": {
+   "chars": 1097,
+   "durationMs": 123816,
+   "tier": "free"
+  },
+  "about/ar/modes": {
+   "chars": 3274,
+   "durationMs": 329784,
+   "tier": "free"
+  },
+  "about/ar/orders": {
+   "chars": 2595,
+   "durationMs": 200856,
+   "tier": "free"
+  },
+  "about/ar/problems": {
+   "chars": 3707,
+   "durationMs": 383184,
+   "tier": "free"
+  },
+  "about/ar/quran": {
+   "chars": 2771,
+   "durationMs": 278952,
+   "tier": "free"
+  },
+  "about/ar/search": {
+   "chars": 360,
+   "durationMs": 34608,
+   "tier": "free"
+  },
+  "about/de/about": {
+   "chars": 896,
+   "durationMs": 61800,
+   "tier": "free"
+  },
+  "about/de/hero": {
+   "chars": 244,
+   "durationMs": 16224,
+   "tier": "free"
+  },
+  "about/de/howto": {
+   "chars": 1563,
+   "durationMs": 114696,
+   "tier": "free"
+  },
+  "about/de/modes": {
+   "chars": 4648,
+   "durationMs": 305496,
+   "tier": "free"
+  },
+  "about/de/orders": {
+   "chars": 2595,
+   "durationMs": 179256,
+   "tier": "free"
+  },
+  "about/de/problems": {
+   "chars": 5362,
+   "durationMs": 354480,
+   "tier": "free"
+  },
+  "about/de/quran": {
+   "chars": 4311,
+   "durationMs": 275136,
+   "tier": "free"
+  },
+  "about/de/search": {
+   "chars": 496,
+   "durationMs": 31032,
+   "tier": "free"
+  },
+  "about/en/about": {
+   "chars": 947,
+   "durationMs": 61608,
+   "tier": "free"
+  },
+  "about/en/hero": {
+   "chars": 241,
+   "durationMs": 16344,
+   "tier": "free"
+  },
+  "about/en/howto": {
+   "chars": 1246,
+   "durationMs": 91824,
+   "tier": "free"
+  },
+  "about/en/modes": {
+   "chars": 3927,
+   "durationMs": 258432,
+   "tier": "free"
+  },
+  "about/en/orders": {
+   "chars": 2595,
+   "durationMs": 172392,
+   "tier": "free"
+  },
+  "about/en/problems": {
+   "chars": 4849,
+   "durationMs": 330936,
+   "tier": "free"
+  },
+  "about/en/quran": {
+   "chars": 3717,
+   "durationMs": 240552,
+   "tier": "free"
+  },
+  "about/en/search": {
+   "chars": 414,
+   "durationMs": 26544,
+   "tier": "free"
+  },
+  "about/es/about": {
+   "chars": 949,
+   "durationMs": 61920,
+   "tier": "free"
+  },
+  "about/es/hero": {
+   "chars": 278,
+   "durationMs": 15984,
+   "tier": "free"
+  },
+  "about/es/howto": {
+   "chars": 1561,
+   "durationMs": 112584,
+   "tier": "free"
+  },
+  "about/es/modes": {
+   "chars": 4435,
+   "durationMs": 281640,
+   "tier": "free"
+  },
+  "about/es/orders": {
+   "chars": 2595,
+   "durationMs": 167448,
+   "tier": "free"
+  },
+  "about/es/problems": {
+   "chars": 5183,
+   "durationMs": 338304,
+   "tier": "free"
+  },
+  "about/es/quran": {
+   "chars": 3984,
+   "durationMs": 247416,
+   "tier": "free"
+  },
+  "about/es/search": {
+   "chars": 459,
+   "durationMs": 27696,
+   "tier": "free"
+  },
+  "about/fi/about": {
+   "chars": 934,
+   "durationMs": 67824,
+   "tier": "free"
+  },
+  "about/fi/hero": {
+   "chars": 270,
+   "durationMs": 18696,
+   "tier": "free"
+  },
+  "about/fi/howto": {
+   "chars": 1375,
+   "durationMs": 116760,
+   "tier": "free"
+  },
+  "about/fi/modes": {
+   "chars": 4271,
+   "durationMs": 302712,
+   "tier": "free"
+  },
+  "about/fi/orders": {
+   "chars": 2595,
+   "durationMs": 195864,
+   "tier": "free"
+  },
+  "about/fi/problems": {
+   "chars": 5037,
+   "durationMs": 367152,
+   "tier": "free"
+  },
+  "about/fi/quran": {
+   "chars": 4035,
+   "durationMs": 274320,
+   "tier": "free"
+  },
+  "about/fi/search": {
+   "chars": 416,
+   "durationMs": 28200,
+   "tier": "free"
+  },
+  "about/fr/about": {
+   "chars": 1086,
+   "durationMs": 61776,
+   "tier": "free"
+  },
+  "about/fr/hero": {
+   "chars": 277,
+   "durationMs": 14400,
+   "tier": "free"
+  },
+  "about/fr/howto": {
+   "chars": 1600,
+   "durationMs": 98664,
+   "tier": "free"
+  },
+  "about/fr/modes": {
+   "chars": 4515,
+   "durationMs": 254688,
+   "tier": "free"
+  },
+  "about/fr/orders": {
+   "chars": 2595,
+   "durationMs": 167592,
+   "tier": "free"
+  },
+  "about/fr/problems": {
+   "chars": 5411,
+   "durationMs": 306888,
+   "tier": "free"
+  },
+  "about/fr/quran": {
+   "chars": 4203,
+   "durationMs": 230136,
+   "tier": "free"
+  },
+  "about/fr/search": {
+   "chars": 502,
+   "durationMs": 25128,
+   "tier": "free"
+  },
+  "about/he/about": {
+   "chars": 674,
+   "durationMs": 72240,
+   "tier": "free"
+  },
+  "about/he/hero": {
+   "chars": 181,
+   "durationMs": 21048,
+   "tier": "free"
+  },
+  "about/he/howto": {
+   "chars": 953,
+   "durationMs": 132792,
+   "tier": "free"
+  },
+  "about/he/modes": {
+   "chars": 2990,
+   "durationMs": 342360,
+   "tier": "free"
+  },
+  "about/he/orders": {
+   "chars": 2595,
+   "durationMs": 239040,
+   "tier": "free"
+  },
+  "about/he/problems": {
+   "chars": 3274,
+   "durationMs": 374136,
+   "tier": "free"
+  },
+  "about/he/quran": {
+   "chars": 2534,
+   "durationMs": 289272,
+   "tier": "free"
+  },
+  "about/he/search": {
+   "chars": 313,
+   "durationMs": 36216,
+   "tier": "free"
+  },
+  "about/hi/about": {
+   "chars": 875,
+   "durationMs": 79488,
+   "tier": "free"
+  },
+  "about/hi/hero": {
+   "chars": 226,
+   "durationMs": 18840,
+   "tier": "free"
+  },
+  "about/hi/howto": {
+   "chars": 1218,
+   "durationMs": 120984,
+   "tier": "free"
+  },
+  "about/hi/modes": {
+   "chars": 3912,
+   "durationMs": 348456,
+   "tier": "free"
+  },
+  "about/hi/orders": {
+   "chars": 2595,
+   "durationMs": 206664,
+   "tier": "free"
+  },
+  "about/hi/problems": {
+   "chars": 4558,
+   "durationMs": 406128,
+   "tier": "free"
+  },
+  "about/hi/quran": {
+   "chars": 3272,
+   "durationMs": 293016,
+   "tier": "free"
+  },
+  "about/hi/search": {
+   "chars": 386,
+   "durationMs": 34488,
+   "tier": "free"
+  },
+  "about/it/about": {
+   "chars": 912,
+   "durationMs": 57576,
+   "tier": "free"
+  },
+  "about/it/hero": {
+   "chars": 263,
+   "durationMs": 14904,
+   "tier": "free"
+  },
+  "about/it/howto": {
+   "chars": 1556,
+   "durationMs": 106584,
+   "tier": "free"
+  },
+  "about/it/modes": {
+   "chars": 4439,
+   "durationMs": 264744,
+   "tier": "free"
+  },
+  "about/it/orders": {
+   "chars": 2595,
+   "durationMs": 160152,
+   "tier": "free"
+  },
+  "about/it/problems": {
+   "chars": 5154,
+   "durationMs": 309072,
+   "tier": "free"
+  },
+  "about/it/quran": {
+   "chars": 3996,
+   "durationMs": 233016,
+   "tier": "free"
+  },
+  "about/it/search": {
+   "chars": 461,
+   "durationMs": 25704,
+   "tier": "free"
+  },
+  "about/ja/about": {
+   "chars": 430,
+   "durationMs": 72768,
+   "tier": "free"
+  },
+  "about/ja/hero": {
+   "chars": 91,
+   "durationMs": 15792,
+   "tier": "free"
+  },
+  "about/ja/howto": {
+   "chars": 597,
+   "durationMs": 108792,
+   "tier": "free"
+  },
+  "about/ja/modes": {
+   "chars": 1757,
+   "durationMs": 292656,
+   "tier": "free"
+  },
+  "about/ja/orders": {
+   "chars": 2595,
+   "durationMs": 191040,
+   "tier": "free"
+  },
+  "about/ja/problems": {
+   "chars": 2131,
+   "durationMs": 369144,
+   "tier": "free"
+  },
+  "about/ja/quran": {
+   "chars": 1544,
+   "durationMs": 263496,
+   "tier": "free"
+  },
+  "about/ja/search": {
+   "chars": 175,
+   "durationMs": 29784,
+   "tier": "free"
+  },
+  "about/ru/about": {
+   "chars": 880,
+   "durationMs": 63792,
+   "tier": "free"
+  },
+  "about/ru/hero": {
+   "chars": 234,
+   "durationMs": 16056,
+   "tier": "free"
+  },
+  "about/ru/howto": {
+   "chars": 1439,
+   "durationMs": 119088,
+   "tier": "free"
+  },
+  "about/ru/modes": {
+   "chars": 4068,
+   "durationMs": 295224,
+   "tier": "free"
+  },
+  "about/ru/orders": {
+   "chars": 2595,
+   "durationMs": 187368,
+   "tier": "free"
+  },
+  "about/ru/problems": {
+   "chars": 4760,
+   "durationMs": 352200,
+   "tier": "free"
+  },
+  "about/ru/quran": {
+   "chars": 3710,
+   "durationMs": 258168,
+   "tier": "free"
+  },
+  "about/ru/search": {
+   "chars": 437,
+   "durationMs": 29904,
+   "tier": "free"
+  },
+  "about/sv/about": {
+   "chars": 851,
+   "durationMs": 71304,
+   "tier": "free"
+  },
+  "about/sv/hero": {
+   "chars": 245,
+   "durationMs": 18024,
+   "tier": "free"
+  },
+  "about/sv/howto": {
+   "chars": 1320,
+   "durationMs": 124248,
+   "tier": "free"
+  },
+  "about/sv/modes": {
+   "chars": 4098,
+   "durationMs": 317016,
+   "tier": "free"
+  },
+  "about/sv/orders": {
+   "chars": 2595,
+   "durationMs": 199080,
+   "tier": "free"
+  },
+  "about/sv/problems": {
+   "chars": 4928,
+   "durationMs": 383904,
+   "tier": "free"
+  },
+  "about/sv/quran": {
+   "chars": 3839,
+   "durationMs": 287208,
+   "tier": "free"
+  },
+  "about/sv/search": {
+   "chars": 438,
+   "durationMs": 32759,
+   "tier": "free"
+  },
+  "about/tr/about": {
+   "chars": 908,
+   "durationMs": 67296,
+   "tier": "free"
+  },
+  "about/tr/hero": {
+   "chars": 248,
+   "durationMs": 17208,
+   "tier": "free"
+  },
+  "about/tr/howto": {
+   "chars": 1466,
+   "durationMs": 120696,
+   "tier": "free"
+  },
+  "about/tr/modes": {
+   "chars": 4079,
+   "durationMs": 304440,
+   "tier": "free"
+  },
+  "about/tr/orders": {
+   "chars": 2595,
+   "durationMs": 192504,
+   "tier": "free"
+  },
+  "about/tr/problems": {
+   "chars": 4735,
+   "durationMs": 355104,
+   "tier": "free"
+  },
+  "about/tr/quran": {
+   "chars": 3531,
+   "durationMs": 258264,
+   "tier": "free"
+  },
+  "about/tr/search": {
+   "chars": 444,
+   "durationMs": 30888,
+   "tier": "free"
+  },
+  "about/zh/about": {
+   "chars": 280,
+   "durationMs": 54912,
+   "tier": "free"
+  },
+  "about/zh/hero": {
+   "chars": 72,
+   "durationMs": 14040,
+   "tier": "free"
+  },
+  "about/zh/howto": {
+   "chars": 417,
+   "durationMs": 93216,
+   "tier": "free"
+  },
+  "about/zh/modes": {
+   "chars": 1290,
+   "durationMs": 256248,
+   "tier": "free"
+  },
+  "about/zh/orders": {
+   "chars": 2595,
+   "durationMs": 189984,
+   "tier": "free"
+  },
+  "about/zh/problems": {
+   "chars": 1551,
+   "durationMs": 303624,
+   "tier": "free"
+  },
+  "about/zh/quran": {
+   "chars": 1184,
+   "durationMs": 239928,
+   "tier": "free"
+  },
+  "about/zh/search": {
+   "chars": 136,
+   "durationMs": 26760,
+   "tier": "free"
+  },
   "bible-ar-vandyck/ar-SA-HamedNeural/1CH/1": {
    "at": "2026-09-15T16:41:40",
    "bytes": 1398672,
@@ -133647,6 +134207,8 @@
   }
  },
  "failed": {
+  "about/ar/modes": "Command '['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', '/tmp/tmpwg3nl67a.txt', '-c', 'copy', 'audio/about/ar/modes.mp3']' returned non-zero exit status 254.",
+  "about/ar/problems": "Command '['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', '/tmp/tmpz9vrhvzi.txt', '-c', 'copy', 'audio/about/ar/problems.mp3']' returned non-zero exit status 254.",
   "bible-ja-freedom-2026/ja-JP-KeitaNeural/DEU/28": {
    "at": "2026-09-18T18:56:51",
    "chars": 4141,
@@ -133718,10 +134280,10 @@
    "tier": "paid"
   }
  },
- "lifetime": 479981,
+ "lifetime": 712464,
  "months": {
   "2026-09": 479981,
-  "2026-10": 0
+  "2026-10": 232483
  },
  "paidLifetime": 40997964,
  "paidMonths": {

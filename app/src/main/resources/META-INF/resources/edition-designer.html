@@ -756,6 +756,13 @@
         : "";
       return;
     }
+    // Arabic books number verses, chapters, pages and running heads in Arabic-Indic
+    // digits, as the printed book does; every other script keeps Western ones.
+    var nd = function(v){
+      return ex.lang === "ar" ? String(v).replace(/\d/g, function(d){
+        return "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669".charAt(+d); })
+                              : v;
+    };
     var pgs = buildPages(sample, state.ordering);
     if (pageIndex >= pgs.length) pageIndex = 0;
     var pg = pgs[pageIndex];
@@ -791,9 +798,9 @@
     rh.style.fontFamily = ex.font || "";
     if (showHead) {
       rh.textContent =
-        state.head === "book"  ? pg.headBook
-      : state.head === "split" ? (recto ? pg.headChapters : pg.headBook)
-      : pg.head;
+        nd(state.head === "book"  ? pg.headBook
+         : state.head === "split" ? (recto ? pg.headChapters : pg.headBook)
+         : pg.head);
       rh.style.right = foreRight ? right + "px" : "auto";
       rh.style.left  = foreRight ? "auto" : left + "px";
       rh.style.top = Math.max(2, top - headSize - mmToPx(2)) + "px";
@@ -805,7 +812,7 @@
     folio.hidden = pg.n <= 1;
     folio.style.bottom = Math.max(2, bottom - ptToPx(8) - mmToPx(3)) + "px";
     folio.style.fontSize = Math.max(5, ptToPx(8)) + "px";
-    folio.textContent = pg.n;
+    folio.textContent = nd(pg.n);
 
     var box = document.getElementById("cols-preview");
     box.style.left = left + "px";
@@ -861,11 +868,11 @@
         sg.blocks.forEach(function(b){
           if (b.note && m.titles) inner += '<div class="ti">' + b.note + '</div>';
           var cap = (b.chapter && m.chapters && !m.continuous)
-            ? '<span class="cn" style="color:' + acc + '">' + b.chapter + '</span>' : "";
+            ? '<span class="cn" style="color:' + acc + '">' + nd(b.chapter) + '</span>' : "";
           var gap = (n > 0 && b.chapter && !m.continuous) ? " gap" : "";
           var body = "";
           b.verses.forEach(function(v){
-            body += (m.verses ? '<span class="vn">' + v[0] + '</span> ' : "") +
+            body += (m.verses ? '<span class="vn">' + nd(v[0]) + '</span> ' : "") +
                     fmt(v[1]) + (m.caps ? "" : " ");
           });
           inner += '<p class="ch' + gap + '">' + cap + body + '</p>';

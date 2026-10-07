@@ -45,10 +45,8 @@ updates the app — it does NOT carry scripture or arguments. Check each at depl
   `COMMONROOT_AUDIO_INDEX` in `docs/build_docs.py`)
   is what makes newly shipped chapters visible.
 
-## PENDING (as of 2026-07-22)
-- [ ] **YTC Turkish Bible** — BaseX image already built + pushed to GHCR. Pull to
-  prod on the NEXT app push or next arguments refresh (maintainer's call — batched,
-  not a standalone restart). Confirm YTC is selectable in the picker afterward;
-  if not, the app-side source registration isn't deployed yet.
+## PENDING (as of 2026-10-06)
+- [x] ~~YTC Turkish Bible — pull to prod on the next app push.~~ Done: confirmed
+  live and selectable with text in the 0.9.3 deploy (2026-10-06).
 - [ ] YTC licence is **CC BY-ND 4.0** — confirm side-by-side display is
   non-derivative use before publishing widely.

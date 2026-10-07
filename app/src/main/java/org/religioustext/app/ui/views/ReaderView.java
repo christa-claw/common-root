@@ -183,6 +183,21 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     /**
+     * Whether a book/chapter has both the mp3 and its offsets JSON — the same
+     * two-part check {@link #audioControl} makes before building a player,
+     * pulled out so the nav bar's always-visible button can ask "is there
+     * anything to play here" without constructing (and discarding) a whole
+     * {@code ChapterAudioPlayer} just to find out.
+     */
+    private boolean hasAudio(final ColState aState, final String aBookCode, final int aChapter) {
+        if (aState == null || aState.col == null || aBookCode == null || aBookCode.isBlank()) return false;
+        final String textId = aState.col.getSourceId();
+        if (textId == null || textId.isBlank()) return false;
+        if (audioIndex.mp3Url(textId, aBookCode, aChapter).isEmpty()) return false;
+        return audioIndex.offsetsUrl(textId, aBookCode, aChapter).isPresent();
+    }
+
+    /**
      * Play control for one chapter, or null when that chapter has no audio.
      *
      * <p>Null is the common case and must stay cheap: the manifest is already in
@@ -193,16 +208,43 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      */
     private com.vaadin.flow.component.Component audioControl(
             final ColState aState, final String aBookCode, final int aChapter) {
-        if (aState == null || aState.col == null) return null;
+        if (!hasAudio(aState, aBookCode, aChapter)) return null;
         final String textId = aState.col.getSourceId();
-        if (textId == null || textId.isBlank()) return null;
         final java.util.Optional<String> mp3 = audioIndex.mp3Url(textId, aBookCode, aChapter);
-        if (mp3.isEmpty()) return null;
         final String offsets = audioIndex.offsetsUrl(textId, aBookCode, aChapter).orElse(null);
-        if (offsets == null) return null;
         return new org.religioustext.app.ui.components.ChapterAudioPlayer(
                 mp3.get(), offsets, aBookCode, aChapter,
                 "col-" + aState.uid, t("reader.audio.available"));
+    }
+
+    // Proxies a click to the chapter's own ChapterAudioPlayer button, found by
+    // the same data-book/data-chapter attributes ChapterAudioPlayer's own
+    // 'ended' handler uses to find the NEXT chapter's player. Scoped to this
+    // column's root since verse/player ids repeat across columns. The target
+    // chapter is resolved fresh on the Java side at click time (see
+    // buildNavBar), not baked into this script, so the button always proxies
+    // to whatever chapter is on screen right now.
+    private static final String NAV_AUDIO_CLICK_JS = """
+        const scope = document.getElementById($0);
+        if (!scope) return;
+        const target = scope.querySelector(
+            '.cr-audio-player[data-book="' + $1 + '"][data-chapter="' + $2 + '"]');
+        if (!target) return;
+        const btn = target.querySelector('vaadin-button, button');
+        if (btn) btn.click();
+        """;
+
+    /**
+     * Keep the nav bar's always-visible play button in sync with whichever
+     * chapter is now at the top of the column. Called from every place that
+     * moves {@code ColState.visibleChapter} — scrolling, prev/next, the
+     * chapter jump box, and sync — so the button never shows for a chapter
+     * it can't actually play, and never goes missing for one it can.
+     */
+    private void updateNavAudio(final ColState aState) {
+        if (aState.navAudio == null) return;
+        final String bookCode = aState.bookCode(aState.currentBookName());
+        aState.navAudio.setVisible(hasAudio(aState, bookCode, aState.visibleChapter));
     }
 
     private final TextQueryService   queryService;
@@ -1118,10 +1160,14 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                     st.openedRefBook    = bookNameForCode(st, code);
                     st.openedRefChapter = chap;
                     st.openedRefVerse   = spec.ref.b();
-                    openAtSeq(st, seq);
                     // A ranged ref highlights the whole passage (a Qur'an range
                     // must stay within one surah — the id scheme is per-surah).
-                    if (spec.ref.hasEnd() && !(spec.ref.quran() && spec.ref.endA() != spec.ref.a()))
+                    final boolean ranged = spec.ref.hasEnd()
+                        && !(spec.ref.quran() && spec.ref.endA() != spec.ref.a());
+                    st.openedRefEndChapter = ranged ? spec.ref.endA() : 0;
+                    st.openedRefEndVerse   = ranged ? spec.ref.endB() : 0;
+                    openAtSeq(st, seq);
+                    if (ranged)
                         flashRange(st, code, chap, spec.ref.b(),
                                    spec.ref.quran() ? 1 : spec.ref.endA(), spec.ref.endB());
                     else
@@ -1223,22 +1269,30 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             if (code != null) {
                 // Verse precision when this column was opened at a specific verse
                 // and still shows that (book, chapter); otherwise chapter-only.
-                int verse = 0;
+                int verse = 0, endChapter = 0, endVerse = 0;
                 if (s.openedRefVerse > 0
                         && s.currentBookName() != null
                         && s.currentBookName().equals(s.openedRefBook)
-                        && s.visibleChapter == s.openedRefChapter)
+                        && s.visibleChapter == s.openedRefChapter) {
                     verse = s.openedRefVerse;
+                    endChapter = s.openedRefEndChapter;   // keep the range: EPH.5.24-28, not EPH.5.24
+                    endVerse   = s.openedRefEndVerse;
+                }
                 c.ref = isQuranSource(s.col.getSourceId())
-                    ? new ReaderLink.Ref(true, "Q", parseIntOr(code, 0), verse)
-                    : new ReaderLink.Ref(false, code, s.visibleChapter, verse);
+                    ? new ReaderLink.Ref(true, "Q", parseIntOr(code, 0), verse,
+                                         endVerse > 0 ? parseIntOr(code, 0) : 0, endVerse)
+                    : new ReaderLink.Ref(false, code, s.visibleChapter, verse, endChapter, endVerse);
             }
             specs.add(c);
             if (!s.col.isSynced()) allSynced = false;
         }
         if (specs.isEmpty()) return null;
-        String path = "/reader?" + ReaderLink.build(specs, allSynced)
-            + "&lang=" + org.religioustext.app.i18n.LocaleUtil.currentLocale().getLanguage();
+        String path = "/reader?" + ReaderLink.build(specs, allSynced);
+        // lang= only when it says something the link does not already: a UI
+        // language equal to the first edition's own language is implied by it.
+        final java.util.Locale ui = org.religioustext.app.i18n.LocaleUtil.currentLocale();
+        if (!ui.equals(firstSourceLocale()))
+            path += "&lang=" + ui.getLanguage();
         // URL reflects the comments panel too: visible + filtered -> carry the
         // channel, so copy-link produces per-channel outreach links directly.
         // Visible but UNFILTERED carries the sentinel COMMENTS_ALL, so "panel open, no
@@ -1260,20 +1314,29 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         return path;
     }
 
+    /** The UI locale matching the first configured column's edition language,
+     *  or null when it has none / is not a provided UI language. */
+    private java.util.Locale firstSourceLocale() {
+        for (final ColState s : states) {
+            if (s.col.getSourceId() == null) continue;
+            final SourceRow row = SourceRow.of(catalog.byId(s.col.getSourceId()));
+            return row == null ? null
+                : org.religioustext.app.i18n.LocaleUtil.fromTag(row.language());
+        }
+        return null;
+    }
+
     /** Push the current link path onto the Copy-link button so its client-side
      *  click handler copies it within the user gesture. Called whenever the view
      *  changes (openAtSeq funnels navigation; the scroll handler covers in-place
-     *  chapter changes). Also mirrors the path into the browser address bar via
-     *  history.replaceState, so the URL always reflects what is currently open
-     *  and can be bookmarked/shared as-is (no history entries are added — the
-     *  back button is unaffected). */
+     *  chapter changes). The address bar is deliberately left alone: the URL the
+     *  reader arrived on is the URL they keep, so a shared link is never
+     *  rewritten into a longer, lossier one. */
     private void refreshCopyLink() {
         if (copyLinkBtn == null) return;
         final String path = buildCurrentLinkPath();
         copyLinkBtn.getElement().executeJs(
-            "this.__crLink = $0;"
-            + " if ($0 && location.pathname.startsWith('/reader'))"
-            + " history.replaceState(null, '', $0);",
+            "this.__crLink = $0;",
             path == null ? "" : path);
         maybeSavePosition();
     }
@@ -1936,6 +1999,28 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         prev.setTooltipText(t("tooltip.prevChapter"));
         next.setTooltipText(t("tooltip.nextChapter"));
 
+        // Always-visible play control, next to the book selector rather than
+        // at the chapter heading (ChapterAudioPlayer), which scrolls out of
+        // view the moment a reader scrolls past it. Visibility is kept in
+        // sync with the chapter on screen by updateNavAudio(); the click
+        // just proxies to that chapter's own player (NAV_AUDIO_CLICK_JS),
+        // so the lazy <audio> build, the sticky-while-playing promotion, the
+        // verse highlight and the single-player-at-a-time broadcast all stay
+        // exactly as ChapterAudioPlayer already implements them.
+        final Button navAudio = new Button(VaadinIcon.PLAY_CIRCLE_O.create());
+        aState.navAudio = navAudio;
+        navAudio.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        navAudio.getStyle().set("flex-shrink", "0");
+        navAudio.setTooltipText(t("reader.audio.available"));
+        navAudio.getElement().setAttribute("aria-label", t("reader.audio.available"));
+        navAudio.setVisible(false);   // shown by updateNavAudio once a chapter with audio is on screen
+        navAudio.addClickListener(e -> {
+            final String bookCode = aState.bookCode(aState.currentBookName());
+            if (bookCode == null) return;
+            navAudio.getElement().executeJs(NAV_AUDIO_CLICK_JS,
+                    "col-" + aState.uid, bookCode, String.valueOf(aState.visibleChapter));
+        });
+
         // The label is also the jump box. A click swaps it for a small field;
         // Enter (or blurring away) commits. Kept as a swap rather than a
         // permanent input so the nav bar still reads as a label at rest —
@@ -1974,7 +2059,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         chapterInput.addKeyPressListener(Key.ENTER, e -> commit.run());
         chapterInput.addBlurListener(e -> commit.run());
 
-        nav.add(aState.bookSelect, prev, aState.chapterLabel, chapterInput, next);
+        nav.add(aState.bookSelect, navAudio, prev, aState.chapterLabel, chapterInput, next);
         return nav;
     }
 
@@ -2007,6 +2092,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         if (seq >= aState.firstSeq && seq <= aState.lastSeq) {
             scrollController.scrollToSeqAnchor(aState, book, aChapter, true);
             aState.setVisible(aChapter, book);
+            updateNavAudio(aState);
         } else {
             openAtSeq(aState, seq);
         }
@@ -2040,6 +2126,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         if (seq >= aState.firstSeq && seq <= aState.lastSeq) {
             scrollController.scrollToSeqAnchor(aState, targetBook, targetChap, true);
             aState.setVisible(targetChap, targetBook);
+            updateNavAudio(aState);
         } else {
             openAtSeq(aState, seq);
         }
@@ -2191,6 +2278,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         aState.visibleSeq   = activeSeq(aState, anchorVerse);
         aState.visibleChapter = anchorVerse.getChapterNumber();
         aState.setVisible(anchorVerse.getChapterNumber(), anchorVerse.getBookName());
+        updateNavAudio(aState);
 
         // Scroll the anchored (book, chapter) to the top after the DOM settles.
         // NOTE: element-scoped executeJs, NOT ui.getPage() — during beforeEnter
@@ -3301,6 +3389,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             st.openedRefBook    = book;
             st.openedRefChapter = chapter;
             st.openedRefVerse   = aRef.verse();
+            st.openedRefEndChapter = anEndVerse > aRef.verse() ? chapter : 0;
+            st.openedRefEndVerse   = anEndVerse > aRef.verse() ? anEndVerse : 0;
             openAtSeq(st, seq);
             if (anEndVerse > aRef.verse())
                 flashRange(st, aRef.bookCode(), chapter, aRef.verse(), chapter, anEndVerse);
@@ -3520,6 +3610,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  position; always refresh the copy-link target. Runs on the UI thread. */
     private void onVisibleChapterChanged(final ColState aState, final String aBook,
                                          final int aChapter, final int aSeq) {
+        updateNavAudio(aState);   // ReaderScrollController already called aState.setVisible(...)
+        trackReaderView(aState, aBook, aChapter);
         final boolean suppressed = System.currentTimeMillis() < aState.suppressUntil;
         if (aState.col.isSynced() && !suppressed) {
             currentSeq = aSeq;
@@ -3528,6 +3620,23 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             notifyOthers(aState);
         }
         refreshCopyLink();
+    }
+
+    /** Fires a human-readable Umami event for the chapter now at the top of this
+     *  column's viewport: edition name (not the bare token), book, chapter. Piggybacks
+     *  on {@code onVisibleChapterChanged} rather than its own scroll hook, so it is
+     *  already debounced to genuine top-of-viewport changes, not every scroll pixel,
+     *  and fires once per column even when several columns are open side by side.
+     *  {@code window.umami} is only defined when {@code RELIGIOUSTEXT_UMAMI_*} is set
+     *  (see ReligiousTextsApp) — the guard makes this a silent no-op in dev/local. */
+    private void trackReaderView(final ColState aState, final String aBook, final int aChapter) {
+        final String sourceId = aState.col.getSourceId();
+        if (sourceId == null) return;
+        final SourceRow row = SourceRow.of(catalog.byId(sourceId));
+        final String edition = row == null ? sourceId : row.name();
+        getElement().executeJs(
+            "window.umami && window.umami.track($0, {edition: $1, book: $2, chapter: $3})",
+            "reader-view", edition, aBook, String.valueOf(aChapter));
     }
 
 
@@ -3561,6 +3670,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         if (seq >= aState.firstSeq && seq <= aState.lastSeq) {
             scrollController.scrollToSeqAnchor(aState, currentBook, currentChapter, false);
             aState.setVisible(currentChapter, currentBook);
+            updateNavAudio(aState);
             aState.visibleSeq = seq;
         } else {
             openAtSeq(aState, seq);
