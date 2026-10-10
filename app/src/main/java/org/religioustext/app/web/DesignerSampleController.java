@@ -3,6 +3,7 @@
 package org.religioustext.app.web;
 
 import org.religioustext.app.model.VerseRef;
+import org.religioustext.app.service.CrossRefQueryService;
 import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.ui.views.reader.BookTitles;
 import org.springframework.http.CacheControl;
@@ -47,11 +48,16 @@ public class DesignerSampleController {
         new Ref("AMO", 1), new Ref("AMO", 2), new Ref("NUM", 36), new Ref("MAL", 1),
         new Ref("REV", 22), new Ref("2PE", 3));
 
+    /** How many references per verse the printed margin carries. */
+    private static final int XREFS_PER_VERSE = 3;
+
     private final TextQueryService text;
+    private final CrossRefQueryService xrefs;
     private final Map<String, Map<String, Object>> cache = new ConcurrentHashMap<>();
 
-    public DesignerSampleController(final TextQueryService aText) {
+    public DesignerSampleController(final TextQueryService aText, final CrossRefQueryService anXrefs) {
         this.text = aText;
+        this.xrefs = anXrefs;
     }
 
     @GetMapping(value = "/designer/sample", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -101,7 +107,33 @@ public class DesignerSampleController {
         out.put("chapters", chapters);
         final Map<String, Object> front = frontMatter(anEdition);
         if (front != null) out.put("front", front);
+        final Map<String, Object> margin = crossReferences(anEdition);
+        if (margin != null) out.put("xrefs", margin);
         return out;
+    }
+
+    /**
+     * The cross references the reference edition prints in its margin, for the chapters the
+     * preview shows: {@code "GEN.1": {"1": ["John 1:1–3", "Heb 11:3", "Isa 45:18"], ...}}. The
+     * three most-voted for each verse, in the reader's own order. Only English editions, because
+     * the references are anchored to the KJV numbering and named in English; null when there
+     * are none, or when they cannot be read, so the preview simply shows no margin.
+     */
+    private Map<String, Object> crossReferences(final PrintEditions.Edition anEdition) {
+        if (!"en".equals(anEdition.lang())) return null;
+        try {
+            final Map<String, Object> out = new LinkedHashMap<>();
+            for (final Ref r : REFS) {
+                final Map<String, List<String>> byVerse = new LinkedHashMap<>();
+                xrefs.forChapter(r.code(), r.chapter()).forEach((verse, refs) ->
+                    byVerse.put(String.valueOf(verse),
+                        refs.stream().limit(XREFS_PER_VERSE).map(XrefLabels::label).toList()));
+                if (!byVerse.isEmpty()) out.put(r.code() + "." + r.chapter(), byVerse);
+            }
+            return out.isEmpty() ? null : out;
+        } catch (final RuntimeException e) {
+            return null;
+        }
     }
 
     /**

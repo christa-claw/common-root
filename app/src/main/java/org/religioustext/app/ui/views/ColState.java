@@ -62,6 +62,8 @@ final class ColState {
     Button          rungLessBtn;
     Button          infoBtn;               // link to the edition's info page (hidden when it has none)
     Button          commentsToggle;        // in-text comment-marker toggle (per column)
+    boolean         showXrefs;             // in-text cross-reference markers on (opt-in, per column)
+    Button          xrefsToggle;           // in-text cross-reference-marker toggle (per column)
     Select<String[]> translationSelect;   // Qur'an: which translation shows beneath the Arabic
     Select<DisplayOptions.DisplayMode> modeSelect;
     Select<OrderMode> orderSelect;

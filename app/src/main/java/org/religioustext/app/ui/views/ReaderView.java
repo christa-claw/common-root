@@ -38,6 +38,8 @@ import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.service.CommentAclService;
 import org.religioustext.app.service.CommentAuthorService;
 import org.religioustext.app.service.CommentQueryService;
+import org.religioustext.app.service.CrossRefQueryService;
+import org.religioustext.app.service.CrossRefQueryService.XRef;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
 import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.SearchService;
@@ -250,6 +252,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private final TextQueryService   queryService;
     private final AudioIndexService  audioIndex;
     private final CommentQueryService commentService;
+    private final CrossRefQueryService xrefService;
+    private final CrossRefDialog xrefDialog;
     private final CommentAuthorService commentAuthor;
     private final CommentAclService commentAcl;
     private final PersonalNoteService noteService;
@@ -338,6 +342,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     public ReaderView(final TextQueryService aQueryService,
                       final AudioIndexService anAudioIndex,
                       final CommentQueryService aCommentService,
+                      final CrossRefQueryService aXrefService,
                       final CommentAuthorService aCommentAuthor,
                       final CommentAclService aCommentAcl,
                       final PersonalNoteService aNoteService,
@@ -349,6 +354,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.queryService = aQueryService;
         this.audioIndex   = anAudioIndex;
         this.commentService = aCommentService;
+        this.xrefService  = aXrefService;
+        this.xrefDialog   = new CrossRefDialog(aQueryService, (k, a) -> this.t(k, a));
         this.commentAuthor = aCommentAuthor;
         this.commentAcl   = aCommentAcl;
         this.noteService  = aNoteService;
@@ -360,7 +367,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.sources       = aQueryService.listSources();
         this.catalog       = new SourceCatalog(this.sources);
         this.columnsLayout = new Div();
-        this.renderer = new VerseWindowRenderer(aQueryService, aCommentService, aNoteService,
+        this.renderer = new VerseWindowRenderer(aQueryService, aCommentService, aXrefService, aNoteService,
             anAuthContext, new VerseWindowRenderer.Host() {
                 @Override public int activeSeq(final ColState aState, final VerseRef aVerseRef) {
                     return ReaderView.this.activeSeq(aState, aVerseRef);
@@ -375,6 +382,11 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 @Override public Span commentBadge(final ColState aState, final String aBookName,
                         final int aChapter, final String aVerseNo, final List<VerseComment> theComments) {
                     return ReaderView.this.commentBadge(aState, aBookName, aChapter, aVerseNo, theComments);
+                }
+                @Override public Span xrefBadge(final ColState aState, final String aBookName,
+                        final String aBookCode, final int aChapter, final String aVerseNo,
+                        final List<XRef> theXrefs) {
+                    return ReaderView.this.xrefBadge(aState, aBookName, aBookCode, aChapter, aVerseNo, theXrefs);
                 }
                 @Override public Span noteBadge(final ColState aState, final String anEmail,
                         final String aBookName, final String aBookCode, final int aChapter,
@@ -1060,6 +1072,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             final DisplayOptions.DisplayMode m = ReaderLink.modeFromToken(prefs.getDefaultMode());
             if (m != null) st.modeSelect.setValue(m);
             st.showComments = prefs.isShowCommentMarkers();
+            st.showXrefs = prefs.isShowXrefMarkers();
+            styleXrefToggle(st);
             if (st.commentsToggle != null) {
                 st.commentsToggle.setIcon(
                     (st.showComments ? VaadinIcon.COMMENT : VaadinIcon.COMMENT_O).create());
@@ -1140,6 +1154,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // they render on first paint (opt-in, off by default, so a link that
             // omits the flag correctly leaves the text pristine).
             st.showComments = spec.comments;
+            st.showXrefs = spec.xrefs;
+            styleXrefToggle(st);
             if (st.commentsToggle != null) {
                 st.commentsToggle.setIcon(
                     (spec.comments ? VaadinIcon.COMMENT : VaadinIcon.COMMENT_O).create());
@@ -1265,6 +1281,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // opens none of it. Widening the grammar is a separate decision.
             c.companion = s.showCompanion ? 1 : Math.max(0, s.rungDepth);
             c.comments  = s.showComments;
+            c.xrefs     = s.showXrefs;
             final String code = bookCodeForName(s, s.currentBookName());
             if (code != null) {
                 // Verse precision when this column was opened at a specific verse
@@ -1907,6 +1924,21 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
         });
 
+        // Cross-reference markers: the same opt-in as the comment markers, drawn as the
+        // ✝ pill the badge itself uses (outline off, filled on) and icon-only, since a
+        // text label would crowd the header. New columns start from the saved preference.
+        final Button xrefsToggle = new Button("\u271D\uFE0E");
+        aState.xrefsToggle = xrefsToggle;
+        xrefsToggle.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        xrefsToggle.setTooltipText(t("reader.xrefs.toggleMarkers"));
+        xrefsToggle.getElement().setAttribute("aria-label", t("reader.xrefs.toggleMarkers"));
+        xrefsToggle.addClickListener(e -> {
+            aState.showXrefs = !aState.showXrefs;
+            styleXrefToggle(aState);
+            if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
+        });
+        styleXrefToggle(aState);
+
         final Button syncBtn = new Button(VaadinIcon.LINK.create());
         syncBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         syncBtn.setTooltipText(t("tooltip.sync"));
@@ -1947,7 +1979,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         sourceGroup.getStyle().set("display", "flex").set("align-items", "center")
             .set("flex", "1 1 100px").set("min-width", "0");
         sourceCombo.getStyle().set("min-width", "64px");
-        header.add(langCombo, sourceGroup, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, syncBtn, removeBtn);
+        header.add(langCombo, sourceGroup, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, xrefsToggle, syncBtn, removeBtn);
         return header;
     }
 
@@ -2377,9 +2409,92 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         return b;
     }
 
+    /** Superscript badge marking a verse that has cross-references: a cross and the
+     *  count, as a filled pill in the secondary colour so the community comments
+     *  stay the more prominent mark. {@code \uFE0E} asks for the text glyph, so iOS
+     *  does not swap in a colour emoji. */
+    private Span xrefBadge(final ColState aState, final String aBookName, final String aBookCode,
+                           final int aChapter, final String aVerseNo, final List<XRef> theXrefs) {
+        final Span b = new Span("\u271D\uFE0E" + theXrefs.size());
+        b.getStyle()
+            .set("cursor", "pointer")
+            .set("font-size", "11px")
+            .set("font-weight", "600")
+            .set("vertical-align", "super")
+            .set("user-select", "none")
+            .set("direction", "ltr")
+            .set("display", "inline-block")
+            .set("color", "var(--lumo-contrast-90pct)")
+            .set("background", "var(--lumo-contrast-10pct)")
+            .set("border", "1px solid var(--lumo-contrast-20pct)")
+            .set("border-radius", "10px")
+            .set("padding", "0 6px")
+            .set("line-height", "1.5")
+            .set("margin", "0 3px");
+        b.getElement().setAttribute("title", t("reader.xrefs.title"));
+        b.addClickListener(e -> xrefDialog.open(
+            bookHeading(aState, aBookName) + " " + aChapter + ":" + aVerseNo,
+            aState.col.getSourceId(), theXrefs,
+            ref -> afterRoundTrip(() -> openXrefInNewColumn(ref, aState))));
+        return b;
+    }
+
+    /** Run {@code aTask} on the next client round trip rather than in this request. A dialog
+     *  closed in this request is only removed once the response goes out, and opening a column
+     *  (BaseX reads, render) holds that response back — so the dialog would sit over the work
+     *  that follows it. Sending the close first and doing the work when the browser answers
+     *  puts them in the order the reader sees: popup gone, then the column. */
+    private void afterRoundTrip(final Runnable aTask) {
+        final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+        if (ui == null) { aTask.run(); return; }
+        ui.getPage().executeJs("return true;").then(Boolean.class, ok -> aTask.run());
+    }
+
+    /** The column-header 💬 toggle reflects {@code showComments}: filled icon in the primary colour when on. */
+    private void styleCommentsToggle(final ColState aState) {
+        final Button b = aState.commentsToggle;
+        if (b == null) return;
+        b.setIcon((aState.showComments ? VaadinIcon.COMMENT : VaadinIcon.COMMENT_O).create());
+        b.getStyle().set("color", aState.showComments ? "var(--lumo-primary-color)" : "");
+    }
+
+    /** The column-header ✝ toggle: outline when off, filled when on. */
+    private void styleXrefToggle(final ColState aState) {
+        final Button b = aState.xrefsToggle;
+        if (b == null) return;
+        final boolean on = aState.showXrefs;
+        b.getStyle()
+            .set("border", "1px solid " + (on ? "var(--lumo-contrast-60pct)" : "var(--lumo-contrast-30pct)"))
+            .set("border-radius", "10px")
+            // Level with the neighbouring icons: their 24px box holds a glyph drawn well
+            // inside it, so an outline as tall as the box reads as taller than they are.
+            // 4px less than the icon box matches the drawn size.
+            .set("box-sizing", "border-box")
+            .set("height", "calc(var(--lumo-icon-size-m) - 4px)")
+            .set("min-height", "0")
+            .set("line-height", "1")
+            .set("display", "inline-flex")
+            .set("align-items", "center")
+            .set("padding", "0 6px")
+            .set("min-width", "0")
+            .set("color", on ? "var(--lumo-base-color)" : "var(--lumo-secondary-text-color)")
+            .set("background", on ? "var(--lumo-contrast-60pct)" : "transparent");
+    }
+
+    /** Open a cross-referenced passage in a new column, highlighting the verse — or, for
+     *  a range inside one chapter, through its last verse. A range that crosses a chapter
+     *  boundary opens at its first verse. */
+    private void openXrefInNewColumn(final XRef aRef, final ColState anOrigin) {
+        final int end = aRef.toEndChapter() != null && aRef.toEndChapter() == aRef.toChapter()
+            && aRef.toEndVerse() != null ? aRef.toEndVerse() : 0;
+        final VerseComment.Ref ref = new VerseComment.Ref(false, aRef.toBook(), aRef.toChapter(), aRef.toVerse());
+        openRefInNewColumn(ref, sourceByToken(defaultBibleToken()), false, end, anOrigin);
+    }
+
     private void openCommentsDialog(final ColState aState, final String aBookName, final int aChapter,
                                     final String aVerseNo, final List<VerseComment> theComments) {
         final Dialog dialog = new Dialog();
+        dialog.addClassName("instant-close");   // hands over to a new column: see the theme stylesheet
         dialog.setHeaderTitle(bookHeading(aState, aBookName) + " " + aChapter + ":" + aVerseNo
             + " — " + t("reader.comments.title"));
         dialog.setWidth("600px");
@@ -2390,7 +2505,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
 
         final java.util.Map<String, String> levels = effectiveLevelsFor(theComments);
         for (final VerseComment c : theComments)
-            dialog.add(commentCard(c, dialog::close, levels.get(c.publicId())));
+            dialog.add(commentCard(c, dialog::close, levels.get(c.publicId()), aState));
 
         // Signed-in readers can add their own comment to this verse from here
         // (the note editor offers the same for verses with no comments yet).
@@ -2763,7 +2878,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         // One bulk permission lookup for exactly this page's cards.
         final java.util.Map<String, String> levels = effectiveLevelsFor(page);
         for (final VerseComment c : page)
-            aList.add(commentCard(c, null, levels.get(c.publicId())));
+            aList.add(commentCard(c, null, levels.get(c.publicId()), null));
 
         if (to >= theMatching.size()) return;
 
@@ -2855,7 +2970,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  {@link org.religioustext.app.model.user.BasicLevel} name on this comment
      *  ({@code null} for guests) — it decides the ✎ edit affordance. */
     private Div commentCard(final VerseComment aComment, final Runnable aBeforeRefNav,
-                            final String anEffectiveLevel) {
+                            final String anEffectiveLevel, final ColState anOrigin) {
         final Div card = new Div();
         // The permalink anchor the ?comment=cmt_… deep link scrolls to + flashes.
         if (aComment.publicId() != null && !aComment.publicId().isBlank())
@@ -2935,7 +3050,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             final Button refBtn = new Button(refLabel(r), e -> {
                 if (aComment.publicId() != null && !aComment.publicId().isBlank()) focusedCommentId = aComment.publicId();
                 if (aBeforeRefNav != null) aBeforeRefNav.run();
-                openRefInNewColumn(r);
+                final Runnable open = () -> openRefInNewColumn(r,
+                    sourceByToken(r.quran() ? "q-ar" : defaultBibleToken()), false, 0, anOrigin);
+                if (aBeforeRefNav != null) afterRoundTrip(open);   // popup first, then the column
+                else open.run();
             });
             refBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_SMALL);
             refBtn.setTooltipText(t("reader.comments.openInNewColumn"));
@@ -2948,7 +3066,13 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 t("reader.comments.openAll") + " (" + aComment.refs().size() + ")", e -> {
                     if (aComment.publicId() != null && !aComment.publicId().isBlank()) focusedCommentId = aComment.publicId();
                     if (aBeforeRefNav != null) aBeforeRefNav.run();
-                    for (final VerseComment.Ref r : aComment.refs()) openRefInNewColumn(r);
+                    final Runnable openAllRefs = () -> {
+                        for (final VerseComment.Ref r : aComment.refs())
+                            openRefInNewColumn(r, sourceByToken(r.quran() ? "q-ar" : defaultBibleToken()),
+                                false, 0, anOrigin);
+                    };
+                    if (aBeforeRefNav != null) afterRoundTrip(openAllRefs);
+                    else openAllRefs.run();
                 });
             openAll.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_SMALL);
             links.add(openAll);
@@ -3364,8 +3488,24 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
 
     private void openRefInNewColumn(final VerseComment.Ref aRef, final String[] aSelection,
                                     final boolean aSyncedFlag, final int anEndVerse) {
+        openRefInNewColumn(aRef, aSelection, aSyncedFlag, anEndVerse, null);
+    }
+
+    /** As above, and when {@code anOrigin} is the column the reference was clicked in, the
+     *  new column starts with that column's comment and cross-reference markers on or off
+     *  to match — someone reading with markers on wants them on the passage they just
+     *  followed. Set before the open so they render on first paint. */
+    private void openRefInNewColumn(final VerseComment.Ref aRef, final String[] aSelection,
+                                    final boolean aSyncedFlag, final int anEndVerse,
+                                    final ColState anOrigin) {
         if (aSelection == null) return;
         final ColState st = addColumn(-1);
+        if (anOrigin != null) {
+            st.showComments = anOrigin.showComments;
+            st.showXrefs = anOrigin.showXrefs;
+            styleCommentsToggle(st);
+            styleXrefToggle(st);
+        }
         setColumnSync(st, aSyncedFlag);
         selectSource(st, aSelection);
         if (aRef.quran() && st.companionId != null) {  // show the translation beneath the Arabic
@@ -3623,7 +3763,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     /** Fires a human-readable Umami event for the chapter now at the top of this
-     *  column's viewport: edition name (not the bare token), book, chapter. Piggybacks
+     *  column's viewport: edition name (not the bare token), book, chapter, and the
+     *  two joined as {@code passage}. Piggybacks
      *  on {@code onVisibleChapterChanged} rather than its own scroll hook, so it is
      *  already debounced to genuine top-of-viewport changes, not every scroll pixel,
      *  and fires once per column even when several columns are open side by side.
@@ -3634,9 +3775,13 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         if (sourceId == null) return;
         final SourceRow row = SourceRow.of(catalog.byId(sourceId));
         final String edition = row == null ? sourceId : row.name();
+        // `passage` joins book and chapter into one value ("Ephesians 5"): Umami's
+        // Properties tab breaks each property down on its own, so a bare chapter
+        // number says nothing without its book. aBook is the English name, so the
+        // value is the same in every edition and language and their counts add up.
         getElement().executeJs(
-            "window.umami && window.umami.track($0, {edition: $1, book: $2, chapter: $3})",
-            "reader-view", edition, aBook, String.valueOf(aChapter));
+            "window.umami && window.umami.track($0, {edition: $1, book: $2, chapter: $3, passage: $4})",
+            "reader-view", edition, aBook, String.valueOf(aChapter), aBook + " " + aChapter);
     }
 
 

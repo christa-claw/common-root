@@ -72,6 +72,46 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.9.6] — 2026-10-10
+
+### Added
+- **Cross references in the reader.** OpenBible.info's cross references (CC BY 4.0, about
+  340,000 rows, mostly from the Treasury of Scripture Knowledge) are seeded at boot from a
+  zip in the jar (Flyway V20 `cross_reference`, V21 `show_xref_markers`), gated by the
+  file's sha256 and upserted on the natural key. A cross badge after a verse opens a dialog
+  (top 10 by votes, Show all, Open all, the CC BY credit and a statement of the changes
+  made). Markers are hidden by default: a per-column toggle, a saved preference, and
+  `cK.xrefs=1` in reader links (`docs/link-format.md`). A column opened from a reference
+  or a comment's passage link inherits the origin's marker toggles. The API serves them at
+  `GET /api/v1/crossrefs/{book}/{chapter}`. Interface text is translated in every locale.
+- **Cross references in a printed Bible**, in the outer margin (the wide one-column
+  format) or inline after each verse in smaller type, one to five per verse, with the
+  credit and changes statement in the rights package. Left-to-right editions with book
+  names are supported; chapters whose numbering differs from the KJV get none.
+- **"Create print package" on the order page**, for administrators, where the server has
+  the project and the print fonts (`/designer/package`, off on a production build).
+  Where it cannot build, the button saves a **print order file** instead: a reference
+  (`CR-XXXXXXXX`), the settings and a spec id, which `build_package.py --order FILE
+  [--order-id N]` rebuilds into the package, stamping the printer's order number into it.
+- **"How an order would work"** on the order page, with an example order file, and
+  `?xrefs=` in the link to the page. Page estimates are re-anchored to measured runs.
+- `build_package.py --body-size`, and a final `RESULT {json}` line for programs.
+- Japanese info page for KJV; `versification-ledger.tsv` classifying each edition's
+  verse numbering against the KJV.
+
+### Changed
+- **The search reindexer is additive and per edition** and defaults to every edition in
+  BaseX, so a run without `SCRIPTURE_EDITIONS` no longer leaves prod's index holding only
+  KJV; memory holds one edition at a time.
+- The About page's reading-orders section is translated into the 13 other interface
+  locales, and audio narrates About text only in its own language.
+- The nightly backfill processes chapter-only windows.
+- **The reader-view event carries a combined `passage` property** ("Ephesians 5")
+  alongside edition, book and chapter. Umami's Properties tab breaks each property
+  down separately, so a chapter number alone was meaningless without its book. The
+  book is the English name, so one passage counts as one value across every edition
+  and language.
+
 ## [0.9.5] — 2026-10-07
 
 ### Fixed

@@ -6,8 +6,8 @@ _Studera texterna som formar vår värld._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.9.5 |
-| Generated | 2026-10-07 |
+| Version | 0.9.6 |
+| Generated | 2026-10-10 |
 <!-- /AUTOGEN:meta -->
 
 ## Vad det är

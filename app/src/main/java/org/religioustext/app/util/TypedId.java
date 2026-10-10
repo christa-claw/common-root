@@ -13,6 +13,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
  *   ref-018e7b30-d2f4-7a9b-bc3d-5e6f7a8b9c0d  comment reference
  *   nte-018e7b34-1b6a-7c8d-9e4f-6a7b8c9d0e1f  personal note
  *   blk-018e7b37-4e92-7d1e-af5a-7b8c9d0e1f2a  blocked domain
+ *   xrf-018e7b3a-6f10-7e2b-8c5d-8c9d0e1f2a3b  cross-reference
  *
  * Properties:
  *   - Type readable from first 3 characters
@@ -32,7 +33,8 @@ public final class TypedId {
         GROUP       ("grp"),   // access-control member group (access_groups)
         ACL         ("acl"),   // access-control list
         ACE         ("ace"),   // access-control entry
-        API_KEY     ("key");   // API key (api_keys; the credential itself is crk_*, not this id)
+        API_KEY     ("key"),   // API key (api_keys; the credential itself is crk_*, not this id)
+        CROSS_REF   ("xrf");   // verse cross-reference (cross_reference; reference data, not a comment)
 
         private final String prefix;
         Type(final String aPrefix) { this.prefix = aPrefix; }

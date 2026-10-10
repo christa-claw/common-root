@@ -56,6 +56,10 @@ public class SecurityConfig extends VaadinWebSecurity {
                 new AntPathRequestMatcher("/edition-designer.html"),
                 new AntPathRequestMatcher("/designer/defaults"),
                 new AntPathRequestMatcher("/designer/sample"),
+                // The "Create print package" button: these routes answer 403 to anyone but an
+                // administrator themselves (PrintPackageController), so they are open here and an
+                // anonymous caller gets a JSON reason instead of a redirect to the login page.
+                new AntPathRequestMatcher("/designer/package/**"),
                 new AntPathRequestMatcher("/print-fonts/**"),
                 // Generated chapter audio (mp3 + its per-verse offsets JSON),
                 // served by AudioStaticConfig at /audio/*. Without this the
@@ -84,7 +88,10 @@ public class SecurityConfig extends VaadinWebSecurity {
 
         // The API is stateless and key-authenticated; Vaadin's CSRF token has no
         // place there and would block the POST /api/v1/verify route.
-        aHttp.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")));
+        // /designer/package/** has no Vaadin token either (a static page posts to it); in its place
+        // a POST must send X-Requested-With and a JSON body, and the caller must be an admin.
+        aHttp.csrf(csrf -> csrf.ignoringRequestMatchers(
+            new AntPathRequestMatcher("/api/**"), new AntPathRequestMatcher("/designer/package/**")));
 
         // Logout: clear session and cookie, then land where the user was.
         // No remember-me cookie is ever issued.

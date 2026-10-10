@@ -46,6 +46,8 @@ YEARS = {
     "RVR09":  "1909",  "SYN":  "1876", "CUV":    "1919", "SVD": "1865",
     "IRVHIN": "2019",  "YTC":  "2023", "NASB": "2020", "LUT1912": "1912",
     "JFB":    "2026",  "LXX": "1851", "TYN": "1534", "LXXE": "1851",
+    "BBE":    "1949",  "DBYEN": "1890", "TKW": "1906",
+    "OST":    "1744",  "SRGNT": "2022",
 }
 
 # abbreviation -> ordered parent abbreviations. Two rules, in this order:

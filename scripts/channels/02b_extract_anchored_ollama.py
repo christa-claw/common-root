@@ -359,12 +359,14 @@ def main():
                 continue
 
             video_url = oll.video_url_from(vtt)
+            file_skipped = 0
             for i, w in enumerate(windows):
                 # A window whose citations are all chapter-only cannot produce a
                 # seedable entry, so it is not worth a model call. Measured on a
                 # 500-video sample this skips 41% of windows.
                 if not args.allow_chapter_only and not verse_level(w["refs"]):
                     chapter_only += 1
+                    file_skipped += 1
                     continue
                 res = ollama_window(w, channel, tradition, args.model)
                 calls += 1
@@ -383,6 +385,14 @@ def main():
                 if _STOP or (args.limit and calls >= args.limit):
                     break
 
+            if file_skipped == len(windows):
+                # Every window was skipped (chapter-only), so no entry was
+                # written. Without a sentinel the file stays "pending" forever:
+                # the nightly wrapper never leaves its channel and the file is
+                # re-scanned every night.
+                results.append({"source_file": rel, "pass": PASS_NAME,
+                                "useful": False, "no_anchors": True,
+                                "chapter_only": True})
             done.add(rel)
             if new_entries and new_entries % 10 == 0:
                 save_ledger(results)

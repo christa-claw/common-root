@@ -125,13 +125,22 @@ def load_properties(path):
 
 
 def bundle_for(locale):
-    base = load_properties(I18N_DIR / "translations.properties")
+    """Text actually recorded in `locale`'s own voice.
+
+    Deliberately does NOT fall back to the English base for an untranslated
+    key: this script speaks each bundle through one fixed voice
+    (VOICE_FOR_LOCALE[locale]), so silently substituting English prose while
+    keeping e.g. the Finnish voice produces audio that says one language in
+    another language's voice. section_parts() already drops any key missing
+    from the returned dict, so an untranslated key is simply left unspoken
+    rather than mis-voiced, and a section with no translated keys at all
+    comes back empty and is skipped by the "no narratable text found" check
+    in main().
+    """
     if locale == "en":
-        return base
+        return load_properties(I18N_DIR / "translations.properties")
     over = load_properties(I18N_DIR / f"translations_{locale}.properties")
-    merged = dict(base)
-    merged.update({k: v for k, v in over.items() if v})
-    return merged
+    return {k: v for k, v in over.items() if v.strip()}
 
 
 def section_parts(props, section):

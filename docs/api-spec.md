@@ -80,9 +80,10 @@ Everything lives under `/api/v1`. ⚖ Versioned from the first public call.
 | `GET /api/v1/texts/{src}/{ref}` | key | requests | A chapter of one edition |
 | `GET /api/v1/passages` | key | requests | Scattered verses/ranges across books, one edition |
 | `GET /api/v1/comments` | key | requests | Comments by reference, no scripture — the embed payoff |
+| `GET /api/v1/crossrefs/{book}/{chapter}` | key | requests | Verse-to-verse cross-references for a chapter (§3.8) |
 | `POST /api/v1/verify` | open? (§10) | per-IP | Check content claimed to be from here (§3.7) |
 
-Eight routes. Anything not needed by the first consumer (§10.7) is left out on
+Nine routes. Anything not needed by the first consumer (§10.7) is left out on
 purpose; a small v1 that never breaks beats a wide one that might.
 
 `{src}` is the **source token from `link-format.md`** (`kjv`, `q-ar`, `buk-en`),
@@ -307,6 +308,46 @@ Response shape (JSON only, per the §10 recommendation):
     }
   ],
   "truncated": false
+}
+```
+
+### 3.8 `GET /api/v1/crossrefs/{book}/{chapter}`
+
+Verse-to-verse cross-references for one chapter: for each verse, the passages
+related to it, most-voted first. Reference data (OpenBible.info, CC BY 4.0,
+about 340,000 references, Protestant canon only), kept apart from comments.
+
+| Param | Values | Notes |
+|---|---|---|
+| `{book}` | USFM code, any case | `JHN`, `1CO`; an unknown book is **404** `no_such_book` |
+| `{chapter}` | integer ≥ 1 | a chapter without references is **200** with empty `verses` |
+
+- Anchors and targets are in the **canonical (KJV) numbering**, edition-independent
+  like comments; `numbering` says so in every payload.
+- Targets are link-format refs (`ROM.5.8`, `PRO.8.22-30`, `PSA.89.11-90.2`). A range
+  that runs from one book into the next keeps only its first verse.
+- `id` (`xrf-…`) is stable across re-seeds, so a consumer can key on it.
+- Negative-vote references are never served.
+- **Attribution is in every payload** (`attribution`): the CC BY 4.0 credit travels
+  with the data. Consumers that republish the references must keep it.
+- Caching: `Cache-Control: public, max-age=3600`; the data changes only on deploy.
+
+```json
+{
+  "book": "JHN", "chapter": 3, "numbering": "KJV",
+  "verses": {
+    "16": [
+      { "id": "xrf-01a1…", "ref": "ROM.5.8", "votes": 984 },
+      { "id": "xrf-01a1…", "ref": "1JN.4.9-10", "votes": 698 }
+    ]
+  },
+  "attribution": {
+    "source": "OpenBible.info",
+    "url": "https://www.openbible.info/labs/cross-references/",
+    "licence": "CC BY 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "References with negative votes removed; ranges that cross into another book shortened to their first verse; books recoded to USFM."
+  }
 }
 ```
 

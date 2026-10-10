@@ -10,6 +10,8 @@ import org.religioustext.app.model.DisplayOptions;
 import org.religioustext.app.model.VerseRef;
 import org.religioustext.app.service.CommentQueryService;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
+import org.religioustext.app.service.CrossRefQueryService;
+import org.religioustext.app.service.CrossRefQueryService.XRef;
 import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.TextQueryService;
 
@@ -51,6 +53,9 @@ final class VerseWindowRenderer {
         /** Superscript badge for a verse that has public comments. */
         Span commentBadge(ColState aState, String aBookName, int aChapter,
                           String aVerseNo, List<VerseComment> theComments);
+        /** Superscript badge for a verse that has cross-references. */
+        Span xrefBadge(ColState aState, String aBookName, String aBookCode, int aChapter,
+                       String aVerseNo, List<XRef> theXrefs);
         /** Superscript note marker for a verse (signed-in readers only). */
         Span noteBadge(ColState aState, String anEmail, String aBookName, String aBookCode,
                       int aChapter, String aVerseNo, String anExisting);
@@ -76,17 +81,20 @@ final class VerseWindowRenderer {
 
     private final TextQueryService    queryService;
     private final CommentQueryService commentService;
+    private final CrossRefQueryService xrefService;
     private final PersonalNoteService noteService;
     private final AuthenticationContext authContext;
     private final Host host;
 
     VerseWindowRenderer(final TextQueryService aQueryService,
                         final CommentQueryService aCommentService,
+                        final CrossRefQueryService aXrefService,
                         final PersonalNoteService aNoteService,
                         final AuthenticationContext anAuthContext,
                         final Host aHost) {
         this.queryService   = aQueryService;
         this.commentService = aCommentService;
+        this.xrefService    = aXrefService;
         this.noteService    = aNoteService;
         this.authContext    = anAuthContext;
         this.host           = aHost;
@@ -382,6 +390,8 @@ final class VerseWindowRenderer {
             (signedIn && opts.isShowVerses() && noteEmail != null)
                 ? noteService.forChapter(noteEmail, theVerses.get(0).getBookCode(), aChapter)
                 : java.util.Map.of();
+        final java.util.Map<Integer, List<XRef>> verseXrefs =
+            xrefsFor(aState, opts, theVerses.get(0).getBookCode(), aChapter);
 
         // In-column companion (e.g. a Qur'an translation beneath each ayah).
         // Render each verse as its own block: the primary line, then the paired
@@ -427,6 +437,10 @@ final class VerseWindowRenderer {
                 if (ayahComments != null)
                     primary.add(host.commentBadge(aState, aBookName, aChapter,
                         String.valueOf(verse.getVerseNumber()), ayahComments));
+                final List<XRef> ayahXrefs = verseXrefs.get(verse.getVerseNumber());
+                if (ayahXrefs != null)
+                    primary.add(host.xrefBadge(aState, aBookName, verse.getBookCode(), aChapter,
+                        String.valueOf(verse.getVerseNumber()), ayahXrefs));
                 if (signedIn && opts.isShowVerses()
                         && verseNotes.get(String.valueOf(verse.getVerseNumber())) != null)
                     primary.add(host.noteBadge(aState, noteEmail, aBookName, verse.getBookCode(), aChapter,
@@ -518,7 +532,7 @@ final class VerseWindowRenderer {
         }
 
         appendNormalVerses(text.getElement(), aState, theVerses, aChapter, aBookName, opts,
-            verseComments, verseNotes, signedIn, noteEmail);
+            verseComments, verseNotes, verseXrefs, signedIn, noteEmail);
         div.add(text);
         return div;
     }
@@ -533,6 +547,7 @@ final class VerseWindowRenderer {
             final String aBookName, final DisplayOptions anOptions,
             final java.util.Map<String, List<VerseComment>> theVerseComments,
             final java.util.Map<String, String> theVerseNotes,
+            final java.util.Map<Integer, List<XRef>> theVerseXrefs,
             final boolean aSignedInFlag, final String aNoteEmail) {
         String lastSectionTitle = null;
         for (final VerseRef verse : theVerses) {
@@ -587,6 +602,12 @@ final class VerseWindowRenderer {
                     String.valueOf(verse.getVerseNumber()), vcs).getElement());
                 aTarget.appendChild(new Span(" ").getElement());
             }
+            final List<XRef> xrs = theVerseXrefs.get(verse.getVerseNumber());
+            if (xrs != null) {
+                aTarget.appendChild(host.xrefBadge(aState, aBookName, verse.getBookCode(), aChapter,
+                    String.valueOf(verse.getVerseNumber()), xrs).getElement());
+                aTarget.appendChild(new Span(" ").getElement());
+            }
             // Note marker ONLY where a note exists — no icon on every verse (keeps
             // the text pristine). Adding a note on a bare verse comes via the
             // annotation pass (hover / notes-mode), not an always-on per-verse icon.
@@ -627,7 +648,8 @@ final class VerseWindowRenderer {
                 ? noteService.forChapter(noteEmail, bookCode, aChapter) : java.util.Map.of();
 
         appendNormalVerses(textEl, aState, aGroup, aChapter, aBookName, opts,
-            verseComments, verseNotes, signedIn, noteEmail);
+            verseComments, verseNotes, xrefsFor(aState, opts, bookCode, aChapter),
+            signedIn, noteEmail);
         groupEl.setAttribute("data-seq-last",
             String.valueOf(host.activeSeq(aState, aGroup.get(aGroup.size() - 1))));
         return true;
@@ -759,6 +781,17 @@ final class VerseWindowRenderer {
         }
         aState.firstSeq = host.activeSeq(aState, batch.get(0));
         trimBottom(aState);
+    }
+
+    /** The chapter's cross-references for the badges, by verse number. Empty unless this
+     *  column has them switched on and shows numbered verses (the badge anchors to the
+     *  verse, which continuous/all-caps modes don't show). Qur'an and hadith columns
+     *  have no rows under their book codes, so they come back empty without a special case. */
+    private java.util.Map<Integer, List<XRef>> xrefsFor(final ColState aState,
+            final DisplayOptions anOptions, final String aBookCode, final int aChapter) {
+        if (!aState.showXrefs || !anOptions.isShowVerses() || aBookCode == null || aBookCode.isBlank())
+            return java.util.Map.of();
+        return xrefService.forChapter(aBookCode, aChapter);
     }
 
     /** The chapter's comments for the badges: the public map, overlaid with the caller's OWN

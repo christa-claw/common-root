@@ -188,6 +188,8 @@ public class PreferencesView extends VerticalLayout {
             existing != null && existing.isShowCommentsPanel());
         final Checkbox markersBox = new Checkbox(t("prefs.showMarkers"),
             existing != null && existing.isShowCommentMarkers());
+        final Checkbox xrefBox = new Checkbox(t("prefs.showXrefMarkers"),
+            existing != null && existing.isShowXrefMarkers());
         final Checkbox resumeBox = new Checkbox(t("prefs.resume"),
             existing == null || existing.isResumeEnabled());      // on until switched off
         resumeBox.setTooltipText(t("prefs.resume.helper"));
@@ -239,7 +241,7 @@ public class PreferencesView extends VerticalLayout {
         // them in a fixed 320px, left-aligned column so they share the same left
         // edge as the 320px selects above.
         final VerticalLayout boolGroup =
-            new VerticalLayout(titlesBox, panelBox, markersBox, resumeBox, locationBlock);
+            new VerticalLayout(titlesBox, panelBox, markersBox, xrefBox, resumeBox, locationBlock);
         boolGroup.setPadding(false);
         boolGroup.setSpacing(false);
         boolGroup.setWidth("320px");
@@ -293,6 +295,7 @@ public class PreferencesView extends VerticalLayout {
                     p.setReaderLongTitles(Boolean.TRUE.equals(titlesBox.getValue()));
                     p.setShowCommentsPanel(Boolean.TRUE.equals(panelBox.getValue()));
                     p.setShowCommentMarkers(Boolean.TRUE.equals(markersBox.getValue()));
+                    p.setShowXrefMarkers(Boolean.TRUE.equals(xrefBox.getValue()));
                     p.setResumeEnabled(Boolean.TRUE.equals(resumeBox.getValue()));
                     if (!Boolean.TRUE.equals(resumeBox.getValue())) p.setLastPosition(null);
                     p.setMutedVoices(CommentQueryService.formatMuted(mutedBox.getValue()));

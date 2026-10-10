@@ -65,6 +65,20 @@ from reportlab.pdfbase.pdfmetrics import stringWidth  # noqa: E402
 
 DROP_CAP_LINES = 2
 
+# The size of a verse number in a chapter paragraph. The margin cross references find
+# where each verse begins by looking for fragments of exactly this size (see
+# Chapter.verse_starts), so chapter_paragraph and the finder must agree on it.
+VERSE_NUM_PT = 6.2
+
+# Cross references in the outer margin (--xrefs margin): small type, hung beside the line
+# a verse begins on. See place_margin_notes and PageBody.draw.
+XREF_PT, XREF_LEAD = 5.7, 6.6
+XREF_GAP, XREF_CLEAR = 3.0, 5.0      # mm: from the text, and from the trimmed edge
+XREF_MIN_OUTER = 30.0                # mm: the narrowest outer margin that carries them
+# Cross references in the text (--xrefs inline): a run right after each verse, in type this
+# fraction of the body size. Clearly smaller, as a printed reference Bible sets them.
+XREF_INLINE_RATIO = 0.64
+
 
 class CapNumeral(Flowable):
     """The chapter numeral, sized and placed as a drop cap.
@@ -125,13 +139,30 @@ class Chapter:
     of the drop cap; with a two-line cap that is the first two.
     """
 
-    def __init__(self, book, number, para, cap, xpad):
+    def __init__(self, book, number, para, cap, xpad, notes=None):
         self.book = book
         self.number = number
         self.para = para
         self.cap = cap
         self.xpad = xpad
+        self.notes = notes or {}          # {verse number: [cross-reference labels]}
         self.n = None
+        self._starts = None
+
+    def verse_starts(self):
+        """[(verse number, line index)]: the line each verse begins on, once broken.
+
+        A verse number is a fragment set at VERSE_NUM_PT, so it can be found in the
+        lines the paragraph was broken into without setting the text a second time."""
+        if self._starts is None:
+            found = []
+            for i, line in enumerate(self.para.blPara.lines):
+                for w in getattr(line, "words", ()) or ():
+                    text = getattr(w, "text", "").strip()
+                    if text.isdigit() and abs(getattr(w, "fontSize", 0) - VERSE_NUM_PT) < 0.01:
+                        found.append((int(text), i))
+            self._starts = found
+        return self._starts
 
     def break_lines(self, measure):
         para, style = self.para, self.para.style
@@ -168,10 +199,15 @@ class Chapter:
         p._splitpara = 1
         p.height = (b - a) * leading
         p.width = self.measure
-        if a == 0:
-            offsets = [self.offset] * min(self.narrow, b) + [0]
-            return ChapterPiece(p, offsets, self.cap)
-        return ChapterPiece(p, [0], None)
+        piece = (ChapterPiece(p, [self.offset] * min(self.narrow, b) + [0], self.cap)
+                 if a == 0 else ChapterPiece(p, [0], None))
+        if self.notes:
+            piece.lead = leading
+            piece.ascent = getattr(bl.lines[a], "ascent", style.fontSize)
+            piece.notes = [(vno, self.notes[vno], li - a)
+                           for vno, li in self.verse_starts()
+                           if a <= li < b and vno in self.notes]
+        return piece
 
 
 class ChapterPiece(Flowable):
@@ -182,6 +218,9 @@ class ChapterPiece(Flowable):
         self.para = para
         self.offsets = offsets
         self.cap = cap
+        self.notes = []          # [(verse number, labels, line within this piece)]
+        self.lead = 0.0
+        self.ascent = 0.0
         self.width = para.width
         self.height = para.height
 
@@ -206,10 +245,12 @@ class PageBody(Flowable):
     the frame. `items` are (top offset, x, flowable, height).
     """
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, xref=None):
         Flowable.__init__(self)
         self.width = width
         self.height = height
+        self.full_height = height    # the text block's depth; self.height shrinks on a last page
+        self.xref = xref             # margin cross-reference settings, or None
         self.items = []
         self.marks = []          # (book, chapter) for each chapter begun here
         self.short = 0           # lines by which a column was left short
@@ -220,6 +261,113 @@ class PageBody(Flowable):
     def draw(self):
         for top, x, f, h in self.items:
             f.drawOn(self.canv, x, self.height - top - h)
+        if self.xref:
+            self._margin_notes()
+
+    def _margin_notes(self):
+        """Hang each verse's cross references in the outer margin, level with the line the
+        verse begins on. Notes that would collide are pushed down, and pulled back up from
+        the foot of the text block; a page too crowded for that loses its least-voted
+        references (the last label of the fullest block) until the rest fit."""
+        cfg = self.xref
+        c = self.canv
+        recto = c.getPageNumber() % 2 == 1
+        blocks = []                      # [natural first baseline, vno, labels]
+        for top, _x, f, _h in self.items:
+            for vno, labels, k in getattr(f, "notes", ()):
+                blocks.append([self.height - top - f.ascent - k * f.lead, vno, list(labels)])
+        if not blocks:
+            return
+        floor = self.height - self.full_height
+        ceiling = self.height - cfg["size"]
+        while True:
+            wrapped = [wrap_note(b[1], b[2], cfg) for b in blocks]
+            ys = place_margin_notes([b[0] for b in blocks], [len(w) for w in wrapped],
+                                    floor + 1.0, ceiling, cfg["lead"])
+            if ys is not None:
+                break
+            fullest = max(range(len(blocks)), key=lambda i: (len(wrapped[i]), len(blocks[i][2])))
+            if len(blocks[fullest][2]) > 1:
+                blocks[fullest][2].pop()
+            else:
+                blocks.pop(fullest)
+                if not blocks:
+                    return
+            self.dropped = getattr(self, "dropped", 0) + 1
+        c.saveState()
+        c.setFillColor(colors.black)
+        for y0, (_nat, vno, labels), lines in zip(ys, blocks, wrapped):
+            for j, (num, text) in enumerate(lines):
+                y = y0 - j * cfg["lead"]
+                if recto:
+                    x = self.width + cfg["gap"]
+                    if num:
+                        c.setFont(cfg["bold"], cfg["size"])
+                        c.setFillColor(cfg["accent"])
+                        c.drawString(x, y, num)
+                        c.setFillColor(colors.black)
+                    else:
+                        x += cfg["indent"](vno)
+                    c.setFont(cfg["font"], cfg["size"])
+                    c.drawString(x + (cfg["indent"](vno) if num else 0), y, text)
+                else:
+                    # A left-hand page: the margin is on the left, and the notes lie
+                    # against the text, so each line ends at the gap.
+                    right = -cfg["gap"]
+                    w = stringWidth(text, cfg["font"], cfg["size"])
+                    if num:
+                        w += cfg["indent"](vno)
+                    x = right - w
+                    if num:
+                        c.setFont(cfg["bold"], cfg["size"])
+                        c.setFillColor(cfg["accent"])
+                        c.drawString(x, y, num)
+                        c.setFillColor(colors.black)
+                        x += cfg["indent"](vno)
+                    c.setFont(cfg["font"], cfg["size"])
+                    c.drawString(x, y, text)
+        c.restoreState()
+
+
+def wrap_note(vno, labels, cfg):
+    """[(verse number or None, text)]: one block of margin references wrapped to the margin.
+
+    A reference is never split; a line is full when the next one will not fit. The first
+    line opens with the verse number, and later lines hang under the references."""
+    width = cfg["width"]
+    indent = cfg["indent"](vno)
+    space = stringWidth(" ", cfg["font"], cfg["size"])
+    lines, cur, w = [], [], indent
+    for i, label in enumerate(labels):
+        text = label + (";" if i < len(labels) - 1 else "")
+        tw = stringWidth(text, cfg["font"], cfg["size"])
+        gap = space if cur else 0.0
+        if cur and w + gap + tw > width:
+            lines.append(cur)
+            cur, w, gap = [], indent, 0.0
+        cur.append(text)
+        w += gap + tw
+    if cur:
+        lines.append(cur)
+    return [(str(vno) if j == 0 else None, " ".join(parts)) for j, parts in enumerate(lines)]
+
+
+def place_margin_notes(natural, sizes, floor, ceiling, lead):
+    """First-line baselines for stacked blocks, top to bottom, or None if they cannot fit.
+
+    `natural` is where each block would sit beside its verse, `sizes` its line count. A block
+    that would overlap the one above is pushed down; if the last then runs below `floor`
+    the blocks are lifted back up from the bottom; if the first then stands above `ceiling`
+    there is no room."""
+    ys = list(natural)
+    for i in range(1, len(ys)):
+        ys[i] = min(ys[i], ys[i - 1] - sizes[i - 1] * lead)
+    for i in range(len(ys) - 1, -1, -1):
+        lowest = floor + (sizes[i] - 1) * lead
+        if i < len(ys) - 1:
+            lowest = max(lowest, ys[i + 1] + sizes[i] * lead)
+        ys[i] = max(ys[i], lowest)
+    return ys if not ys or ys[0] <= ceiling else None
 
 
 # ── right-to-left setting ─────────────────────────────────────────────────────
@@ -1304,7 +1452,8 @@ def esc(text):
                 .replace(">", "&gt;"))
 
 
-def chapter_paragraph(book, chapter, verses, st, fonts, accent_colour_obj):
+def chapter_paragraph(book, chapter, verses, st, fonts, accent_colour_obj, xref_for=None,
+                      inline=False):
     """One chapter as one justified block, verse numbers superscript.
 
     Bibles set verses run-on rather than one per line; a verse-per-paragraph
@@ -1325,14 +1474,29 @@ def chapter_paragraph(book, chapter, verses, st, fonts, accent_colour_obj):
     if st["_rtl"]:
         return RtlChapter(book, chapter, verses, st, fonts, accent_colour_obj)
     parts = []
+    ref_pt = round(st["body"].fontSize * XREF_INLINE_RATIO, 1)
     for n, text in verses:
+        run = ""
+        if inline and xref_for:
+            labels = xref_for(book, chapter, n)
+            if labels:
+                # A reference is never broken inside ("1 John 4:9" stays whole); the line may
+                # break between references.
+                refs = "; ".join(esc(label).replace(" ", "&nbsp;") for label in labels)
+                run = f'{"&nbsp;" if st["_cjk"] else " "}<font size="{ref_pt}">{refs}</font>'
         parts.append(
-            f'<super><font size="6.2">{n}</font></super>'
-            f'{"" if st["_cjk"] else "&nbsp;"}{esc(text)}{"" if st["_cjk"] else " "}')
+            f'<super><font size="{VERSE_NUM_PT}">{n}</font></super>'
+            f'{"" if st["_cjk"] else "&nbsp;"}{esc(text)}{run}{"" if st["_cjk"] else " "}')
     para = Paragraph("".join(parts), st["body"])
     cap = CapNumeral(chapter, fonts["bold"], st["body"], accent_colour_obj,
                      lines=DROP_CAP_LINES)
-    return Chapter(book, chapter, para, cap, xpad=st["body"].fontSize * 0.16)
+    notes = {}
+    if xref_for and not inline:
+        for n, _text in verses:
+            labels = xref_for(book, chapter, n)
+            if labels and str(n).isdigit():
+                notes[int(n)] = labels
+    return Chapter(book, chapter, para, cap, xpad=st["body"].fontSize * 0.16, notes=notes)
 
 
 # ── page composition ──────────────────────────────────────────────────────────
@@ -1413,12 +1577,13 @@ def compose_pages(units, geom, leading):
     width = geom["width"] - geom["inner"] - geom["outer"]
     height = geom["height"] - geom["top"] - geom["bottom"]
     eps = 1e-4
-    pages = [PageBody(width, height)]
+    xref = geom.get("xref")
+    pages = [PageBody(width, height, xref)]
     y = [0.0]
 
     def new_page():
         pages[-1].height = height
-        pages.append(PageBody(width, height))
+        pages.append(PageBody(width, height, xref))
         y[0] = 0.0
 
     def place_columns(cols, depth):
@@ -1525,7 +1690,7 @@ def compose_pages(units, geom, leading):
 
 
 def build_story(rows, st, fonts, ordering, geom, accent="black",
-                book_titles="long", book_end=True):
+                book_titles="long", book_end=True, xref_for=None, xref_inline=False):
     """rows: iterable of (book, chapter, verse_no, text) in final order."""
     accent_obj = accent_colour(accent)
     leading = st["body"].leading
@@ -1539,7 +1704,7 @@ def build_story(rows, st, fonts, ordering, geom, accent="black",
             if not units or units[-1][0] != "chapters":
                 units.append(("chapters", []))
             units[-1][1].append(chapter_paragraph(cur_book, cur_chap, buf, st,
-                                                  fonts, accent_obj))
+                                                  fonts, accent_obj, xref_for, xref_inline))
 
     def open_book(book):
         """The rule, and under it the long title when we have one."""
@@ -1668,6 +1833,31 @@ FRONT_RESOURCES = os.path.join(
 BOOKNAMES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "app", "src", "main", "resources", "i18n")
+
+
+def kjv_last_verses():
+    """{(USFM code, chapter): the KJV's last verse number}, from the corpus's KJV."""
+    from build_edition import xq, NS
+    out = {}
+    for ln in xq(NS + "for $b in db:open('religioustext', 'bible-kjv-1611.xml')//rt:book "
+                 "for $c in $b/rt:chapter return string($b/@code) || '&#9;' || string($c/@number) "
+                 "|| '&#9;' || string(max($c/rt:verse/@number ! xs:integer(.)))").split("\n"):
+        p = ln.split("\t")
+        if len(p) == 3 and p[1].isdigit() and p[2].isdigit():
+            out[(p[0], int(p[1]))] = int(p[2])
+    return out
+
+
+def book_codes(translation):
+    """{corpus book name: USFM code} for an edition, the key the cross references use."""
+    from build_edition import xq, NS
+    out = {}
+    for ln in xq(NS + f"for $b in db:open('religioustext', '{translation}.xml')"
+                 f"//rt:book return string($b/@name) || '&#9;' || string($b/@code)").split("\n"):
+        if "\t" in ln:
+            name, code = ln.split("\t", 1)
+            out[name] = code.strip()
+    return out
 
 
 def localised_book_names(translation, lang):
@@ -1829,6 +2019,17 @@ def main():
                          "suits an edition that prints no chapter numbers; "
                          "'none' suits scriptio continua, where any furniture "
                          "breaks the effect")
+    ap.add_argument("--xrefs", default="none", choices=("none", "inline", "margin"),
+                    help="cross references from OpenBible.info (CC BY 4.0; see xrefs.py). "
+                         "'inline' sets them in small type right after each verse, with "
+                         "abbreviated book names, in any trim; it needs abbreviations for the "
+                         "language (English, Finnish). 'margin' hangs them in the outer margin "
+                         "level with each verse, and needs one column and a fore-edge of at least "
+                         "30 mm: use --trim notes. A chapter numbered differently from the KJV "
+                         "gets none. Either way it is a different interior, and a separate print "
+                         "run")
+    ap.add_argument("--xref-top", type=int, default=3, choices=range(1, 6),
+                    help="how many references to print for each verse, most-voted first")
     ap.add_argument("--self-test", action="store_true",
                     help="build from synthetic verses, no BaseX")
     ap.add_argument("--self-test-chapters", type=int, default=3,
@@ -1934,11 +2135,75 @@ def main():
         st["_continued"] = front.get("continued", "continued")
         if a.title == "The Holy Bible":
             a.title = front["title"]
+    xref_for = None
+    if a.xrefs != "none":
+        import xrefs as xr
+        if a.self_test:
+            raise SystemExit("--xrefs needs a real edition, not --self-test.")
+        if rtl:
+            raise SystemExit(
+                "Cross references are not built for right-to-left editions yet: they would need "
+                "the book's own digits and shaped names, and in the margin the other side.")
+        inline = a.xrefs == "inline"
+        names = xr.names_for(lang or "en", abbreviated=inline)
+        if names is None:
+            code = (lang or "").split("-")[0]
+            raise SystemExit(
+                f"No {'abbreviated ' if inline else ''}book names for '{lang}': a cross reference "
+                f"needs them. Add app/src/main/resources/print/xref-names_{code}.properties "
+                f"(USFM code = the name, all 66 books)"
+                + ("" if inline else ", or an i18n/booknames_ file for the language") + ".")
+        if not inline and (geom["columns"] != 1 or geom["outer"] < XREF_MIN_OUTER * mm):
+            raise SystemExit(
+                f"Margin cross references need one column and a fore-edge of at least "
+                f"{XREF_MIN_OUTER:.0f} mm; this geometry has {geom['columns']} column(s) and "
+                f"{geom['outer'] / mm:.0f} mm. Use --trim notes, or --xrefs inline.")
+        data = xr.load(a.xref_top, names=names)
+        codes = book_codes(a.translation)
+        # The references are anchored to the KJV numbering. A chapter whose last verse number
+        # is not the KJV's is numbered differently (Psalm titles counted as a verse, a verse split
+        # or joined), and a reference there would stand beside the wrong verse, so it gets none.
+        # A verse left out because the edition prints two as one is fine: the numbers still agree.
+        last = {}
+        for r in rows:
+            try:
+                key = (codes[r[0]], int(r[1]))
+                last[key] = max(last.get(key, 0), int(r[2]))
+            except (KeyError, ValueError):
+                pass
+        kjv_last = kjv_last_verses()
+        misnumbered = {k for k, n in last.items() if k in kjv_last and kjv_last[k] != n}
+        if misnumbered:
+            hit = sum(1 for r in rows
+                      if r[0] in codes and (codes[r[0]], int(r[1])) in misnumbered)
+            print(f"  cross references: {len(misnumbered)} chapters left without them, numbered "
+                  f"differently from the KJV ({100 * hit / max(1, len(rows)):.1f}% of the verses)")
+
+        def xref_for(book, chapter, vno):
+            # The corpus hands chapter and verse over as text; the data is keyed by number.
+            try:
+                key = (codes[book], int(chapter))
+                if key in misnumbered:
+                    return None
+                return data.get((key[0], key[1], int(vno)))
+            except (KeyError, ValueError):
+                return None
+        if not inline:
+            space = stringWidth(" ", fonts["regular"], XREF_PT)
+            geom["xref"] = {
+                "font": fonts["regular"], "bold": fonts["bold"], "size": XREF_PT,
+                "lead": XREF_LEAD, "accent": accent_colour(a.accent),
+                "width": geom["outer"] - (XREF_GAP + XREF_CLEAR) * mm, "gap": XREF_GAP * mm,
+                "indent": lambda v: stringWidth(str(v), fonts["bold"], XREF_PT) + space}
     if not a.self_test:
         local = localised_book_names(a.translation, lang or "en")
         if local:
             rows = [(local.get(r[0], r[0]),) + tuple(r[1:]) for r in rows]
             extra = [local.get(b, b) for b in extra]
+            if a.xrefs != "none":
+                # By layout time the books carry their translated names; the references are
+                # looked up by code, so the lookup has to know those names as well.
+                codes.update({local.get(n, n): c for n, c in list(codes.items())})
     meta = {
         "title": a.title,
         "subtitle": a.edition_name or ORDER_LABEL.get(
@@ -1980,6 +2245,13 @@ def main():
             "h_rights": front["headings"]["rights"],
         })
 
+    if a.xrefs != "none":
+        # The credit CC BY 4.0 asks for goes in whatever language the rights page is in.
+        credit, changes = xr.credit_and_changes(a.xref_top, a.xrefs)
+        meta["rights"] += " " + credit + " " + changes
+        if not a.edition_name and not front:
+            meta["subtitle"] += ", with cross references"
+
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     doc = BookDoc(a.out, geom, fonts, a.title, head_mode=a.running_head,
                   accent=a.accent)
@@ -1987,7 +2259,9 @@ def main():
              else front_matter(st, meta)) + build_story(rows, st, fonts, a.ordering,
                                                  geom, accent=a.accent,
                                                  book_titles=a.book_titles,
-                                                 book_end=not a.no_book_end)
+                                                 book_end=not a.no_book_end,
+                                                 xref_for=xref_for,
+                                                 xref_inline=a.xrefs == "inline")
     doc.build(story)
     bodies = [f for f in story if isinstance(f, PageBody)]
     first_body = doc.page - len(bodies) + 1
@@ -2026,6 +2300,15 @@ def main():
     print(f"  {len(rows)} verses · {len({r[0] for r in rows})} books · "
           f"canon={a.canon} · ordering={a.ordering} · "
           f"head={a.running_head} · accent={a.accent}")
+    if a.xrefs == "margin":
+        dropped = sum(getattr(b, "dropped", 0) for b in bodies)
+        print(f"  cross references: the {a.xref_top} most-voted for each verse, in the outer "
+              f"margin at {XREF_PT} pt"
+              + (f" ({dropped} left out where a page had no room)" if dropped else ""))
+    elif a.xrefs == "inline":
+        print(f"  cross references: the {a.xref_top} most-voted for each verse, after the verse "
+              f"in type {XREF_INLINE_RATIO:.0%} of the body size "
+              f"({round(st['body'].fontSize * XREF_INLINE_RATIO, 1)} pt)")
     if uneven:
         shown = ", ".join(f"{pg} ({n})" for pg, n in uneven[:12])
         print(f"  {len(uneven)} page(s) with a column left short — page "

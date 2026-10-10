@@ -157,6 +157,33 @@
   .cols-preview .ch.gap{ margin-top:var(--lh); }
   /* The drop cap, verse numbers, book opening, long title and closing rule are
      in book-look.css, shared with the reader. */
+  /* The reference edition's margin notes hang on the page, outside the text box. */
+  .cols-preview .xi{ font-size:.64em; }
+  /* The "Create print package" button under the spec. */
+  pre.sample{ margin:.5em 0 0; padding:.7em .8em; overflow:auto; font-size:.8em; line-height:1.5;
+    background:var(--sunk); border:1px solid var(--rule); border-radius:5px; }
+  details summary{ cursor:pointer; color:var(--ink-soft); }
+  .pkg{ margin-top:16px; }
+  .pkg-btn{ display:block; width:100%; font:inherit; font-weight:700; padding:.8em 1em;
+    border-radius:6px; border:1px solid var(--rubric); background:var(--rubric); color:var(--surface);
+    cursor:pointer; }
+  .pkg-btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .pkg-note{ margin:.6em 0 0; font-size:.85em; line-height:1.5; color:var(--ink-soft); }
+  .pkg-out{ margin-top:.6em; font-size:.85em; }
+  .pkg-out pre{ margin:.4em 0 0; padding:.7em .8em; overflow:auto; font-size:.82em; line-height:1.5;
+    background:var(--sunk); border:1px solid var(--rule); border-radius:5px; white-space:pre-wrap; }
+  .pkg-out .row{ display:flex; gap:.6em; align-items:center; flex-wrap:wrap; }
+  .pkg-out a.dl, .pkg-out button.copy{ font:inherit; font-weight:700; padding:.45em .8em; border-radius:5px;
+    border:1px solid var(--rubric); background:transparent; color:var(--rubric); cursor:pointer;
+    text-decoration:none; }
+  .pkg-spin{ display:inline-block; width:.9em; height:.9em; margin-right:.4em; vertical-align:-.1em;
+    border:2px solid var(--rule); border-top-color:var(--rubric); border-radius:50%;
+    animation:pkgspin .9s linear infinite; }
+  @keyframes pkgspin{ to{ transform:rotate(360deg); } }
+  .page .xr{ position:absolute; color:#1a1a1a; font-family:"EB Garamond",Georgia,serif; }
+  .page .xr.l{ text-align:right; }
+  .page .xr b{ color:var(--rubric); font-weight:700; }
+  #trim.off button, #margin:disabled{ opacity:.45; cursor:not-allowed; }
   .cols-preview .ti{ text-align:center; font-style:italic; font-size:.95em;
     height:var(--lh); line-height:var(--lh); margin:0; }
   /* Front matter is single column, full measure. */
@@ -269,6 +296,15 @@
           <input type="range" id="margin" min="8" max="40" step="1" value="12">
           <div class="ticks"><span>0.8</span><span>2.0</span><span>3.0</span><span id="margin-max-tick">4.0 cm notes</span></div>
         </div>
+        <div class="field" id="xrefs-field">
+          <label>Cross references <span style="color:var(--ink-faint)">— English editions</span></label>
+          <div class="seg" id="xrefs">
+            <button data-v="none" aria-pressed="true">None</button>
+            <button data-v="inline" aria-pressed="false" title="Three cross references after each verse, in small type, with abbreviated book names. Any trim">In the text</button>
+            <button data-v="margin" aria-pressed="false" title="Three cross references to each verse in the outer margin, in small type, beside the verse. A wider one-column book">In the margin</button>
+          </div>
+          <p id="xrefs-hint" style="font-size:.82em;color:var(--ink-faint);margin:.55em 0 0" hidden></p>
+        </div>
       </div>
 
       <div class="card">
@@ -352,7 +388,7 @@
       <div class="spec">
         <h2>Production spec</h2>
         <div class="big">
-          <div><p class="k">Extent</p><p class="v" id="pages">1,160</p></div>
+          <div><p class="k">Extent</p><p class="v" id="pages">1,024</p></div>
           <div><p class="k">Spine</p><p class="v" id="spine">28 mm</p></div>
           <div><p class="k">Per copy</p><p class="v acc" id="unit">€31</p></div>
           <div><p class="k">Run total</p><p class="v" id="total">€775</p></div>
@@ -361,6 +397,7 @@
           <div><dt>Trim</dt><dd id="s-trim">140 × 216 mm</dd></div>
           <div><dt>Setting</dt><dd id="s-set">2 col · 53 mm · 8.8/10.6 pt</dd></div>
           <div><dt>Margins</dt><dd id="s-marg">17 / 12 / 14 / 15 mm</dd></div>
+          <div id="s-xref-row" hidden><dt>Cross refs</dt><dd id="s-xref">Top 3 per verse</dd></div>
           <div><dt>Paper</dt><dd>40 gsm Thinprint</dd></div>
           <div><dt>Printing</dt><dd id="s-print">Digital, mono</dd></div>
           <div><dt>Binding</dt><dd>Sewn</dd></div>
@@ -370,6 +407,11 @@
           <div><dt>Rights</dt><dd id="s-rights">Public domain</dd></div>
         </dl>
         <div class="flag ok" id="flag"><b>Monochrome job.</b> This is the spec Pretore quoted on 22 September.</div>
+        <div class="pkg" id="pkg">
+          <button type="button" class="pkg-btn" id="pkg-make">Create print package</button>
+          <p class="pkg-note" id="pkg-note" aria-live="polite"></p>
+          <div class="pkg-out" id="pkg-out" hidden></div>
+        </div>
       </div>
     </div>
   </div>
@@ -377,20 +419,57 @@
   <div class="notes">
     <h3>What each control actually costs</h3>
     <ol>
-      <li><b>Type size is the biggest lever on extent</b>, bigger than margin. On the standard trim, 7.5 pt sets in 892 pages and 10.5 pt in 1,666 — a large-print edition is nearly twice the book. <span class="chip measured">Measured</span></li>
+      <li><b>Type size is the biggest lever on extent</b>, bigger than margin. On the standard trim, 7.5 pt sets in 749 pages and 10.5 pt in 1,485 — a large-print edition is twice the book. <span class="chip measured">Measured</span></li>
       <li><b>Format barely changes the page count</b>, because each trim's type size scales with the page. A pocket Bible is a smaller object, not a longer one.</li>
       <li><b>The two-column setting has a boundary that moves.</b> Wide margins and large type both squeeze the column; below about 28 characters a line, justification opens rivers. At 8.8 pt the columns survive to a 38 mm fore-edge; at 10.5 pt they give out at 24 mm and the book becomes a single-column reader's edition.</li>
-      <li><b>Apocrypha adds about 22%</b> — 6,736 verses against 31,194. In traditional order their placement is conventional; in chronological order it still needs building.</li>
+      <li><b>Apocrypha adds about 22%</b> — 6,736 verses against 31,103. In traditional order their placement is conventional; in chronological order it still needs building.</li>
       <li><b>Colour changes the job, not just the look.</b> Any accent but black means two inks and a requote.</li>
       <li><b>The spread is the unit, not the page.</b> With the head split, the verso names the book and the recto names the chapters, so nothing is said twice and each side answers one question. On a page that opens a book there is no head at all — the rule beneath already names it.</li>
       <li><b>The traditional titles assert things the books do not.</b> “The Epistle of Paul the Apostle to the Hebrews” names an author the letter never names; so do the five books of Moses, the Lamentations of Jeremiah and the Saints before the evangelists. That sits oddly in an edition whose argument is that chapters (1227) and verses (1551) are later additions worth showing as such — so it is a setting, and <b>Name only</b> asserts nothing. The long title is also English-only: a Finnish or German edition gets the bare name until someone supplies the titles.</li>
     </ol>
 
+    <h3>How an order would work <span class="chip derived">Proposal</span></h3>
+    <ol>
+      <li><b>The reader chooses and saves an order.</b> On this page they pick an edition and press
+        <i>Create print order</i> (below the spec). They get a small file, an example of which is below. It carries
+        our reference and a <i>spec id</i>: the same spec id is the same interior, so identical orders can be grouped
+        into one print run. The page would offer a fixed set of editions, because every different interior is its own
+        set-up.</li>
+      <li><b>The reader sends it to Pretore.</b> Pretore bills them and ships the book. The price is Pretore's: the
+        figures on this page are estimates, not quotes.</li>
+      <li><b>Pretore sends us the file</b> with its own order number.</li>
+      <li><b>We build the print-ready package from it</b>, in about ten seconds:
+        <code>build_package.py --order file.json --order-id &lt;Pretore's number&gt;</code>. It holds the interior
+        PDF, the rights page, the spec and the font licences, stamped with both numbers. A file edited after it was
+        made no longer matches its spec id and is refused.</li>
+      <li><b>We send the package to Pretore</b>, who print and ship.</li>
+    </ol>
+    <p><b>Not yet agreed:</b> whether Pretore will bill and ship to individual readers, the smallest run of identical
+      orders, what is needed for the cover, and how orders should reach Pretore.</p>
+    <details>
+      <summary>An example order file</summary>
+      <pre class="sample">{
+  "format": "common-root-print-order",
+  "version": 1,
+  "created": "2026-10-10T12:00:00.000Z",
+  "orderRef": "CR-7F3A91C2",
+  "edition": "WEB",
+  "settings": {
+    "ordering": "chronological", "canon": "66", "trim": "standard", "body": 8.8, "outer": 12,
+    "head": "split", "titles": "long", "accent": "black", "xrefs": "none", "xrefTop": 3,
+    "mode": "CHAPTERS_VERSES"
+  },
+  "estimate": { "pages": 1024, "spineMm": 25, "copies": 25, "unitEur": 31, "totalEur": 775,
+                "note": "Estimates from the order page, not a quote." },
+  "specId": "1eeb9bcbf673"
+}</pre>
+    </details>
+
     <h3>Why a reader does not see this page</h3>
     <p>All of it lives inside the PDF, so changing any of it means re-typesetting — and a different interior is a separate setup at €750, not a share of a €775 batch. Twenty-five readers choosing twenty-five margins would cost €18,750. So this is the page that <b>opens an edition</b>; readers then join the one they like, and every copy in a run is identical. That is the whole reason the per-copy figure is €31.</p>
 
     <h3>Where the numbers come from</h3>
-    <p>Extents marked <span class="chip measured">Measured</span> were typeset at that exact geometry and their pages counted; everything else is interpolated between measured points and marked <span class="chip derived">Derived</span>. The 1,160-page baseline scales real typesetting to WEB's 31,194 verses and is good to about ±5% until a full run exists. Spine assumes 0.048 mm a leaf including binding bulk — an estimate to quote, not to cut a cover to. Prices are Pretore's for 1 and 25 copies; everything between is a straight line. Shipping excluded.</p>
+    <p>Extents marked <span class="chip measured">Measured</span> were typeset at that exact geometry and their pages counted; everything else is interpolated between measured points and marked <span class="chip derived">Derived</span>. The baseline is a full run: the WEB in event order, 66 books, on the standard trim at 8.8 pt, is 1,023 pages (31,103 verses). Cross references and the one-column reference edition are anchored to full runs of their own (1,166 and 1,223 pages), and scaled from there. Spine assumes 0.048 mm a leaf including binding bulk — an estimate to quote, not to cut a cover to. Prices are Pretore's for 1 and 25 copies; everything between is a straight line. Shipping excluded.</p>
   </div>
 </div>
 
@@ -401,12 +480,17 @@
     standard:{ w:140, h:216, inner:17, body:8.8 },
     large:   { w:152, h:229, inner:18, body:9.4 }
   };
+  // The reference edition is the generator's `--trim notes --xrefs margin`: one column on
+  // 152 x 229 mm, a 40 mm fore-edge that carries the cross references. WEB in event order,
+  // 66 books, 9.4 pt: 1,223 pages, counted from a real run (the same trim without the
+  // references is also 1,223: the notes add no pages, the wide margin and trim do).
+  var REF_TRIM = { w:152, h:229, inner:17, body:9.4 }, REF_MARGIN = 40, REF_PAGES = 1223;
   // Pages counted from real typesetting, standard trim, 12 mm fore-edge.
   var BY_BODY   = { 7.5:30, 8.0:34, 8.8:39, 9.5:47, 10.5:56 };
   // Pages counted at 8.8 pt, standard trim, by fore-edge; [two-col, one-col].
   var BY_MARGIN = { 8:[38,36],10:[39,37],12:[39,37],15:[41,38],20:[44,40],
                     25:[45,42],30:[null,45],35:[null,46],40:[null,49] };
-  var REF = 39, BASE_PAGES = 1160, LEAF = 0.048, CANON_FULL = 1.216;
+  var REF = 39, BASE_PAGES = 1023, LEAF = 0.048, CANON_FULL = 1.216;
   var ACCENT_NAME = { black:"Black", rubric:"Rubric red", indigo:"Indigo",
                       sepia:"Sepia", forest:"Forest green" };
 
@@ -472,8 +556,26 @@
 
   var state = { translation:"web", ordering:"chronological", canon:"66",
                 mode:"CHAPTERS_VERSES", trim:"standard", body:8.8, margin:12,
-                head:"split", titles:"long", accent:"black",
+                head:"split", titles:"long", accent:"black", xrefs:"none", saved:null,
                 construction:"hardcover", cover:"paper-matt", qty:25 };
+  // The reference edition is only offered on an English edition: the references are anchored
+  // to the KJV numbering and named in English.
+  // none | inline | margin: how the cross references are set, for the edition now chosen.
+  function xrefMode(){ return edition(state.translation).lang === "en" ? state.xrefs : "none"; }
+  function refMode(){ return xrefMode() === "margin"; }          // the one-column reference edition
+  function inlineMode(){ return xrefMode() === "inline"; }       // after each verse, in any trim
+  // Measured: WEB in event order, standard trim, 8.8 pt, three references per verse, set inline:
+  // 1,166 pages against 1,023 without them.
+  var INLINE_FACTOR = 1166 / 1023;
+  // The wording the book's rights page carries (scripts/print/xrefs.py credit_and_changes).
+  function xrefCredit(){
+    return "Cross references " + (refMode() ? "in the margin" : "after each verse, in small type") +
+    ": OpenBible.info (openbible.info/labs/cross-references), " +
+    "compiled mostly from the Treasury of Scripture Knowledge and ranked by reader votes, used under the " +
+    "Creative Commons Attribution 4.0 International licence (creativecommons.org/licenses/by/4.0). " +
+    "Changes made: references with negative votes removed; ranges that cross into another book shortened " +
+    "to their first verse; only the three most-voted references to each verse printed; book names abbreviated.";
+  }
 
   // The reader's own DisplayMode enum, verbatim, so the two surfaces agree.
   var MODE = {
@@ -555,7 +657,7 @@
       var vs = ((sample.chapters && sample.chapters[key]) || []).filter(function(v){
         return (from == null || v[0] >= from) && (to == null || v[0] <= to); });
       if (!vs.length) return null;
-      var b = { verses:vs };
+      var b = { verses:vs, xkey:key };
       if (!o.nocap) b.chapter = chapter;
       if (o.opens) {
         b.book = nm(code);
@@ -646,6 +748,8 @@
   function minMeasureMm(bodyPt){ return 28 * 0.46 * bodyPt / 72 * 25.4; }
 
   function geometry(){
+    if (refMode()) return { trim:REF_TRIM, columns:1, ref:true,
+                            measure: REF_TRIM.w - REF_TRIM.inner - REF_MARGIN };
     var t = TRIM[state.trim];
     var twoWidth = (t.w - t.inner - state.margin - 5) / 2;
     var two = twoWidth >= minMeasureMm(state.body);
@@ -662,11 +766,13 @@
   // The largest type that still sets two columns at the narrowest fore-edge:
   // on the pocket trim 10.5 pt cannot, so the type slider stops short of it.
   function bodyCap(){
+    if (refMode()) return 10.5;                      // one column: no two-column limit
     var t = TRIM[state.trim];
     var col = (t.w - t.inner - MARGIN_MIN - 5) / 2;          // mm
     return Math.min(10.5, Math.floor(col * 72 / (25.4 * 28 * 0.46) * 10) / 10);
   }
   function marginCap(){
+    if (refMode()) return REF_MARGIN;
     var t = TRIM[state.trim];
     var cap = Math.floor(t.w - t.inner - 5 - 2 * minMeasureMm(state.body));
     return Math.max(MARGIN_MIN, Math.min(MARGIN_MAX, cap));
@@ -674,11 +780,18 @@
 
   function pages(){
     var g = geometry();
+    if (g.ref) {
+      // Anchored to the one measured run and scaled by type size, canon and mode.
+      var rb = interp(BY_BODY, state.body) / interp(BY_BODY, REF_TRIM.body);
+      return Math.round(REF_PAGES * rb * (state.canon === "full" ? CANON_FULL : 1) *
+                        MODE[state.mode].extent / 4) * 4;
+    }
     var rBody   = interp(BY_BODY, state.body) / REF;
     var rMargin = interp(BY_MARGIN, state.margin, g.columns === 2 ? 0 : 1) / REF;
     var rCanon  = state.canon === "full" ? CANON_FULL : 1;
     var rMode   = MODE[state.mode].extent;
-    return Math.round(BASE_PAGES * rBody * rMargin * rCanon * rMode / 4) * 4;
+    var plain = Math.round(BASE_PAGES * rBody * rMargin * rCanon * rMode / 4) * 4;
+    return inlineMode() ? Math.round(plain * INLINE_FACTOR / 4) * 4 : plain;
   }
 
   var ORDER_LABEL = {"chronological": "Event order", "writing": "Writing order", "canonical": "Canonical order", "tanakh": "Tanakh order", "narrative": "Narrative order"};
@@ -713,7 +826,7 @@
       var ord = ORDER_LABEL[state.ordering] ||
                 (state.ordering.charAt(0).toUpperCase() + state.ordering.slice(1) + " order");
       return '<div class="ft-title" style="margin-top:' + topPx + 'px">The Holy Bible</div>' +
-             '<div class="ft-sub">' + ord + '</div>' +
+             '<div class="ft-sub">' + ord + (xrefMode() !== "none" ? ", with cross references" : "") + '</div>' +
              '<div class="ft-imp">common-root.org</div>';
     }
     return '<div class="ft-h">About this arrangement</div>' +
@@ -726,7 +839,8 @@
                 'carries no per-copy licence.') +
            ' Typeset by Common Root (common-root.org) from a structured text ' +
            'corpus. Set in Crimson Pro, used under the SIL Open Font Licence. The full ' +
-           'text of that licence accompanies this file.</p>';
+           'text of that licence accompanies this file.' +
+           (xrefMode() !== "none" ? ' ' + xrefCredit() : '') + '</p>';
   }
 
   /* ── preview ──────────────────────────────────────────────────────────────
@@ -872,8 +986,16 @@
           var gap = (n > 0 && b.chapter && !m.continuous) ? " gap" : "";
           var body = "";
           b.verses.forEach(function(v){
-            body += (m.verses ? '<span class="vn">' + nd(v[0]) + '</span> ' : "") +
-                    fmt(v[1]) + (m.caps ? "" : " ");
+            // Cross references after the verse, in smaller type (the inline placement).
+            var run = "";
+            if (inlineMode() && m.verses && !m.continuous && sample.xrefs && b.xkey) {
+              var onChapter = sample.xrefs[b.xkey], labels = onChapter && onChapter[v[0]];
+              if (labels) run = ' <span class="xi">' + labels.map(function(x){
+                return x.replace(/ /g, "&nbsp;"); }).join("; ") + '</span>';
+            }
+            body += (m.verses ? '<span class="vn"' + (b.xkey ? ' data-x="' + b.xkey + '.' + v[0] + '"' : "") +
+                    '>' + nd(v[0]) + '</span> ' : "") +
+                    fmt(v[1]) + run + (m.caps ? "" : " ");
           });
           inner += '<p class="ch' + gap + '">' + cap + body + '</p>';
           n++;
@@ -901,6 +1023,32 @@
         last.style.height =
           Math.max(lh, Math.floor((boxH - last.offsetTop) / lh) * lh) + "px";
       }
+    }
+
+    // The reference edition: cross references in the outer margin, level with their verse.
+    Array.prototype.forEach.call(page.querySelectorAll(".xr"), function(e){ e.parentNode.removeChild(e); });
+    if (refMode() && sample.xrefs && m.verses && !m.continuous && !pg.front) {
+      var pr = page.getBoundingClientRect(), br = box.getBoundingClientRect();
+      var nfs = ptToPx(5.7), nlh = ptToPx(6.6), nw = mmToPx(REF_MARGIN - 8);
+      var edge = recto ? (br.right - pr.left) + mmToPx(3) : (br.left - pr.left) - mmToPx(3) - nw;
+      var notes = [];
+      Array.prototype.forEach.call(box.querySelectorAll(".vn[data-x]"), function(sp){
+        var k = sp.getAttribute("data-x"), i = k.lastIndexOf(".");
+        var chapter = sample.xrefs[k.slice(0, i)], labels = chapter && chapter[k.slice(i + 1)];
+        if (labels) notes.push({ top:sp.getBoundingClientRect().top - pr.top, vn:nd(k.slice(i + 1)), labels:labels });
+      });
+      var prevBottom = -1e9, floorY = br.bottom - pr.top;
+      notes.forEach(function(n){
+        var d = document.createElement("div");
+        d.className = "xr" + (recto ? "" : " l");
+        d.style.cssText = "width:" + nw + "px;left:" + edge + "px;font-size:" + nfs + "px;line-height:" + nlh + "px";
+        d.innerHTML = "<b>" + n.vn + "</b> " + n.labels.join("; ");
+        page.appendChild(d);
+        var top = Math.max(n.top - nfs * 0.15, prevBottom);        // pushed down if it would collide
+        if (top + d.offsetHeight > floorY) top = Math.max(0, floorY - d.offsetHeight);
+        d.style.top = top + "px";
+        prevBottom = top + d.offsetHeight;
+      });
     }
 
     document.getElementById("pg-label").textContent = pg.label;
@@ -935,10 +1083,24 @@
       note = ed.name + ", set at the chosen geometry. One empty line " +
              "between chapters; a chapter never opens on fewer than three lines " +
              "at the foot of a column, and no single line is carried over.";
+    if (inlineMode() && !pg.front)
+      note += (m.verses && !m.continuous
+        ? " Three cross references follow each verse, in type 64% of the size of the text."
+        : " Cross references are shown only where verse numbers are.");
+    if (refMode() && !pg.front)
+      note += (m.verses && !m.continuous
+        ? " Three cross references to each verse hang in the outer margin, level with it, in 5.7 pt type."
+        : " The margin carries cross references only where verse numbers are shown.");
     if (rtl && !pg.front)
       note += " Set right to left: the first column is the right-hand one, the drop " +
               "cap sits on the right, and the gutter is on the right of a recto.";
     document.getElementById("preview-note").textContent = note;
+  }
+
+  // Pretore's two quotes, a straight line between them.
+  function priceFor(n){
+    var total = n === 1 ? 750 : (n === 25 ? 775 : 748.96 + (25/24)*n);
+    return { total:total, unit: n === 1 ? 750 : (n === 25 ? 31 : total/n) };
   }
 
   function money(v){
@@ -948,6 +1110,21 @@
 
   function render(){
     var ed = edition(state.translation);
+    // The edition changed to one the references do not fit (Arabic, say): back to the standard book.
+    if (state.xrefs !== "none" && ed.lang !== "en") { setXrefs("none"); return; }
+    var ref = refMode(), inl = inlineMode();
+    document.getElementById("xrefs-field").hidden = ed.lang !== "en";
+    var hint = document.getElementById("xrefs-hint");
+    hint.hidden = state.xrefs === "none";
+    hint.innerHTML = ref
+      ? "A <b>reference edition</b>: one column, 15.2 × 22.9 cm, with a 4 cm fore-edge that carries the " +
+        "references. It is a different interior from the standard book, so a separate print run."
+      : "References follow each verse in type about two-thirds the size of the text, with abbreviated " +
+        "book names. Any trim. About 14% more pages than the plain book, so a separate print run.";
+    document.getElementById("margin").disabled = ref;
+    document.getElementById("trim").classList.toggle("off", ref);
+    Array.prototype.forEach.call(document.querySelectorAll("#trim button"), function(b){ b.disabled = ref; });
+    setSeg("trim", ref ? "" : state.trim);
     document.getElementById("translation").value = ed.id;
     var tn = document.getElementById("translation-note");
     tn.hidden = false;
@@ -969,8 +1146,7 @@
     document.getElementById("spine").textContent = spine.toFixed(0) + " mm";
 
     var n = state.qty;
-    var total = n === 1 ? 750 : (n === 25 ? 775 : 748.96 + (25/24)*n);
-    var unit  = n === 1 ? 750 : (n === 25 ? 31  : total/n);
+    var total = priceFor(n).total, unit = priceFor(n).unit;
     document.getElementById("unit").textContent  = money(unit);
     document.getElementById("total").textContent = money(total);
 
@@ -979,7 +1155,11 @@
       g.columns + " col · " + g.measure.toFixed(0) + " mm · " +
       state.body.toFixed(1) + "/" + lead.toFixed(1) + " pt";
     document.getElementById("s-marg").textContent =
-      g.trim.inner + " / " + state.margin + " / 14 / 15 mm";
+      g.trim.inner + " / " + state.margin + (ref ? " / 15 / 16 mm" : " / 14 / 15 mm");
+    document.getElementById("s-xref-row").hidden = !(ref || inl);
+    document.getElementById("s-xref").textContent = ref
+      ? "Top 3 per verse, outer margin, 5.7 pt — OpenBible.info, CC BY 4.0"
+      : "Top 3 per verse, after the verse, 64% size — OpenBible.info, CC BY 4.0";
     document.getElementById("s-print").textContent =
       state.accent === "black" ? "Digital, mono" : "Digital, COLOUR";
     document.getElementById("s-head").textContent =
@@ -1000,7 +1180,21 @@
     if (state.accent !== "black")
       msgs.push("<b>Colour job — needs a requote.</b> " + ACCENT_NAME[state.accent] +
                 " on the apparatus, scripture stays black. Pretore quoted monochrome.");
-    if (g.columns === 1)
+    if (ref)
+      msgs.push("<b>Reference edition.</b> One column on 15.2 × 22.9 cm, with a 4 cm fore-edge that " +
+                "carries three cross references to each verse in 5.7 pt type (OpenBible.info, CC BY 4.0: " +
+                "credited, with what was changed, on the rights page). It is a different interior from " +
+                "the standard book, so a separate print run and its own set-up. The notes add no pages; " +
+                "the wider trim and margin do. <b>Not quoted:</b> Pretore's prices are for the standard " +
+                "140 × 216 mm book, so this size and extent need a requote.");
+    else if (inl)
+      msgs.push("<b>Cross references in the text.</b> Three to each verse, set right after it in type " +
+                "about two-thirds the size of the text, with abbreviated book names (OpenBible.info, " +
+                "CC BY 4.0: credited, with what was changed, on the rights page). Any trim works. It is a " +
+                "different interior from the plain book, about 14% more pages (measured on the WEB), so a " +
+                "separate print run. <b>Not quoted:</b> Pretore's prices are for the plain book, so the " +
+                "extra pages need a requote.");
+    if (!ref && g.columns === 1)
       msgs.push("<b>Single column.</b> At " + state.body.toFixed(1) + " pt a " +
                 (state.margin/10).toFixed(1) + " cm fore-edge leaves no room for two — " +
                 "this is a reader's edition, a different object.");
@@ -1016,10 +1210,28 @@
                 EDITIONS.map(function(e){ return e.name; }).join(", ").replace(/, ([^,]*)$/, " and $1") +
                 ". Your reading order and display mode carried over; the " +
                 "translation did not.");
+    renderPackage();
     if (msgs.length){ f.className = "flag"; f.innerHTML = msgs.join("<br><br>"); }
     else { f.className = "flag ok";
       f.innerHTML = "<b>Monochrome job.</b> This is the spec Pretore quoted on 22 September."; }
     renderPreview();
+  }
+
+  // Switching the reference edition on takes the book to its own interior and puts the
+  // standard choices back when it is switched off.
+  function setXrefs(v){
+    if (v === state.xrefs) return;
+    if (state.xrefs === "margin" && state.saved) {         // leaving the reference edition
+      state.trim = state.saved.trim; state.margin = state.saved.margin;
+      state.body = state.saved.body; state.saved = null;
+    }
+    state.xrefs = v;
+    if (v === "margin") {
+      state.saved = { trim:state.trim, margin:state.margin, body:state.body };
+      state.margin = REF_MARGIN; state.body = REF_TRIM.body;
+    }
+    setSeg("xrefs", state.xrefs);
+    render();
   }
 
   function setSeg(id, value){
@@ -1043,6 +1255,8 @@
   }
   ["ordering","canon","mode","trim","head","titles","accent",
    "construction","cover"].forEach(function(id){ wireSeg(id, id); });
+  document.getElementById("xrefs").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if (b && !b.disabled) setXrefs(b.dataset.v); });
   document.getElementById("translation").addEventListener("change", function(e){
     state.translation = e.target.value; render(); });
   document.getElementById("body").addEventListener("input", function(e){
@@ -1067,9 +1281,12 @@
   // fill in the rest (below), but never override what the link asked for.
   var queried = { source:false, ordering:false, mode:false };
 
+  var queryXrefs = null;
   (function readQuery(){
     var q;
     try { q = new URLSearchParams(location.search); } catch (err) { return; }
+    var x = (q.get("xrefs") || "").toLowerCase();
+    if (x === "inline" || x === "margin") queryXrefs = x;
     var src = (q.get("source") || "").toUpperCase();
     if (src) {
       cameFromReader = true; queried.source = true;
@@ -1097,6 +1314,210 @@
                                                      block:"center" });
   });
 
+  /* ── Create print package ────────────────────────────────────────────────
+     The settings on this page, turned into a package for the printer. Where the server has the
+     typesetting toolchain and the viewer is an administrator, the button builds it there and
+     offers the zip. Anywhere else (the live site has no toolchain) it shows the exact command
+     to run in the project folder, so the button is never a dead control. */
+  var pkgCaps = { enabled:false, admin:false };
+  var pkgBuilt = null;                 // { id, request } of the last build this page started
+  var pkgTimer = null;
+  var PKG_FONTS = { en:["fonts/crimson", "CrimsonPro"], ar:["fonts/scheherazade", "ScheherazadeNew"] };
+
+  function packageRequest(){
+    var ed = edition(state.translation);
+    return { edition:ed.abbr, ordering:state.ordering, canon:state.canon,
+             trim: refMode() ? "notes" : state.trim, body:state.body,
+             outer: refMode() ? null : state.margin, head:state.head, titles:state.titles,
+             accent:state.accent, xrefs:xrefMode(), xrefTop:3, mode:state.mode };
+  }
+  // Why these settings cannot be built yet, or null. The same limits the server enforces.
+  function packageBlocker(){
+    if (state.mode !== "CHAPTERS_VERSES")
+      return "Only the verse-numbered text is built so far. Choose “Verses (1551)” to make a package.";
+    if (state.canon === "full" && (state.ordering === "chronological" || state.ordering === "writing"))
+      return "The apocrypha have no placement in that reading order yet. Use the traditional order.";
+    return null;
+  }
+  function packageCommand(){
+    var r = packageRequest(), ed = edition(state.translation), f = PKG_FONTS[ed.lang] || PKG_FONTS.en;
+    var a = ["python3 scripts/print/build_package.py", "--translation " + ed.source,
+             "--ordering " + r.ordering, "--canon " + r.canon, "--trim " + r.trim,
+             "--fonts " + f[0], "--font-family " + f[1], "--running-head " + r.head,
+             "--book-titles " + r.titles, "--accent " + r.accent];
+    if (r.body != null) a.push("--body-size " + r.body);
+    if (r.outer != null) a.push("--outer " + r.outer);
+    if (r.xrefs !== "none") a.push("--xrefs " + r.xrefs, "--xref-top " + r.xrefTop);
+    a.push("--out out/print/" + ed.abbr.toLowerCase() + "-" + r.ordering +
+           (r.xrefs === "none" ? "" : "-xrefs-" + r.xrefs) + "-package.zip");
+    return a.join(" \\\n  ");
+  }
+  // The settings on this page as a print order: a small file build_package.py --order reads. Only a
+  // request; the builder checks it as if a person had typed the options. `estimate` is the page's own
+  // figures, for information.
+  // Our reference for an order: CR- and eight hex digits.
+  function newOrderRef(){
+    var b = new Uint8Array(4);
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(b);
+    else for (var i = 0; i < 4; i++) b[i] = Math.floor(Math.random() * 256);
+    return "CR-" + Array.prototype.map.call(b, function(x){ return ("0" + x.toString(16)).slice(-2); })
+                     .join("").toUpperCase();
+  }
+  // A spec id names an INTERIOR: the same edition and settings give the same id, so a printer can put
+  // identical orders in one run. First twelve hex digits of the SHA-256 of these values joined with
+  // "|"; scripts/print/build_package.py spec_id() makes the same id, and a file edited afterwards no
+  // longer matches it. null where the browser has no crypto.subtle (the file then has no spec id).
+  function specString(r){
+    return [r.edition, r.ordering, r.canon, r.trim,
+            r.body != null ? Number(r.body).toFixed(1) : "",
+            r.outer != null ? String(Math.round(r.outer)) : "",
+            r.head, r.titles, r.accent, r.xrefs, r.xrefTop].join("|");
+  }
+  function specIdOf(r){
+    if (!(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(specString(r))).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){
+        return ("0" + b.toString(16)).slice(-2); }).join("").slice(0, 12);
+    });
+  }
+  function orderFile(ref, sid){
+    var r = packageRequest(), p = pages(), pr = priceFor(state.qty);
+    var f = { format:"common-root-print-order", version:1, created:new Date().toISOString(),
+             orderRef:ref, edition:r.edition,
+             settings:{ ordering:r.ordering, canon:r.canon, trim:r.trim, body:r.body, outer:r.outer,
+                        head:r.head, titles:r.titles, accent:r.accent, xrefs:r.xrefs,
+                        xrefTop:r.xrefTop, mode:r.mode },
+             estimate:{ pages:p, spineMm:Math.round(p / 2 * LEAF), copies:state.qty,
+                        unitEur:Math.round(pr.unit * 100) / 100, totalEur:Math.round(pr.total * 100) / 100,
+                        note:"Estimates from the order page, not a quote." } };
+    if (sid) f.specId = sid;
+    return f;
+  }
+  function orderFilename(){
+    var r = packageRequest();
+    return "print-order-" + r.edition.toLowerCase() + "-" + r.ordering +
+           (r.xrefs === "none" ? "" : "-xrefs-" + r.xrefs) + ".json";
+  }
+  function downloadOrder(){
+    var ref = newOrderRef(), name = orderFilename();
+    specIdOf(packageRequest()).then(function(sid){
+      var blob = new Blob([JSON.stringify(orderFile(ref, sid), null, 2) + "\n"], { type:"application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+      var note = document.getElementById("pkg-ref");
+      if (note) note.innerHTML = "Saved <b>" + escHtml(name) + "</b>. Reference <b>" + ref + "</b>" +
+        (sid ? ", spec id <b>" + sid + "</b>. The same spec id is the same interior, so identical orders can share a print run."
+             : ".");
+    });
+  }
+  function escHtml(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  function renderPackage(){
+    var btn = document.getElementById("pkg-make"), note = document.getElementById("pkg-note");
+    if (pkgTimer) return;              // a build is running: its own status owns the panel
+    var blocker = packageBlocker(), canBuild = pkgCaps.enabled && pkgCaps.admin;
+    btn.disabled = !!blocker;
+    btn.textContent = canBuild ? "Create print package" : "Create print order";
+    note.textContent = blocker ? blocker
+      : canBuild ? "Typesets the book and gathers the rights page, the spec and the font licences into one zip. About ten seconds on a laptop, longer on a small server."
+      : pkgCaps.enabled ? "Sign in as an administrator to build here. Or save the settings as a print order, below."
+      : "This server cannot typeset the book. This saves your settings as a print order: a small file a machine that has the project turns into the package.";
+    var out = document.getElementById("pkg-out");
+    if (pkgBuilt && pkgBuilt.done) {
+      var stale = JSON.stringify(packageRequest()) !== pkgBuilt.request;
+      out.hidden = false;
+      out.innerHTML = pkgBuilt.html + (stale ? '<p class="pkg-note">Made with the settings before your last change.</p>' : "");
+    } else if (!canBuild && pkgShowCommand) {
+      showCommand();
+    } else if (!pkgBuilt) {
+      out.hidden = true;
+    }
+  }
+  var pkgShowCommand = false;
+  function showCommand(){
+    var out = document.getElementById("pkg-out"), cmd = packageCommand();
+    out.hidden = false;
+    out.innerHTML = '<div class="row"><button type="button" class="copy" id="pkg-order">Download order file</button>' +
+      '<button type="button" class="copy" id="pkg-copy">Copy the command</button></div>' +
+      '<p class="pkg-note" id="pkg-ref"></p>' +
+      '<p class="pkg-note">On a machine that has the project: <code>python3 scripts/print/build_package.py --order ' +
+      escHtml(orderFilename()) + '</code>. Or run the whole command:</p><pre>' + escHtml(cmd) + '</pre>';
+    document.getElementById("pkg-order").addEventListener("click", downloadOrder);
+    document.getElementById("pkg-copy").addEventListener("click", function(){
+      var done = function(){ document.getElementById("pkg-copy").textContent = "Copied"; };
+      if (navigator.clipboard) navigator.clipboard.writeText(cmd).then(done, function(){});
+    });
+  }
+  function pkgFail(msg){
+    pkgTimer = null;
+    var btn = document.getElementById("pkg-make"), out = document.getElementById("pkg-out");
+    btn.disabled = false; btn.textContent = "Create print package";
+    document.getElementById("pkg-note").textContent = "";
+    out.hidden = false;
+    out.innerHTML = '<p class="pkg-note"><b>Could not make the package.</b> ' + escHtml(msg) + '</p>';
+    pkgBuilt = null;
+  }
+  function pkgPoll(id, requestJson){
+    fetch("/designer/package/" + id, { credentials:"same-origin", headers:{ Accept:"application/json" } })
+      .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+      .then(function(x){
+        var btn = document.getElementById("pkg-make"), out = document.getElementById("pkg-out");
+        if (!x.ok) return pkgFail(x.j.error || "The build could not be followed.");
+        var j = x.j;
+        if (j.status === "running") {
+          btn.disabled = true; btn.textContent = "Building…";
+          document.getElementById("pkg-note").innerHTML = '<span class="pkg-spin"></span>Typesetting, ' +
+            j.seconds + " s. A thousand pages take about ten seconds on a laptop.";
+          out.hidden = false;
+          out.innerHTML = j.log && j.log.length ? "<pre>" + escHtml(j.log.slice(-4).join("\n")) + "</pre>" : "";
+          pkgTimer = setTimeout(function(){ pkgPoll(id, requestJson); }, 2000);
+        } else if (j.status === "done") {
+          pkgTimer = null;
+          var r = j.result, mb = (r.bytes / 1048576).toFixed(1);
+          pkgBuilt = { id:id, request:requestJson, done:true, html:
+            '<div class="row"><a class="dl" href="/designer/package/' + id + '/download">Download the package</a>' +
+            '<span>' + r.pages.toLocaleString("en-GB") + " pages · spine ≈ " + r.spineMm + " mm · " + mb +
+            ' MB · rights ' + escHtml(r.rightsStatus) + '</span></div>' +
+            '<p class="pkg-note">The zip holds the interior PDF, RIGHTS.txt, SPEC.json, README.txt and the font licences. Checksum ' +
+            escHtml(r.sha256.slice(0, 16)) + '…</p>' };
+          btn.disabled = false; btn.textContent = "Create print package";
+          document.getElementById("pkg-note").textContent = "";
+          renderPackage();
+        } else {
+          pkgFail(j.error || "The build failed.");
+        }
+      })
+      .catch(function(){ pkgFail("The server did not answer."); });
+  }
+  function pkgStart(){
+    var request = packageRequest(), requestJson = JSON.stringify(request);
+    var btn = document.getElementById("pkg-make");
+    btn.disabled = true; btn.textContent = "Starting…";
+    pkgBuilt = null;
+    pkgTimer = true;                   // marks "a build is running" until the first poll answers
+    fetch("/designer/package", { method:"POST", credentials:"same-origin",
+        headers:{ "Content-Type":"application/json", "Accept":"application/json", "X-Requested-With":"designer" },
+        body:requestJson })
+      .then(function(r){ return r.json().then(function(j){ return { status:r.status, j:j }; }); })
+      .then(function(x){
+        if (x.status === 202 || (x.status === 409 && x.j.id)) pkgPoll(x.j.id, requestJson);   // 409: follow the one running
+        else pkgFail(x.j.error || "The server refused the request.");
+      })
+      .catch(function(){ pkgFail("The server did not answer."); });
+  }
+  document.getElementById("pkg-make").addEventListener("click", function(){
+    if (pkgCaps.enabled && pkgCaps.admin) pkgStart();
+    else { pkgShowCommand = true; renderPackage(); }
+  });
+  if (window.fetch) {
+    fetch("/designer/package/capabilities", { credentials:"same-origin", headers:{ Accept:"application/json" } })
+      .then(function(r){ return r.ok ? r.json() : {}; })
+      .then(function(c){ pkgCaps = { enabled:!!c.enabled, admin:!!c.admin }; renderPackage(); })
+      .catch(function(){ renderPackage(); });
+  }
+
   document.getElementById("pg-prev").addEventListener("click", function(){
     var n = currentPages().length; if (!n) return;
     pageIndex = (pageIndex + n - 1) % n; renderPreview(); });
@@ -1122,6 +1543,8 @@
   } else {
     render();
   }
+  // A link can open the page with the cross references already on (?xrefs=inline or margin).
+  if (queryXrefs && edition(state.translation).lang === "en") setXrefs(queryXrefs);
 
   // A signed-in reader has already chosen an edition, a reading order and a
   // display mode in Preferences; open on those. Anything the URL named wins, and

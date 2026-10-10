@@ -6,8 +6,8 @@ _Tutki tekstejä, jotka muovaavat maailmaamme._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.9.5 |
-| Generated | 2026-10-07 |
+| Version | 0.9.6 |
+| Generated | 2026-10-10 |
 <!-- /AUTOGEN:meta -->
 
 ## Mikä se on

@@ -50,3 +50,14 @@ vaadin-combo-box,
   background: #1a3a5c !important;
   color: white !important;
 }
+
+/* Dialogs that hand over to a new column (cross-references, a comment's passage links)
+   close with no animation. The close animation only finishes once the browser is idle, and
+   rendering the new column keeps it busy, so the dialog lingered for ~1s after the column
+   appeared. Applied with Dialog#addClassName("instant-close"). */
+vaadin-dialog-overlay.instant-close,
+vaadin-dialog-overlay.instant-close::part(overlay),
+vaadin-dialog-overlay.instant-close::part(backdrop) {
+  animation: none !important;
+  transition: none !important;
+}

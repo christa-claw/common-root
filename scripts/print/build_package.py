@@ -26,6 +26,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import zipfile
@@ -588,7 +589,7 @@ def sha256(path):
 
 
 def rights_document(edition_id, ed, fonts_family, font_licences,
-                    latin_family=None, ordering="canonical"):
+                    latin_family=None, ordering="canonical", xref_top=0, xref_where="margin"):
     lic = ed.get("licence")
     if lic:
         head = [
@@ -671,6 +672,33 @@ def rights_document(edition_id, ed, fonts_family, font_licences,
         "  No system font is used anywhere in the file. Every glyph in the",
         "  PDF comes from an embedded, licensed face.",
         "",
+    ]
+    if xref_top:
+        sys.path.insert(0, HERE)
+        import xrefs
+        credit, changes = xrefs.credit_and_changes(xref_top, xref_where)
+        r += [
+            "THE CROSS REFERENCES",
+            "-" * 20,
+            ("  This book prints cross references in its outer margin."
+             if xref_where == "margin" else
+             "  This book prints cross references after each verse, in small type."),
+            "  They are NOT part of the text above and have a different source and licence.",
+            "",
+            f"  Source         {xrefs.CREDIT_NAME}, {xrefs.CREDIT_URL}",
+            "  Derived from   the Treasury of Scripture Knowledge (public domain), with",
+            "                 reader votes added by OpenBible.info",
+            f"  Licence        {xrefs.LICENCE_NAME}",
+            f"  Licence text   {xrefs.LICENCE_URL}",
+            "",
+            "  CC BY 4.0 allows copying, adapting and printing, with credit and a statement",
+            "  of what was changed, and has no share-alike condition. The book prints both",
+            "  on its rights page:",
+            f"    {credit}",
+            f"    {changes}",
+            "",
+        ]
+    r += [
         "THE ARRANGEMENT",
         "-" * 15,
         ("  The ORDER of the books is editorial work by Common Root and is not"
@@ -686,6 +714,20 @@ def rights_document(edition_id, ed, fonts_family, font_licences,
     return "\n".join(r)
 
 
+def order_lines(order):
+    """The README lines that say which order a package is for (none when it is not for one)."""
+    if not order:
+        return []
+    lines = []
+    if order.get("printerOrderNumber"):
+        lines.append(f"  Printer's order   {order['printerOrderNumber']}")
+    if order.get("ourReference"):
+        lines.append(f"  Our reference     {order['ourReference']}")
+    if order.get("specId"):
+        lines.append(f"  Spec id           {order['specId']}  (the same id is the same interior)")
+    return lines
+
+
 def readme(edition_id, ed, spec, stats):
     return "\n".join([
         "COMMON ROOT — PRINT PACKAGE",
@@ -693,6 +735,7 @@ def readme(edition_id, ed, spec, stats):
         "",
         f"  {ed['title']} — {spec['ordering']} order",
         f"  Generated {date.today()} from common-root.org",
+    ] + order_lines(spec.get("order")) + [
         "",
         "WHAT IS IN HERE",
         "-" * 15,
@@ -713,6 +756,7 @@ def readme(edition_id, ed, spec, stats):
         f"  Running head  {spec['running_head']}",
         f"  Book titles   {spec['book_titles']}",
         f"  Book close    {spec['book_end']}",
+    ] + ([f"  Cross refs    {spec['cross_references']}"] if spec.get("cross_references") else []) + [
         f"  Margins       inner {spec['inner_mm']} / outer {spec['outer_mm']} /",
         f"                head {spec['top_mm']} / foot {spec['bottom_mm']} mm",
         f"  Paper         {spec['paper']}",
@@ -735,7 +779,158 @@ def readme(edition_id, ed, spec, stats):
     ])
 
 
+# ── print orders ─────────────────────────────────────────────────────────────
+#
+# The order page can write its settings as a small JSON file (a "print order") instead of building
+# anything: a server without the typesetting toolchain cannot build, and the order can be carried to
+# a machine that can. `build_package.py --order file.json` then builds exactly what it asks for.
+#
+#   {"format": "common-root-print-order", "version": 1, "created": "...", "edition": "WEB",
+#    "settings": {"ordering": ..., "canon": ..., "trim": ..., "body": 8.8, "outer": 12, "head": ...,
+#                 "titles": ..., "accent": ..., "xrefs": ..., "xrefTop": 3, "mode": ...},
+#    "estimate": {...}}        <- the page's own figures, for information; never used to build
+#
+# An order is only a request. It is turned into the same command-line options a person would type and
+# goes through the same checks: argparse's lists of choices, the rights registry (an edition that is
+# not VERIFIED is refused), and the limits below. Nothing in it is run.
+
+ORDER_FORMAT = "common-root-print-order"
+ORDER_REF = re.compile(r"^CR-[0-9A-F]{8}$")          # our reference, made by the order page
+SPEC_ID = re.compile(r"^[0-9a-f]{12}$")              # which interior this is; see spec_id()
+PRETORE_ID = re.compile(r"^[A-Za-z0-9._-]{1,40}$")   # the printer's own order number
+ORDER_SETTINGS = {"ordering", "canon", "trim", "body", "outer", "head", "titles", "accent",
+                  "xrefs", "xrefTop", "mode"}
+ORDER_OPTION = {"ordering": "--ordering", "canon": "--canon", "trim": "--trim",
+                "head": "--running-head", "titles": "--book-titles", "accent": "--accent"}
+
+
+def spec_id(edition, s):
+    """Twelve hex characters naming an INTERIOR: the same edition and settings give the same id.
+
+    Two orders with the same spec id are the same book, so a printer can put them in one run (the
+    set-up is paid per interior, not per copy). It is the first twelve hex digits of the SHA-256 of
+    these values joined with '|', and edition-designer.html makes it the same way, so a file edited
+    after the page wrote it no longer matches its own id."""
+    body = s.get("body")
+    outer = s.get("outer")
+    parts = [edition, s.get("ordering") or "", s.get("canon") or "", s.get("trim") or "",
+             f"{float(body):.1f}" if body is not None else "",
+             str(int(round(float(outer)))) if outer is not None else "",
+             s.get("head") or "", s.get("titles") or "", s.get("accent") or "",
+             s.get("xrefs") or "none", str(s.get("xrefTop") or 3)]
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:12]
+
+
+def order_to_args(order, pretore_id=None):
+    """The command-line options for a print order (a dict), or SystemExit saying what is wrong.
+
+    `pretore_id` is the printer's own order number, when the order has been billed."""
+    def refuse(msg):
+        raise SystemExit(f"This print order cannot be built: {msg}")
+
+    if not isinstance(order, dict) or order.get("format") != ORDER_FORMAT:
+        refuse("it is not a Common Root print order file.")
+    if order.get("version") != 1:
+        refuse(f"it is version {order.get('version')}; this builder reads version 1.")
+    ids = [k for k, e in EDITIONS.items() if e["abbrev"] == order.get("edition")]
+    if len(ids) != 1:
+        refuse(f"'{order.get('edition')}' is not an edition this builder has rights for.")
+    translation = ids[0]
+    ed = EDITIONS[translation]
+    settings = order.get("settings") or {}
+    if not isinstance(settings, dict):
+        refuse("its settings are not a set of named values.")
+    unknown = sorted(set(settings) - ORDER_SETTINGS)
+    if unknown:
+        refuse(f"it has settings this builder does not know: {', '.join(unknown)}.")
+    ref, sid = order.get("orderRef"), order.get("specId")
+    if ref is not None and not (isinstance(ref, str) and ORDER_REF.match(ref)):
+        refuse("its order reference is not of the form CR-XXXXXXXX.")
+    if sid is not None:
+        if not (isinstance(sid, str) and SPEC_ID.match(sid)):
+            refuse("its spec id is not twelve hex digits.")
+        if sid != spec_id(order.get("edition"), settings):
+            refuse("its spec id does not match its settings: the file was edited after the order "
+                   "was made. Ask for a fresh one.")
+    if pretore_id is not None and not PRETORE_ID.match(pretore_id):
+        refuse("the printer's order number may only hold letters, digits, dot, dash and underscore "
+               "(40 at most).")
+    if settings.get("mode") not in (None, "CHAPTERS_VERSES"):
+        refuse("only the verse-numbered text is built so far.")
+    ordering, canon = settings.get("ordering"), settings.get("canon")
+    if canon == "full" and ordering in ("chronological", "writing"):
+        refuse("the apocrypha have no placement in that reading order yet.")
+    xrefs = settings.get("xrefs") or "none"
+    trim = settings.get("trim")
+    if xrefs == "margin":
+        trim = "notes"
+    elif trim == "notes":
+        refuse("the wide one-column format is for cross references in the margin.")
+    args = ["--translation", translation]
+    for key, option in ORDER_OPTION.items():
+        value = trim if key == "trim" else settings.get(key)
+        if value:
+            args += [option, str(value)]
+    body, outer = settings.get("body"), settings.get("outer")
+    if body is not None:
+        if not isinstance(body, (int, float)) or not 7.2 <= body <= 10.5:
+            refuse("the type size must be 7.2 to 10.5 pt.")
+        args += ["--body-size", str(round(float(body), 1))]
+    if outer is not None and xrefs != "margin":
+        if not isinstance(outer, (int, float)) or not 8 <= outer <= 40:
+            refuse("the fore-edge margin must be 8 to 40 mm.")
+        args += ["--outer", str(outer)]
+    if xrefs != "none":
+        top = settings.get("xrefTop") or 3
+        if not isinstance(top, int) or not 1 <= top <= 5:
+            refuse("cross references per verse must be 1 to 5.")
+        args += ["--xrefs", xrefs, "--xref-top", str(top)]
+    fonts = ("scheherazade", "ScheherazadeNew") if ed.get("rtl") else ("crimson", "CrimsonPro")
+    args += ["--fonts", os.path.join(os.path.dirname(os.path.dirname(HERE)), "fonts", fonts[0]),
+             "--font-family", fonts[1]]
+    name = f"{ed['abbrev'].lower()}-{ordering or 'chronological'}" + (
+        "" if xrefs == "none" else f"-xrefs-{xrefs}") + (
+        f"-{pretore_id}" if pretore_id else "") + "-package.zip"
+    args += ["--out", os.path.join("out", "print", name)]
+    if ref:
+        args += ["--order-ref", ref]
+    if sid:
+        args += ["--spec-id", sid]
+    if pretore_id:
+        args += ["--order-id", pretore_id]
+    return args
+
+
+def _without_option(argv, option):
+    """argv without `option` and its value (either `--opt value` or `--opt=value`)."""
+    out, skip = [], False
+    for a in argv:
+        if skip:
+            skip = False
+        elif a == option:
+            skip = True
+        elif not a.startswith(option + "="):
+            out.append(a)
+    return out
+
+
 def main():
+    # --order FILE: take the settings from a print order. Options given beside it win (a different
+    # --out, say), because they come last and argparse keeps the last of a repeated option.
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--order")
+    pre.add_argument("--order-id")
+    known, rest = pre.parse_known_args()
+    argv = None
+    if known.order:
+        try:
+            with open(known.order, encoding="utf-8") as f:
+                order = json.load(f)
+        except (OSError, ValueError) as e:
+            raise SystemExit(f"Cannot read the print order {known.order}: {e}")
+        # --order-id is already in `order_to_args`' output; the copy left in `rest` would repeat it.
+        rest = _without_option(rest, "--order-id")
+        argv = order_to_args(order, known.order_id) + rest
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -744,12 +939,19 @@ def main():
     ap.add_argument("--canon", default="66", choices=("66", "full"))
     ap.add_argument("--trim", default="standard")
     ap.add_argument("--outer", type=float)
+    ap.add_argument("--body-size", type=float,
+                    help="body type size in points (default: what the trim was designed around)")
     ap.add_argument("--fonts")
     ap.add_argument("--running-head", default="split",
                     choices=("none", "book", "book-chapter", "split"))
     ap.add_argument("--book-titles", default="long",
                     choices=("long", "short"))
     ap.add_argument("--no-book-end", action="store_true")
+    ap.add_argument("--xrefs", default="none", choices=("none", "inline", "margin"),
+                    help="cross references: 'inline' after each verse in small type (any trim; "
+                         "needs abbreviations for the language), or 'margin' in the outer margin "
+                         "(needs --trim notes); the package then carries their credit and licence")
+    ap.add_argument("--xref-top", type=int, default=3, choices=range(1, 6))
     ap.add_argument("--accent", default="black",
                     choices=("black", "rubric", "indigo", "sepia", "forest"))
     ap.add_argument("--font-family", default="CrimsonPro")
@@ -760,7 +962,15 @@ def main():
                          "without BaseX")
     ap.add_argument("--allow-review", action="store_true",
                     help="build even when the edition's rights are in REVIEW")
-    a = ap.parse_args()
+    ap.add_argument("--order", help="build what a print order file (from the order page's "
+                                    "'Download order file') asks for")
+    ap.add_argument("--order-id", help="the printer's own order number for this order, once it has "
+                                       "been billed; it goes into the package and its file name")
+    ap.add_argument("--order-ref", help=argparse.SUPPRESS)       # set by --order: our reference
+    ap.add_argument("--spec-id", help=argparse.SUPPRESS)         # set by --order: which interior
+    a = ap.parse_args(argv)
+    if a.order_id and not PRETORE_ID.match(a.order_id):
+        ap.error("--order-id may only hold letters, digits, dot, dash and underscore (40 at most)")
 
     ed = EDITIONS.get(a.translation)
     if not ed:
@@ -791,6 +1001,8 @@ def main():
            "--title", a.title, "--out", pdf]
     if a.no_book_end:
         cmd.append("--no-book-end")
+    if a.xrefs != "none":
+        cmd += ["--xrefs", a.xrefs, "--xref-top", str(a.xref_top)]
     if a.self_test:
         cmd += ["--self-test", "--self-test-chapters", "12"]
     else:
@@ -799,6 +1011,8 @@ def main():
         cmd += ["--fonts", a.fonts, "--font-family", a.font_family]
     if a.outer is not None:
         cmd += ["--outer", str(a.outer)]
+    if a.body_size is not None:
+        cmd += ["--body-size", str(a.body_size)]
 
     print("  building interior …")
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -860,6 +1074,13 @@ def main():
         "book_end": ("Each book opens with a rule across the page; a "
                      "closing rule follows the last book only"
                      if not a.no_book_end else "None"),
+        "cross_references": (
+            f"The {a.xref_top} most-voted for each verse, in the outer margin, 5.7 pt, level with "
+            "the line the verse begins on (OpenBible.info, CC BY 4.0)"
+            if a.xrefs == "margin" else
+            f"The {a.xref_top} most-voted for each verse, set right after the verse in type 64% "
+            "of the body size, with abbreviated book names (OpenBible.info, CC BY 4.0)"
+            if a.xrefs == "inline" else None),
         "canon": "66 books" if a.canon == "66"
                  else "every book this edition carries",
         "trim_mm": (grab(r"· (\d+) × \d+ mm", int),
@@ -874,6 +1095,11 @@ def main():
         "spine_mm_estimate": stats["spine_mm"],
     })
     spec["trim_mm"] = f"{spec['trim_mm'][0]} × {spec['trim_mm'][1]} mm"
+    order_meta = {k: v for k, v in (("ourReference", a.order_ref),
+                                    ("printerOrderNumber", a.order_id),
+                                    ("specId", a.spec_id)) if v}
+    if order_meta:
+        spec["order"] = order_meta
 
     import re
     licence_files = {}      # name inside the zip -> path on disk
@@ -887,7 +1113,9 @@ def main():
 
     rights = rights_document(a.translation, ed, a.font_family, licences,
                              latin_family="CrimsonPro" if rtl else None,
-                             ordering=a.ordering)
+                             ordering=a.ordering,
+                             xref_top=a.xref_top if a.xrefs != "none" else 0,
+                             xref_where=a.xrefs)
     manifest = {
         "generator": "common-root build_package.py",
         "generated": str(date.today()),
@@ -895,6 +1123,7 @@ def main():
         "ordering": a.ordering,
         "canon": a.canon,
         "rights_status": ed["status"],
+        "order": order_meta or None,
         "files": {},
     }
 
@@ -928,6 +1157,12 @@ def main():
     print("    MANIFEST.json")
     if ed["status"] == "REVIEW":
         print("\n  ⚠ RIGHTS IN REVIEW — do not send this to a printer.")
+    # The last line, for a program to read (the app's "Create print package" button does):
+    print("RESULT " + json.dumps({
+        "edition": a.translation, "ordering": a.ordering, "pages": stats["pages"],
+        "spine_mm": stats["spine_mm"], "rights_status": ed["status"],
+        "zip": os.path.abspath(a.out), "bytes": size, "sha256": sha256(a.out),
+        "order": order_meta or None}))
 
 
 if __name__ == "__main__":

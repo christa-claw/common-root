@@ -20,11 +20,6 @@
    "durationMs": 329784,
    "tier": "free"
   },
-  "about/ar/orders": {
-   "chars": 2595,
-   "durationMs": 200856,
-   "tier": "free"
-  },
   "about/ar/problems": {
    "chars": 3707,
    "durationMs": 383184,
@@ -58,11 +53,6 @@
   "about/de/modes": {
    "chars": 4648,
    "durationMs": 305496,
-   "tier": "free"
-  },
-  "about/de/orders": {
-   "chars": 2595,
-   "durationMs": 179256,
    "tier": "free"
   },
   "about/de/problems": {
@@ -140,11 +130,6 @@
    "durationMs": 281640,
    "tier": "free"
   },
-  "about/es/orders": {
-   "chars": 2595,
-   "durationMs": 167448,
-   "tier": "free"
-  },
   "about/es/problems": {
    "chars": 5183,
    "durationMs": 338304,
@@ -178,11 +163,6 @@
   "about/fi/modes": {
    "chars": 4271,
    "durationMs": 302712,
-   "tier": "free"
-  },
-  "about/fi/orders": {
-   "chars": 2595,
-   "durationMs": 195864,
    "tier": "free"
   },
   "about/fi/problems": {
@@ -220,11 +200,6 @@
    "durationMs": 254688,
    "tier": "free"
   },
-  "about/fr/orders": {
-   "chars": 2595,
-   "durationMs": 167592,
-   "tier": "free"
-  },
   "about/fr/problems": {
    "chars": 5411,
    "durationMs": 306888,
@@ -258,11 +233,6 @@
   "about/he/modes": {
    "chars": 2990,
    "durationMs": 342360,
-   "tier": "free"
-  },
-  "about/he/orders": {
-   "chars": 2595,
-   "durationMs": 239040,
    "tier": "free"
   },
   "about/he/problems": {
@@ -300,11 +270,6 @@
    "durationMs": 348456,
    "tier": "free"
   },
-  "about/hi/orders": {
-   "chars": 2595,
-   "durationMs": 206664,
-   "tier": "free"
-  },
   "about/hi/problems": {
    "chars": 4558,
    "durationMs": 406128,
@@ -338,11 +303,6 @@
   "about/it/modes": {
    "chars": 4439,
    "durationMs": 264744,
-   "tier": "free"
-  },
-  "about/it/orders": {
-   "chars": 2595,
-   "durationMs": 160152,
    "tier": "free"
   },
   "about/it/problems": {
@@ -380,11 +340,6 @@
    "durationMs": 292656,
    "tier": "free"
   },
-  "about/ja/orders": {
-   "chars": 2595,
-   "durationMs": 191040,
-   "tier": "free"
-  },
   "about/ja/problems": {
    "chars": 2131,
    "durationMs": 369144,
@@ -418,11 +373,6 @@
   "about/ru/modes": {
    "chars": 4068,
    "durationMs": 295224,
-   "tier": "free"
-  },
-  "about/ru/orders": {
-   "chars": 2595,
-   "durationMs": 187368,
    "tier": "free"
   },
   "about/ru/problems": {
@@ -460,11 +410,6 @@
    "durationMs": 317016,
    "tier": "free"
   },
-  "about/sv/orders": {
-   "chars": 2595,
-   "durationMs": 199080,
-   "tier": "free"
-  },
   "about/sv/problems": {
    "chars": 4928,
    "durationMs": 383904,
@@ -500,11 +445,6 @@
    "durationMs": 304440,
    "tier": "free"
   },
-  "about/tr/orders": {
-   "chars": 2595,
-   "durationMs": 192504,
-   "tier": "free"
-  },
   "about/tr/problems": {
    "chars": 4735,
    "durationMs": 355104,
@@ -538,11 +478,6 @@
   "about/zh/modes": {
    "chars": 1290,
    "durationMs": 256248,
-   "tier": "free"
-  },
-  "about/zh/orders": {
-   "chars": 2595,
-   "durationMs": 189984,
    "tier": "free"
   },
   "about/zh/problems": {

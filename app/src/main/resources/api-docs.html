@@ -93,6 +93,14 @@ GET /passages?src=kjv,web&amp;refs=GEN.1.1,GEN.1.2</code></pre>
   "attestation": { … } }</code></pre>
 <p>Passages come back in the order asked, at most 20 per call. A passage that does not exist in its edition is returned with <code>"found": false</code> and no verses rather than failing the whole call; a reference that cannot be parsed fails the whole call, and nothing is served. The single <code>attestation</code> covers every passage found, in that order — a comparison of one verse across four translations is one provable object.</p>
 
+<h2 id="crossrefs">Cross-references</h2>
+<h3><code>GET /crossrefs/{book}/{chapter}</code></h3>
+<p>The verse-to-verse cross-references of one chapter, for each verse the related passages most-voted first. <code>{book}</code> is a USFM code (<code>JHN</code>, <code>1CO</code>); targets are link-format references (<code>ROM.5.8</code>, <code>PRO.8.22-30</code>) in the canonical (KJV) numbering, each with a stable <code>xrf-…</code> id and its vote count. Protestant canon only. A chapter with no references is an empty <code>verses</code> object, not an error; an unknown book is 404 <code>no_such_book</code>.</p>
+<pre><code>{ "book": "JHN", "chapter": 3, "numbering": "KJV",
+  "verses": { "16": [ { "id": "xrf-…", "ref": "ROM.5.8", "votes": 984 }, … ] },
+  "attribution": { "source": "OpenBible.info", "licence": "CC BY 4.0", … } }</code></pre>
+<p>The data is from <a href="https://www.openbible.info/labs/cross-references/">OpenBible.info</a>, licensed CC BY 4.0, and the attribution object is in every response: if you store or republish the references, keep the credit with them.</p>
+
 <h2 id="formats">Formats</h2>
 <p><code>?format=json</code> (default) or <code>?format=xml</code>; the query parameter wins, otherwise an <code>Accept: application/xml</code> header is honoured. XML is the corpus's own <code>&lt;chapter&gt;</code> element under <code>http://religioustext.org/schema/1.0</code> — a valid subtree of <code>religious-text.xsd</code>, the same bytes you would cut out of the bulk download, with this site's reading-order attributes removed. It is available for single passages only; <code>/passages</code> and <code>/texts</code> are JSON. The attestation rides inside the document as a processing instruction before the element — <code>&lt;?common-root-attestation alg="…" kid="…" canon="…" corpus="…" minted="…" app="…" tag="…"?&gt;</code> — so a saved file is self-validating; validators ignore it and the element stays a pure schema subtree. Plain text answers 501 until the display modes ship.</p>
 
