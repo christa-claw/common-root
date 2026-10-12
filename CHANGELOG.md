@@ -72,6 +72,53 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-10-12
+
+### Added
+- **Strong's numbers on the original-language text** (Hebrew first). A new ⓝ toggle in
+  the column header, beside the comment and cross-reference ones, opens every rung —
+  so the Hebrew (WLC) line under each verse is showing — and puts a small number beside
+  each Hebrew word. Switching it off only hides the numbers. The Hebrew column itself has
+  the toggle too, and `cK.strongs=1` restores it from a link (`docs/link-format.md`).
+  The words come from the Open Scriptures Hebrew Bible (CC BY 4.0) and live in their own
+  BaseX database, `words` (305,507 words, 299,556 numbered), shipped in the corpus image
+  beside the editions; where the database is absent the toggle is simply hidden. Numbers
+  appear only on verses whose text matches the source exactly (23,175 of 23,213), so a
+  number never sits on text that is not on the page. The corpus's own text is untouched.
+- **Strong's tooltip.** Hovering, focusing or tapping a number shows the pointed lemma,
+  transliteration, gloss and definition, a machine-translated label where the text came
+  from a translation, and the CC BY credit, from one shared opaque tooltip
+  (`GET /lexicon/hebrew/{H####}?lang=`, public, cached a day). The lexicon text is
+  `i18n/lexicon/hebrew.properties` (8,674 entries from the Open Scriptures Hebrew Lexicon,
+  CC BY 4.0, with the KJV-renderings "usage" line left out) plus one
+  `hebrew_<lang>.properties` per other interface language, with English per-key fallback.
+- **Strong's window.** Double-clicking a number opens the whole entry, how often the word
+  occurs in the Hebrew Bible and its first 200 passages. A passage expands in place — the
+  whole Hebrew verse with the word highlighted and the other words numbered — and, under it,
+  the same verse in the Bible being browsed (else the preferred Bible), found through OSHB's
+  Hebrew-to-KJV verse map and per-edition numbering tables; an edition with unknown numbering,
+  or a chapter whose verse count differs from the KJV's, gets no line rather than a wrong
+  one. The window is in the interface language, with book names from `booknames_<lang>`.
+- **Lexicon translation job.** The recurring translation task gains a second duty:
+  `scripts/strongs/check_lexicon_translations.py` reports coverage, prints the next batch
+  (most frequent words first — the top 400 cover 73.5% of tagged words) and gates the
+  files; the procedure is `docs/lexicon-translation-job.md`. The 25 most frequent glosses
+  are translated into all 13 locales as a pilot.
+- **Native chapter and verse numerals**: Eastern Arabic-Indic digits for Arabic and Hebrew
+  letter-numerals for Hebrew, per column language, with a № toggle per column to switch back
+  to Western digits.
+- `scripts/strongs/`: the normaliser for OSHB's augmented lemmas, the words builder and
+  importer (`words-oshb.xml`, `schema/words.xsd`), the verse-numbering and chapter-difference
+  generators, and previews, and `scripts/bibles/check_oshb_alignment.py`.
+- SVD-E and ONAV info pages in all 13 other interface locales; the updated Brenton English
+  Septuagint (LXXUP) marked done.
+
+### Changed
+- **CI:** `-XX:+EnableDynamicAgentLoading`, so the order of the tests no longer decides
+  whether Mockito works, and the print builder now kills its whole process tree on a
+  timeout. The nightly audio job narrates `fi-1933` from an explicit book list that drops
+  ESG (its chapter 12 is empty).
+
 ## [0.9.6] — 2026-10-10
 
 ### Added

@@ -68,6 +68,8 @@ public class SecurityConfig extends VaadinWebSecurity {
                 // fetch() lands on the login page so the text never highlights.
                 new AntPathRequestMatcher("/audio/**"),
                 new AntPathRequestMatcher("/docs/**"),
+                // The Strong's tooltip's lexicon entries: static text, fetched by the reader page itself.
+                new AntPathRequestMatcher("/lexicon/**"),
                 new AntPathRequestMatcher("/download"),
                 new AntPathRequestMatcher("/download/**"),
                 // The web API is permitted here and gated by ApiAuthFilter instead:

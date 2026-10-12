@@ -23,6 +23,7 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import org.religioustext.app.i18n.LocaleUtil;
+import org.religioustext.app.i18n.Numerals;
 import org.religioustext.app.service.AboutAudioIndexService;
 import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.service.UserService;
@@ -309,25 +310,25 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("gap", "12px")
             .set("width", "100%");
 
-        addStep(steps, "1", t("about.howto.step1.title"), t("about.howto.step1.body"));
-        addStep(steps, "2", t("about.howto.step2.title"), t("about.howto.step2.body"));
-        addStep(steps, "3", t("about.howto.step3.title"), t("about.howto.step3.body"));
-        addStep(steps, "4", t("about.howto.step4.title"), t("about.howto.step4.body"));
-        addStep(steps, "5", t("about.howto.step5.title"), t("about.howto.step5.body"));
-        addStep(steps, "6", t("about.howto.step6.title"), t("about.howto.step6.body"));
-        addStep(steps, "7", t("about.howto.step7.title"), t("about.howto.step7.body"));
+        addStep(steps, 1, t("about.howto.step1.title"), t("about.howto.step1.body"));
+        addStep(steps, 2, t("about.howto.step2.title"), t("about.howto.step2.body"));
+        addStep(steps, 3, t("about.howto.step3.title"), t("about.howto.step3.body"));
+        addStep(steps, 4, t("about.howto.step4.title"), t("about.howto.step4.body"));
+        addStep(steps, 5, t("about.howto.step5.title"), t("about.howto.step5.body"));
+        addStep(steps, 6, t("about.howto.step6.title"), t("about.howto.step6.body"));
+        addStep(steps, 7, t("about.howto.step7.title"), t("about.howto.step7.body"));
 
         s.add(steps);
         return s;
     }
 
-    private void addStep(final Div aContainer, final String aNum, final String aTitle, final String aBody) {
+    private void addStep(final Div aContainer, final int aNum, final String aTitle, final String aBody) {
         final Div step = new Div();
         step.getStyle()
             .set("background", "#f8fafc").set("border-radius", "8px")
             .set("padding", "12px 14px").set("border-left", "4px solid #1a3a5c");
 
-        final Span number = new Span(aNum);
+        final Span number = new Span(Numerals.format(aNum, LocaleUtil.currentLocale()));
         number.getStyle()
             .set("display", "inline-block").set("background", "#1a3a5c").set("color", "white")
             .set("font-weight", "700").set("font-size", "13px")

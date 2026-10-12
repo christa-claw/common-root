@@ -36,6 +36,13 @@
 #   grc TR / BYZ1904  no Azure voice, and NT only
 #   ar  Qur'an/hadith NOT to be synthesised — recitation needs tajwid, not TTS
 #
+# 2026-10-12: fi-1933's books field changed from ALL to an explicit list
+# that drops ESG (maintainer's call, via chat). ESG ch.12 is a genuine
+# empty chapter node in this edition's corpus -- 0 verses, not a budget or
+# TTS problem -- so the nightly job scanned a 0-char 'pending' chapter
+# forever and logged "no verses returned" every run. ESG's other chapters
+# (10,11,13-16) were already generated before this edit and are unaffected.
+#
 # text-id                voice                    lang    books
 bible-zh-cuv             zh-CN-YunxiNeural        zh-CN   ALL
 bible-ar-vandyck         ar-SA-HamedNeural        ar-SA   ALL
@@ -48,4 +55,4 @@ bible-rvr09-1909         es-ES-AlvaroNeural       es-ES   ALL
 bible-it-diodati         it-IT-BenignoNeural      it-IT   ALL
 bible-sv-1917            sv-SE-MattiasNeural      sv-SE   ALL
 bible-lsv                en-GB-AlfieNeural        en-GB   ALL
-bible-fi-1933            fi-FI-HarriNeural        fi-FI   ALL
+bible-fi-1933            fi-FI-HarriNeural        fi-FI   GEN,EXO,LEV,NUM,DEU,JOS,JDG,RUT,1SA,2SA,1KI,2KI,1CH,2CH,EZR,NEH,EST,JOB,PSA,PRO,ECC,SNG,ISA,JER,LAM,EZK,DAN,HOS,JOL,AMO,OBA,JON,MIC,NAM,HAB,ZEP,HAG,ZEC,MAL,MAT,MRK,LUK,JHN,ACT,ROM,1CO,2CO,GAL,EPH,PHP,COL,1TH,2TH,1TI,2TI,TIT,PHM,HEB,JAS,1PE,2PE,1JN,2JN,3JN,JUD,REV,TOB,JDT,1MA,2MA,WIS,SIR,BAR,MAN,SUS,S3Y,BEL

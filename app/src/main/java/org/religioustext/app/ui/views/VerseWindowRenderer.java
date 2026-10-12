@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import org.religioustext.app.i18n.Numerals;
 import org.religioustext.app.model.DisplayOptions;
 import org.religioustext.app.model.VerseRef;
 import org.religioustext.app.service.CommentQueryService;
@@ -14,9 +15,12 @@ import org.religioustext.app.service.CrossRefQueryService;
 import org.religioustext.app.service.CrossRefQueryService.XRef;
 import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.TextQueryService;
+import org.religioustext.app.service.WordLayerService;
+import org.religioustext.app.service.WordLayerService.Word;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Renders the verse window for one reader column and keeps it filled as the
@@ -82,6 +86,7 @@ final class VerseWindowRenderer {
     private final TextQueryService    queryService;
     private final CommentQueryService commentService;
     private final CrossRefQueryService xrefService;
+    private final WordLayerService wordLayer;
     private final PersonalNoteService noteService;
     private final AuthenticationContext authContext;
     private final Host host;
@@ -89,12 +94,14 @@ final class VerseWindowRenderer {
     VerseWindowRenderer(final TextQueryService aQueryService,
                         final CommentQueryService aCommentService,
                         final CrossRefQueryService aXrefService,
+                        final WordLayerService aWordLayer,
                         final PersonalNoteService aNoteService,
                         final AuthenticationContext anAuthContext,
                         final Host aHost) {
         this.queryService   = aQueryService;
         this.commentService = aCommentService;
         this.xrefService    = aXrefService;
+        this.wordLayer      = aWordLayer;
         this.noteService    = aNoteService;
         this.authContext    = anAuthContext;
         this.host           = aHost;
@@ -144,9 +151,84 @@ final class VerseWindowRenderer {
                     for (final VerseRef cv : queryService.versesByCodeChapter(rid, code, chapter))
                         map.put(code + "|" + chapter + "|" + cv.getVerseNumber(),
                                 cv.getDisplayContent(false));
+                    // Strong's numbers (the ⓝ toggle): the same chapter's words, for a rung with a word layer
+                    if (aState.showStrongs && wordLayer.hasLayer(rid)) {
+                        final java.util.Map<String, List<Word>> wmap =
+                            aState.rungWords.computeIfAbsent(rid, k -> new java.util.HashMap<>());
+                        wordLayer.forChapter(rid, code, chapter).forEach(
+                            (vn, ws) -> wmap.put(code + "|" + chapter + "|" + vn, ws));
+                    }
                 }
             }
         }
+    }
+
+    /** The text of one rung line: plain, or — with the ⓝ toggle on and a word layer for this
+     *  verse — the same words with their Strong's numbers. The words are used only when they
+     *  rebuild EXACTLY the line being replaced, so a number can never sit on text that is not on
+     *  the page; any difference falls back to the plain line. */
+    private com.vaadin.flow.component.Component rungContent(final ColState aState, final String aRungId,
+                                                            final String aKey, final String aText) {
+        if (aState.showStrongs && aKey != null) {
+            final java.util.Map<String, List<Word>> m = aState.rungWords.get(aRungId);
+            final List<Word> ws = m == null ? null : m.get(aKey);
+            if (ws != null && !ws.isEmpty() && WordLayerService.reconstruct(ws).equals(aText.strip()))
+                return strongsLine(ws, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null, aState.uid);
+        }
+        return new Span(aText);
+    }
+
+    /** The words of the COLUMN'S OWN verse with their numbers when this column's edition has a word
+     *  layer (the Hebrew text) and ⓝ is on; empty otherwise. Exact-aligned verses only, like the rungs. */
+    private java.util.Map<Integer, List<Word>> ownWordsFor(final ColState aState, final DisplayOptions anOptions,
+                                                           final String aBookCode, final int aChapter) {
+        if (!aState.showStrongs || !anOptions.isShowVerses() || aBookCode == null || aBookCode.isBlank())
+            return java.util.Map.of();
+        final String edition = aState.col.getSourceId();
+        return edition != null && wordLayer.hasLayer(edition) ? wordLayer.forChapter(edition, aBookCode, aChapter)
+                                                              : java.util.Map.of();
+    }
+
+    /** One verse's text: the words with numbers if they rebuild the verse exactly, else the plain text. */
+    private static com.vaadin.flow.component.Component ownLine(final List<Word> theWords, final String aBody,
+                                                                final int aColUid) {
+        if (theWords != null && !theWords.isEmpty() && WordLayerService.reconstruct(theWords).equals(aBody.strip()))
+            return strongsLine(theWords, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null, aColUid);
+        return new Span(aBody);
+    }
+
+    /** Words with a small superscript number after each numbered word, laid out like the corpus line.
+     *  Words carrying {@code aHighlight} (a Strong's id, or null) are marked — the Strong's window uses
+     *  this to show where in a verse the word it is about stands. */
+    static Span strongsLine(final List<Word> theWords, final String aLang, final String aHighlight,
+                            final int aColUid) {
+        final Span line = new Span();
+        for (int i = 0; i < theWords.size(); i++) {
+            final Word w = theWords.get(i);
+            final Span word = new Span(w.text() + w.after());
+            if (aHighlight != null && aHighlight.equals(w.strongs()))
+                word.getStyle().set("background", "var(--lumo-primary-color-10pct)")
+                    .set("border-radius", "3px").set("padding", "0 2px").set("font-weight", "600");
+            line.add(word);
+            if (w.label() != null) {
+                final Span n = new Span(w.label());
+                n.addClassName("strongs-n");
+                // The tooltip script (strongs-tip.js) reads these; the entry itself is fetched on demand.
+                n.getElement().setAttribute("data-s", w.strongs());
+                n.getElement().setAttribute("data-l", aLang);
+                if (aColUid > 0) n.getElement().setAttribute("data-col", String.valueOf(aColUid));   // which column it was clicked in
+                n.getElement().setAttribute("tabindex", "0");
+                n.getElement().setAttribute("role", "button");
+                n.getStyle()
+                    .set("font-size", "0.5em").set("font-weight", "600").set("vertical-align", "super")
+                    .set("color", "var(--lumo-primary-text-color)").set("margin-inline-start", "2px")
+                    .set("direction", "ltr").set("unicode-bidi", "isolate").set("user-select", "none");
+                line.add(n);
+            }
+            final String gap = WordLayerService.gapAfter(theWords, i);
+            if (!gap.isEmpty()) line.add(new com.vaadin.flow.component.Text(gap));
+        }
+        return line;
     }
 
     void renderWindow(final ColState aState, final List<VerseRef> aWindow) {
@@ -258,6 +340,18 @@ final class VerseWindowRenderer {
         return sep;
     }
 
+    /** The numeral convention to render {@code aState}'s chapter/verse numbers
+     *  in: {@code srcLang}'s own, if the reader hasn't switched this column
+     *  back to Western digits and Numerals actually has a formatter for it —
+     *  null (Western) otherwise. Per column, not the UI locale: two columns
+     *  showing different-language editions side by side format their numbers
+     *  independently of each other and of the interface language. */
+    private Locale numeralLocale(final ColState aState) {
+        if (!aState.nativeNumerals) return null;
+        final String lang = aState.srcLang;
+        return (lang == null || lang.isBlank()) ? null : Locale.forLanguageTag(lang);
+    }
+
     private Div buildChapterGroup(final ColState aState, final String aBookName,
                                   final int aChapter, final List<VerseRef> theVerses,
                                   final int aSeq, final boolean aWithHeading) {
@@ -319,7 +413,8 @@ final class VerseWindowRenderer {
         final boolean bookLook = host.bookLook();
         boolean dropCap = false;
         if (aWithHeading && opts.isShowChapters() && bookLook) {
-            final H2 ref = new H2(host.bookHeading(aState, aBookName) + " " + aChapter);
+            final H2 ref = new H2(host.bookHeading(aState, aBookName)
+                + " " + Numerals.format(aChapter, numeralLocale(aState)));
             ref.getElement().setAttribute("data-chapter-heading", "true");
             ref.addClassName("bk-sr");
             div.add(ref);
@@ -340,7 +435,8 @@ final class VerseWindowRenderer {
             // clue which book it belongs to — the book separators only fire on a
             // book-NAME change, so an intra-book jump shows none. The reference
             // heading keeps every group unambiguous in any order.
-            final H2 h = new H2(host.bookHeading(aState, aBookName) + " " + aChapter);
+            final H2 h = new H2(host.bookHeading(aState, aBookName)
+                + " " + Numerals.format(aChapter, numeralLocale(aState)));
             h.getElement().setAttribute("data-chapter-heading", "true");
             h.getStyle().set("font-size", "15px").set("margin", "8px 0 4px 0")
              .set("color", "var(--lumo-secondary-text-color)");
@@ -368,7 +464,7 @@ final class VerseWindowRenderer {
             .set("text-align", "justify")
             .set("overflow-wrap", "break-word");
         if (dropCap) {
-            final Span cap = new Span(String.valueOf(aChapter));
+            final Span cap = new Span(Numerals.format(aChapter, numeralLocale(aState)));
             cap.addClassName("cn");
             text.add(cap);
         }
@@ -392,6 +488,8 @@ final class VerseWindowRenderer {
                 : java.util.Map.of();
         final java.util.Map<Integer, List<XRef>> verseXrefs =
             xrefsFor(aState, opts, theVerses.get(0).getBookCode(), aChapter);
+        final java.util.Map<Integer, List<Word>> ownWords =
+            ownWordsFor(aState, opts, theVerses.get(0).getBookCode(), aChapter);
 
         // In-column companion (e.g. a Qur'an translation beneath each ayah).
         // Render each verse as its own block: the primary line, then the paired
@@ -413,7 +511,8 @@ final class VerseWindowRenderer {
                 final Div primary = new Div();
                 primary.getStyle().set("line-height", "1.9").set("font-size", "1.25em");
                 if (opts.isShowVerses()) {
-                    final Span num = new Span(verse.getVerseNumber() + " ");
+                    final Span num = new Span(
+                        Numerals.format(verse.getVerseNumber(), numeralLocale(aState)) + " ");
                 num.addClassName("vn");
                     num.getStyle().set("font-size", "10px")
                         .set("color", "var(--lumo-secondary-text-color)")
@@ -431,7 +530,7 @@ final class VerseWindowRenderer {
                     }
                     primary.add(num);
                 }
-                primary.add(new Span(body));
+                primary.add(ownLine(ownWords.get(verse.getVerseNumber()), body, aState.uid));
                 final List<VerseComment> ayahComments =
                     verseComments.get(String.valueOf(verse.getVerseNumber()));
                 if (ayahComments != null)
@@ -511,7 +610,7 @@ final class VerseWindowRenderer {
                             chip.getElement().setAttribute("title", host.lineageWitnessHint());
                         }
                         final Div line = new Div();
-                        line.add(chip, new Span(rtext));
+                        line.add(chip, rungContent(aState, rung[0], rungKey, rtext));
                         line.getStyle()
                             .set("direction", rungRtl ? "rtl" : "ltr")
                             .set("text-align", rungRtl ? "right" : "left")
@@ -532,7 +631,7 @@ final class VerseWindowRenderer {
         }
 
         appendNormalVerses(text.getElement(), aState, theVerses, aChapter, aBookName, opts,
-            verseComments, verseNotes, verseXrefs, signedIn, noteEmail);
+            verseComments, verseNotes, verseXrefs, ownWords, signedIn, noteEmail);
         div.add(text);
         return div;
     }
@@ -548,6 +647,7 @@ final class VerseWindowRenderer {
             final java.util.Map<String, List<VerseComment>> theVerseComments,
             final java.util.Map<String, String> theVerseNotes,
             final java.util.Map<Integer, List<XRef>> theVerseXrefs,
+            final java.util.Map<Integer, List<Word>> theOwnWords,
             final boolean aSignedInFlag, final String aNoteEmail) {
         String lastSectionTitle = null;
         for (final VerseRef verse : theVerses) {
@@ -572,7 +672,8 @@ final class VerseWindowRenderer {
                 }
             }
             if (anOptions.isShowVerses()) {
-                final Span num = new Span(verse.getVerseNumber() + " ");
+                final Span num = new Span(
+                    Numerals.format(verse.getVerseNumber(), numeralLocale(aState)) + " ");
                 num.addClassName("vn");
                 num.getStyle()
                     .set("font-size", "10px")
@@ -594,7 +695,14 @@ final class VerseWindowRenderer {
                 }
                 aTarget.appendChild(num.getElement());
             }
-            aTarget.appendChild(new Span(body + " ").getElement());
+            final List<Word> own = theOwnWords.get(verse.getVerseNumber());
+            if (own != null && WordLayerService.reconstruct(own).equals(body.strip())) {
+                // the column's own text carries Strong's numbers (the Hebrew column with ⓝ on)
+                aTarget.appendChild(ownLine(own, body, aState.uid).getElement());
+                aTarget.appendChild(new Span(" ").getElement());
+            } else {
+                aTarget.appendChild(new Span(body + " ").getElement());
+            }
             final List<VerseComment> vcs =
                 theVerseComments.get(String.valueOf(verse.getVerseNumber()));
             if (vcs != null) {
@@ -649,7 +757,7 @@ final class VerseWindowRenderer {
 
         appendNormalVerses(textEl, aState, aGroup, aChapter, aBookName, opts,
             verseComments, verseNotes, xrefsFor(aState, opts, bookCode, aChapter),
-            signedIn, noteEmail);
+            ownWordsFor(aState, opts, bookCode, aChapter), signedIn, noteEmail);
         groupEl.setAttribute("data-seq-last",
             String.valueOf(host.activeSeq(aState, aGroup.get(aGroup.size() - 1))));
         return true;

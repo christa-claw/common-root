@@ -40,6 +40,9 @@ import org.religioustext.app.service.CommentAuthorService;
 import org.religioustext.app.service.CommentQueryService;
 import org.religioustext.app.service.CrossRefQueryService;
 import org.religioustext.app.service.CrossRefQueryService.XRef;
+import org.religioustext.app.service.LexiconService;
+import org.religioustext.app.service.VerseNumbering;
+import org.religioustext.app.service.WordLayerService;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
 import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.SearchService;
@@ -50,6 +53,7 @@ import org.religioustext.app.model.user.UserPreferences;
 import org.religioustext.app.ui.components.LanguageSelect;
 import org.religioustext.app.ui.components.SearchDialog;
 import org.religioustext.app.i18n.LocaleUtil;
+import org.religioustext.app.i18n.Numerals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -254,6 +258,11 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private final CommentQueryService commentService;
     private final CrossRefQueryService xrefService;
     private final CrossRefDialog xrefDialog;
+    private final WordLayerService wordLayer;
+    private final StrongsDialog strongsDialog;
+    private final VerseNumbering numbering;
+    /** The edition whose word layer the Strong's window counts and lists passages from (Hebrew). */
+    private static final String HEBREW_WORDS_EDITION = "bible-he-wlc";
     private final CommentAuthorService commentAuthor;
     private final CommentAclService commentAcl;
     private final PersonalNoteService noteService;
@@ -339,10 +348,62 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // Per-column reader state (book list, companion pairing, verse-window
     // bounds, controls, attribution) extracted to ColState.java (same package).
 
+    /** Double-click on a Strong's number (strongs-tip.js): open the full window. The id comes from the
+     *  page, so it is validated here too. */
+    @com.vaadin.flow.component.ClientCallable
+    public void openStrongs(final String aStrongs, final String aColumnUid) {
+        if (aStrongs == null || !aStrongs.matches("H\\d{1,5}")) return;
+        strongsDialog.open(aStrongs, HEBREW_WORDS_EDITION, LocaleUtil.currentLocale(), translationFor(aColumnUid),
+            occ -> afterRoundTrip(() -> openOccurrence(occ)));
+    }
+
+    /** The Bible the Strong's window shows under each Hebrew verse, in this order: the column the number
+     *  was clicked in, when it is a translation (not an original-language text) — "the Bible being
+     *  browsed"; else the reader's preferred Bible (Preferences, else the interface language's default).
+     *  A candidate whose verse numbering is unknown is skipped (VerseNumbering never guesses); null when
+     *  neither qualifies, and the window shows Hebrew only. */
+    private StrongsDialog.Translation translationFor(final String aColumnUid) {
+        final java.util.List<String[]> candidates = new java.util.ArrayList<>();
+        int uid = 0;
+        try { uid = Integer.parseInt(aColumnUid == null ? "" : aColumnUid.trim()); } catch (final NumberFormatException e) { /* none */ }
+        for (final ColState s : states)
+            if (uid > 0 && s.uid == uid && s.col.getSourceId() != null) {
+                final String[] row = catalog.byId(s.col.getSourceId());
+                if (row != null) candidates.add(row);
+            }
+        candidates.add(sourceByToken(defaultBibleToken()));
+        for (final String[] row : candidates) {
+            if (row == null) continue;
+            final org.religioustext.app.ui.views.reader.SourceRow s = org.religioustext.app.ui.views.reader.SourceRow.of(row);
+            if (s.isBible() && !s.isOriginal() && s.id() != null
+                    && numbering.schemeOf(s.id()) != VerseNumbering.Scheme.UNKNOWN)
+                return new StrongsDialog.Translation(s.id(), s.abbreviation(), s.isRtl());
+        }
+        return null;
+    }
+
+    /** Open one use of a word in a new column of the original-language text, so the verse numbering is
+     *  the Hebrew text's own. Falls back to the default Bible if that edition is not in the catalogue. */
+    private void openOccurrence(final WordLayerService.Occurrence anOccurrence) {
+        final String[] hebrew = sourceByToken("wlc");
+        openRefInNewColumn(new VerseComment.Ref(false, anOccurrence.book(), anOccurrence.chapter(), anOccurrence.verse()),
+            hebrew != null ? hebrew : sourceByToken(defaultBibleToken()), false, 0, null);
+    }
+
+    /** Installs the Strong's tooltip script; it guards itself, so every attach is safe. */
+    @Override
+    protected void onAttach(final com.vaadin.flow.component.AttachEvent anEvent) {
+        super.onAttach(anEvent);
+        StrongsTip.install(anEvent.getUI(), getElement());
+    }
+
     public ReaderView(final TextQueryService aQueryService,
                       final AudioIndexService anAudioIndex,
                       final CommentQueryService aCommentService,
                       final CrossRefQueryService aXrefService,
+                      final WordLayerService aWordLayer,
+                      final LexiconService aLexicon,
+                      final VerseNumbering aNumbering,
                       final CommentAuthorService aCommentAuthor,
                       final CommentAclService aCommentAcl,
                       final PersonalNoteService aNoteService,
@@ -355,6 +416,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.audioIndex   = anAudioIndex;
         this.commentService = aCommentService;
         this.xrefService  = aXrefService;
+        this.wordLayer    = aWordLayer;
+        this.numbering    = aNumbering;
+        this.strongsDialog = new StrongsDialog(aLexicon, aWordLayer, aQueryService, aNumbering, (k, a) -> this.t(k, a));
         this.xrefDialog   = new CrossRefDialog(aQueryService, (k, a) -> this.t(k, a));
         this.commentAuthor = aCommentAuthor;
         this.commentAcl   = aCommentAcl;
@@ -367,7 +431,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.sources       = aQueryService.listSources();
         this.catalog       = new SourceCatalog(this.sources);
         this.columnsLayout = new Div();
-        this.renderer = new VerseWindowRenderer(aQueryService, aCommentService, aXrefService, aNoteService,
+        this.renderer = new VerseWindowRenderer(aQueryService, aCommentService, aXrefService, aWordLayer, aNoteService,
             anAuthContext, new VerseWindowRenderer.Host() {
                 @Override public int activeSeq(final ColState aState, final VerseRef aVerseRef) {
                     return ReaderView.this.activeSeq(aState, aVerseRef);
@@ -844,6 +908,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         aState.descendants = catalog.descendantGenerationsOf(selectedId);
         aState.rungDepth   = 0;
         aState.rungTexts.clear();
+        aState.rungWords.clear();
         updateRungButtons(aState);
     }
 
@@ -899,6 +964,29 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 aState.rungDepth < 0 ? "var(--lumo-primary-color)" : "");
             aState.rungLessBtn.setTooltipText(t(aState.rungDepth > 0
                 ? "reader.lineage.less" : "reader.lineage.newer"));
+        }
+        updateStrongsToggle(aState);
+    }
+
+    /** ⓝ is offered when the column shows verses and one of its ancestor rungs — in practice the
+     *  original-language floor — has a word layer. Otherwise it is hidden and, if it was on, switched
+     *  off so no stale numbers linger. */
+    private void updateStrongsToggle(final ColState aState) {
+        final Button b = aState.strongsToggle;
+        if (b == null) return;
+        boolean offered = false;
+        if (verseGranular(aState)) {
+            // the column's own text carries the numbers (the Hebrew column) …
+            offered = aState.col.getSourceId() != null && wordLayer.hasLayer(aState.col.getSourceId());
+            // … or one of its ancestor rungs does (an English column's Hebrew rung)
+            if (!offered)
+                for (final org.religioustext.app.ui.views.reader.SourceCatalog.Rung r : aState.allRungs())
+                    if (wordLayer.hasLayer(r.row()[0])) { offered = true; break; }
+        }
+        b.setVisible(offered);
+        if (!offered && aState.showStrongs) {
+            aState.showStrongs = false;
+            styleStrongsToggle(aState);
         }
     }
 
@@ -1149,6 +1237,15 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 updateRungButtons(st);
                 updateAttribution(st);
             }
+            // cK.strongs=1: ⓝ on, which has every rung open (unless the link already opened them). A
+            // column whose OWN text has a word layer (the Hebrew column) takes it too, rungs or not.
+            if (spec.strongs && (!st.lineage.isEmpty()
+                    || (st.col.getSourceId() != null && wordLayer.hasLayer(st.col.getSourceId())))) {
+                st.showStrongs = true;
+                if (st.rungDepth < st.totalRungs()) st.rungDepth = st.totalRungs();
+                styleStrongsToggle(st);
+                updateRungButtons(st);
+            }
 
             // Restore this column's in-text comment markers before the open so
             // they render on first paint (opt-in, off by default, so a link that
@@ -1282,6 +1379,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             c.companion = s.showCompanion ? 1 : Math.max(0, s.rungDepth);
             c.comments  = s.showComments;
             c.xrefs     = s.showXrefs;
+            c.strongs   = s.showStrongs;
             final String code = bookCodeForName(s, s.currentBookName());
             if (code != null) {
                 // Verse precision when this column was opened at a specific verse
@@ -1731,6 +1829,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             aState.srcLicense     = sel.length > 4 ? sel[4] : null;
             aState.srcSource      = sel.length > 5 ? sel[5] : null;
             aState.srcLang        = org.religioustext.app.ui.views.reader.SourceRow.of(sel).language();
+            if (aState.numeralsToggle != null) {
+                aState.numeralsToggle.setVisible(Numerals.supports(aState.srcLang));
+            }
             // The info button only shows for an edition that has an info page.
             if (aState.infoBtn != null)
                 aState.infoBtn.setVisible(EditionInfo.PAGES.containsKey(sel[2]));
@@ -1939,6 +2040,44 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         });
         styleXrefToggle(aState);
 
+        // Strong's numbers: the third marker toggle, ⓝ. On, it opens every rung — so the
+        // original-language ones are showing — and puts a small number beside each Hebrew word;
+        // off, it ONLY hides the numbers: the rungs stay as they are (the maintainer, 2026-10-12).
+        // Only offered where there is an original-language rung with a word layer
+        // (updateStrongsToggle).
+        final Button strongsToggle = new Button("\u24DD");
+        aState.strongsToggle = strongsToggle;
+        strongsToggle.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        strongsToggle.setTooltipText(t("reader.strongs.toggle"));
+        strongsToggle.getElement().setAttribute("aria-label", t("reader.strongs.toggle"));
+        strongsToggle.addClickListener(e -> {
+            aState.showStrongs = !aState.showStrongs;
+            if (aState.showStrongs)
+                aState.rungDepth = aState.totalRungs();           // every ancestor, the originals included
+            styleStrongsToggle(aState);
+            updateRungButtons(aState);
+            if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
+        });
+        styleStrongsToggle(aState);
+        strongsToggle.setVisible(false);                          // shown once the column has the originals
+
+        // Native numerals: opt-out per column for a source whose language has its
+        // own chapter/verse numeral convention (Arabic, Hebrew today — see
+        // Numerals). Hidden entirely for a column whose language has none
+        // registered, since toggling it would do nothing.
+        final Button numeralsToggle = new Button("\u2116");   // № (numero sign) — script-neutral "numbers" glyph
+        aState.numeralsToggle = numeralsToggle;
+        numeralsToggle.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        numeralsToggle.setTooltipText(t("reader.numerals.toggleNative"));
+        numeralsToggle.getElement().setAttribute("aria-label", t("reader.numerals.toggleNative"));
+        numeralsToggle.setVisible(Numerals.supports(aState.srcLang));
+        numeralsToggle.addClickListener(e -> {
+            aState.nativeNumerals = !aState.nativeNumerals;
+            styleNumeralsToggle(aState);
+            if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
+        });
+        styleNumeralsToggle(aState);
+
         final Button syncBtn = new Button(VaadinIcon.LINK.create());
         syncBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         syncBtn.setTooltipText(t("tooltip.sync"));
@@ -1979,7 +2118,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         sourceGroup.getStyle().set("display", "flex").set("align-items", "center")
             .set("flex", "1 1 100px").set("min-width", "0");
         sourceCombo.getStyle().set("min-width", "64px");
-        header.add(langCombo, sourceGroup, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, xrefsToggle, syncBtn, removeBtn);
+        header.add(langCombo, sourceGroup, modeSelect, orderSelect, translationSelect, companionToggle, rungMore, rungLess, commentsToggle, xrefsToggle, strongsToggle, numeralsToggle, syncBtn, removeBtn);
         return header;
     }
 
@@ -2298,6 +2437,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         renderer.clearContent(aState);
         aState.companionText.clear();
         aState.rungTexts.clear();
+        aState.rungWords.clear();
         renderer.loadCompanionFor(aState, window);
         renderer.renderWindow(aState, window);
 
@@ -2459,16 +2599,40 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     /** The column-header ✝ toggle: outline when off, filled when on. */
-    private void styleXrefToggle(final ColState aState) {
-        final Button b = aState.xrefsToggle;
+    private void styleXrefToggle(final ColState aState) { stylePillToggle(aState.xrefsToggle, aState.showXrefs); }
+
+    /** The ⓝ toggle, drawn like the ✝ one. */
+    private void styleStrongsToggle(final ColState aState) { stylePillToggle(aState.strongsToggle, aState.showStrongs); }
+
+    private void stylePillToggle(final Button b, final boolean on) {
         if (b == null) return;
-        final boolean on = aState.showXrefs;
         b.getStyle()
             .set("border", "1px solid " + (on ? "var(--lumo-contrast-60pct)" : "var(--lumo-contrast-30pct)"))
             .set("border-radius", "10px")
             // Level with the neighbouring icons: their 24px box holds a glyph drawn well
             // inside it, so an outline as tall as the box reads as taller than they are.
             // 4px less than the icon box matches the drawn size.
+            .set("box-sizing", "border-box")
+            .set("height", "calc(var(--lumo-icon-size-m) - 4px)")
+            .set("min-height", "0")
+            .set("line-height", "1")
+            .set("display", "inline-flex")
+            .set("align-items", "center")
+            .set("padding", "0 6px")
+            .set("min-width", "0")
+            .set("color", on ? "var(--lumo-base-color)" : "var(--lumo-secondary-text-color)")
+            .set("background", on ? "var(--lumo-contrast-60pct)" : "transparent");
+    }
+
+    /** The column-header № toggle: outline when off (Western digits), filled when on
+     *  (srcLang's own numerals) — same visual language as the ✝ cross-reference toggle. */
+    private void styleNumeralsToggle(final ColState aState) {
+        final Button b = aState.numeralsToggle;
+        if (b == null) return;
+        final boolean on = aState.nativeNumerals;
+        b.getStyle()
+            .set("border", "1px solid " + (on ? "var(--lumo-contrast-60pct)" : "var(--lumo-contrast-30pct)"))
+            .set("border-radius", "10px")
             .set("box-sizing", "border-box")
             .set("height", "calc(var(--lumo-icon-size-m) - 4px)")
             .set("min-height", "0")
@@ -3503,8 +3667,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         if (anOrigin != null) {
             st.showComments = anOrigin.showComments;
             st.showXrefs = anOrigin.showXrefs;
+            st.nativeNumerals = anOrigin.nativeNumerals;
             styleCommentsToggle(st);
             styleXrefToggle(st);
+            styleNumeralsToggle(st);
         }
         setColumnSync(st, aSyncedFlag);
         selectSource(st, aSelection);

@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.religioustext</groupId>
         <artifactId>religious-texts-parent</artifactId>
-        <version>0.9.6</version>
+        <version>0.10.0</version>
     </parent>
 
     <artifactId>app</artifactId>
@@ -245,6 +245,20 @@
                  STARTING FLOOR is deliberately conservative (30%). After the first CI run,
                  open the HTML report, see the real number, and ratchet this up so it holds
                  the line you're actually at. -->
+            <!-- Mockito attaches its agent to the running JVM. On JDK 21 that makes the JDK print
+                 "A Java agent has been loaded dynamically" from the "Attach Listener" thread, and
+                 if that is the first output surefire captures, its StackWalkerStrategy fails to
+                 initialise on that thread (NPE) and every later Mockito test in the fork errors.
+                 Whether it is first depends on test order, which moved when test classes were
+                 added (CI run 38239848405: 48 errors). Allowing dynamic loading silences the
+                 warning, so the order no longer matters. @{argLine} keeps JaCoCo's agent. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

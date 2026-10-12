@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://religioustext.org/schema/words/1.0"
+           xmlns:wd="http://religioustext.org/schema/words/1.0"
+           elementFormDefault="qualified">
+
+  <!-- Word layer for original-language editions (docs/strongs-design.md).
+       One document per edition, stored in its own BaseX database ("words"), apart from the
+       edition documents. Each <w> carries the word's surface form and, where the source gives
+       one, its Strong's number; the corpus's own verse text is never modified.
+       v1.0 (2026-10-12): Hebrew, from the Open Scriptures Hebrew Bible (CC BY 4.0). -->
+
+  <xs:element name="words" type="wd:WordsType"/>
+
+  <xs:complexType name="WordsType">
+    <xs:sequence>
+      <xs:element name="book" type="wd:BookType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id"          type="xs:string" use="required"/>   <!-- words-oshb -->
+    <xs:attribute name="edition"     type="xs:string" use="required"/>   <!-- the corpus edition these words belong to -->
+    <xs:attribute name="source"      type="xs:anyURI" use="required"/>
+    <xs:attribute name="commit"      type="xs:string" use="optional"/>
+    <xs:attribute name="license"     type="xs:string" use="required"/>
+    <xs:attribute name="credit"      type="xs:string" use="required"/>
+    <xs:attribute name="changes"     type="xs:string" use="required"/>   <!-- what we altered (CC BY) -->
+    <xs:attribute name="generatedAt" type="xs:dateTime" use="optional"/>
+    <xs:attribute name="totalVerses" type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="totalWords"  type="xs:positiveInteger" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="BookType">
+    <xs:sequence>
+      <xs:element name="chapter" type="wd:ChapterType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="code" type="xs:string" use="required"/>          <!-- USFM, as in the edition documents -->
+  </xs:complexType>
+
+  <xs:complexType name="ChapterType">
+    <xs:sequence>
+      <xs:element name="verse" type="wd:VerseType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="number" type="xs:positiveInteger" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="VerseType">
+    <xs:sequence>
+      <xs:element name="w" type="wd:WordType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="number" type="xs:positiveInteger" use="required"/>
+    <!-- How the source's text compared with the edition's own text for this verse. The reader
+         shows numbers only on "exact": anything else would put a tag on text that is not the
+         text on the page. -->
+    <xs:attribute name="align" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="exact"/>
+          <xs:enumeration value="canonical"/>
+          <xs:enumeration value="letters"/>
+          <xs:enumeration value="words"/>
+          <xs:enumeration value="mismatch"/>
+          <xs:enumeration value="only_in_source"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="WordType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="id"     type="xs:string" use="required"/>    <!-- the source's stable word id -->
+        <xs:attribute name="strongs" type="wd:StrongsType" use="optional"/> <!-- absent on prefix-only words -->
+        <xs:attribute name="sense"  type="wd:SenseType"  use="optional"/> <!-- homograph letter -->
+        <xs:attribute name="plus"   type="xs:boolean"    use="optional"/> <!-- a trailing "+" in the source lemma -->
+        <!-- printed marks that follow the word (maqqef, paseq, sof pasuq, paragraph marks), with any
+             leading space they carry. Rebuild a verse by joining text + after for each word, with a
+             space between words unless the previous `after` holds a maqqef (U+05BE). -->
+        <xs:attribute name="after"  type="xs:string"     use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="StrongsType">
+    <xs:restriction base="xs:string"><xs:pattern value="[HG][0-9]+"/></xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SenseType">
+    <xs:restriction base="xs:string"><xs:pattern value="[a-f]"/></xs:restriction>
+  </xs:simpleType>
+</xs:schema>

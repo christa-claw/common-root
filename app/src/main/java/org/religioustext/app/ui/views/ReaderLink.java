@@ -33,6 +33,7 @@ import java.util.Map;
  *   verse — ladder order, generation by generation, main line first.
  * - comments=1 shows that column's in-text comment markers (opt-in, off by default).
  * - xrefs=1 shows that column's in-text cross-reference markers (same: opt-in, off by default).
+ * - strongs=1 shows Strong's numbers on that column's original-language rungs and opens every rung.
  *
  * Parsing is lenient: columns are capped at {@link #MAX_COLUMNS}, an unparseable
  * ref becomes null, and unknown tokens fall back to defaults — so old links keep
@@ -126,6 +127,7 @@ public final class ReaderLink {
         public int         companion;           // 0 = off; N = companion shown / N lineage generations
         public boolean     comments;             // in-text comment markers (per column)
         public boolean     xrefs;                // in-text cross-reference markers (per column)
+        public boolean     strongs;              // Strong's numbers on the original-language rungs (per column)
     }
 
     /** Result of parsing a query string. */
@@ -201,6 +203,7 @@ public final class ReaderLink {
             if (c.companion > 0)                   parts.add(p + "companion=" + c.companion);
             if (c.comments)                        parts.add(p + "comments=1");
             if (c.xrefs)                           parts.add(p + "xrefs=1");
+            if (c.strongs)                         parts.add(p + "strongs=1");
             if (c.highlights != null && !c.highlights.isEmpty()) {
                 final StringBuilder hl = new StringBuilder();
                 for (final Ref r : c.highlights) {
@@ -254,6 +257,8 @@ public final class ReaderLink {
             c.comments = "1".equals(cmts) || "true".equalsIgnoreCase(cmts);
             final String xr = aQueryMap.get(p + "xrefs");
             c.xrefs = "1".equals(xr) || "true".equalsIgnoreCase(xr);
+            final String sg = aQueryMap.get(p + "strongs");
+            c.strongs = "1".equals(sg) || "true".equalsIgnoreCase(sg);
             c.highlights.addAll(parseHighlights(aQueryMap.get(p + "hl")));
             out.cols.add(c);
         }

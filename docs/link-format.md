@@ -47,6 +47,7 @@ Each column `K` (1-based) uses the prefix `cK.`:
 | `cK.hl`        | no       | comma-separated references                          | Extra passages to flash on landing, in any book. Does not affect where the column opens. Max 12. |
 | `cK.companion` | no       | `1`–`9`                                             | Qur'an / hadith base columns: any value shows the paired companion translation beneath each ayah / hadith. Bible columns: opens the first N RUNGS of the edition's antecedent-translation lineage beneath each verse (see *Lineage rungs*). |
 | `cK.xrefs`     | no       | `1`                                                 | Show this column's in-text cross-reference markers (the ✝ badge after a verse that has OpenBible cross-references; opt-in, off by default). Bible columns only. |
+| `cK.strongs`   | no       | `1`                                                 | Show Strong's numbers beside the words of this column's original-language rungs (the muted Hebrew line under each verse) and open every rung; on the Hebrew (`wlc`) column itself it puts the numbers on that column's own text. Opt-in, off by default. Bible columns only. |
 
 The **source token implies the column type**, so no separate type parameter is
 needed.

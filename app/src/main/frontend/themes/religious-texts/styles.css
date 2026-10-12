@@ -61,3 +61,23 @@ vaadin-dialog-overlay.instant-close::part(backdrop) {
   animation: none !important;
   transition: none !important;
 }
+
+/* The Strong's tooltip (strongs-tip.js): one shared, fixed, fully opaque box. */
+.strongs-n { cursor: help; }
+.strongs-n:focus-visible { outline: 1px solid var(--lumo-primary-color); border-radius: 2px; }
+#strongs-tip {
+  position: fixed; display: none; z-index: 10000; box-sizing: border-box;
+  max-width: min(340px, 92vw); min-width: 200px;
+  background: var(--lumo-base-color); color: var(--lumo-body-text-color); opacity: 1;
+  border: 1px solid var(--lumo-contrast-20pct); border-radius: 8px; padding: 8px 10px;
+  font-family: var(--lumo-font-family); font-size: var(--lumo-font-size-s); line-height: 1.45;
+  box-shadow: var(--lumo-box-shadow-m);
+}
+#strongs-tip .st-lemma { font-size: 1.5em; margin-inline-end: .4em; unicode-bidi: isolate; }
+#strongs-tip .st-x { font-style: italic; color: var(--lumo-secondary-text-color); }
+#strongs-tip .st-n { font-size: .8em; font-weight: 600; margin-inline-start: .5em; color: var(--lumo-primary-text-color); }
+#strongs-tip .st-g { font-weight: 600; margin-top: 2px; }
+#strongs-tip .st-d { color: var(--lumo-secondary-text-color); margin-top: 2px; }
+#strongs-tip .st-h { margin-top: 4px; font-size: .8em; font-style: italic; color: var(--lumo-tertiary-text-color); }
+#strongs-tip .st-f { margin-top: 6px; font-size: .8em; color: var(--lumo-tertiary-text-color); }
+#strongs-tip .st-f a { color: inherit; }

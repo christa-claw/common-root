@@ -64,6 +64,11 @@ final class ColState {
     Button          commentsToggle;        // in-text comment-marker toggle (per column)
     boolean         showXrefs;             // in-text cross-reference markers on (opt-in, per column)
     Button          xrefsToggle;           // in-text cross-reference-marker toggle (per column)
+    boolean         showStrongs;           // Strong's numbers on the original-language rungs (per column)
+    Button          strongsToggle;         // the ⓝ toggle
+    /** Rung edition id -> "code|chapter|verse" -> its words, for rungs with a word layer. */
+    java.util.Map<String, java.util.Map<String, java.util.List<org.religioustext.app.service.WordLayerService.Word>>>
+                    rungWords = new java.util.HashMap<>();
     Select<String[]> translationSelect;   // Qur'an: which translation shows beneath the Arabic
     Select<DisplayOptions.DisplayMode> modeSelect;
     Select<OrderMode> orderSelect;
@@ -157,6 +162,14 @@ final class ColState {
     Span            attribution;            // source/translation + licence line under the nav
     String          srcTranslation, srcLicense, srcSource;  // primary-source attribution parts
     String          srcLang;                // the edition's language ("en", "he", ...); "" when unknown
+    /** Render this column's chapter/verse numbers in srcLang's own numeral
+     *  convention (see Numerals) rather than plain Western digits. ON by
+     *  default — matches what the column's own language is actually
+     *  printed in — and only ever reachable through the toggle for a
+     *  language Numerals has a formatter for; everything else just stays on
+     *  Western digits regardless of this flag. */
+    boolean         nativeNumerals = true;
+    com.vaadin.flow.component.button.Button numeralsToggle;   // header "№" toggle, hidden when srcLang has no native-numeral formatter
     boolean         showComments;           // in-text 💬 markers; OFF by default — scripture text stays pristine
     Span            chapterLabel;
     /** The chapter label doubles as a jump box: clicking it swaps in this

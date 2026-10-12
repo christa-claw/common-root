@@ -6,8 +6,8 @@ _Study the texts that shape our world._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.9.6 |
-| Generated | 2026-10-10 |
+| Version | 0.10.0 |
+| Generated | 2026-10-12 |
 <!-- /AUTOGEN:meta -->
 
 ## What it is

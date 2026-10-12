@@ -200,7 +200,7 @@ public class PrintBuilderService {
             final Process p = process;
             kill = watchdog.schedule(() -> {
                 aJob.add("Stopped: the build ran past its time limit (" + timeoutMinutes + " minutes).");
-                p.destroyForcibly();
+                killTree(p);
             }, timeoutMillis(), TimeUnit.MILLISECONDS);
 
             String resultLine = null;
@@ -232,9 +232,19 @@ public class PrintBuilderService {
             aJob.status = Status.FAILED;
         } finally {
             if (kill != null) kill.cancel(false);
-            if (process != null && process.isAlive()) process.destroyForcibly();
+            if (process != null && process.isAlive()) killTree(process);
             aJob.finished = Instant.now();
         }
+    }
+
+    /**
+     * Kill the builder and everything it started. Killing only the parent leaves a child
+     * (a shell's {@code sleep}, the script's own helpers) holding the output pipe open, so
+     * the reader would block until that child chose to exit and the time limit would not bite.
+     */
+    private static void killTree(final Process aProcess) {
+        aProcess.descendants().forEach(ProcessHandle::destroyForcibly);
+        aProcess.destroyForcibly();
     }
 
     /** Keep the last few builds on disk; the rest are removed. */
