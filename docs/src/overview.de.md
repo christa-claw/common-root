@@ -6,8 +6,8 @@ _Studieren Sie die Texte, die unsere Welt prägen._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.10.0 |
-| Generated | 2026-10-12 |
+| Version | 0.10.1 |
+| Generated | 2026-10-13 |
 <!-- /AUTOGEN:meta -->
 
 ## Was es ist
@@ -84,7 +84,7 @@ in einer Übersetzung erstellter Link in einer anderen korrekt öffnet.
 ## Derzeit verfügbare Texte
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
 <!-- /AUTOGEN:translations -->
 
 Weitere Übersetzungen und Traditionen — darunter der Koran, Hadith-Sammlungen und
@@ -160,9 +160,9 @@ Die Quellen sind nach Kanal und Perspektive geordnet:
 | Islamic | 6 |
 | Critical | 2 |
 | Neutral | 1 |
-| Not yet classified | 17 |
+| Not yet classified | 18 |
 
-_32 channels configured._
+_33 channels configured._
 <!-- /AUTOGEN:channels -->
 
 ## Unterstützung

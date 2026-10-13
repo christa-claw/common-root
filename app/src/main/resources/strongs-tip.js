@@ -12,7 +12,7 @@
   if (window.__strongsTip) return;
   window.__strongsTip = true;
 
-  var cache = {}, tip = null, current = null, pinned = null;
+  var cache = {}, tip = null, current = null, pinned = null, looked = {};
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -84,12 +84,23 @@
     t.style.top = y + 'px';
     t.style.visibility = 'visible';
   }
+  // Analytics: one "strongs-lookup" per number per page load, so a pointer sweeping back and
+  // forth over the same word counts once. The full window reports its own lookups from the
+  // server (ReaderView.openStrongs), with via=window. No-op when Umami is not installed.
+  function track(id, passage) {
+    if (!id || looked[id] || !window.umami) return;
+    looked[id] = true;
+    var data = { strongs: id, via: 'tooltip' };
+    if (passage) data.source = passage;      // the verse the number sits in ("Genesis 1:1")
+    window.umami.track('strongs-lookup', data);
+  }
   function show(anchor) {
     current = anchor;
     entry(anchor.getAttribute('data-s'), anchor.getAttribute('data-l') || 'en').then(function (j) {
       if (!j || current !== anchor || !document.body.contains(anchor)) return;
       render(j);
       place(anchor);
+      track(anchor.getAttribute('data-s'), anchor.getAttribute('data-p'));
     });
   }
   function hide() {
@@ -121,7 +132,7 @@
     ev.preventDefault();
     hide();
     var host = window.__strongsHost;
-    if (host && host.$server && host.$server.openStrongs) host.$server.openStrongs(a.getAttribute('data-s'), a.getAttribute('data-col') || '');
+    if (host && host.$server && host.$server.openStrongs) host.$server.openStrongs(a.getAttribute('data-s'), a.getAttribute('data-col') || '', a.getAttribute('data-p') || '');
   });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') hide(); });
   // The reader adjusts scroll positions on its own, so scroll events are frequent: follow the

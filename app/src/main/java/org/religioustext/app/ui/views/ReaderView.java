@@ -349,12 +349,21 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     // bounds, controls, attribution) extracted to ColState.java (same package).
 
     /** Double-click on a Strong's number (strongs-tip.js): open the full window. The id comes from the
-     *  page, so it is validated here too. */
+     *  page, so it is validated here too; {@code aSource} is the verse label the number carries
+     *  ({@code data-p}), checked before it is used. */
     @com.vaadin.flow.component.ClientCallable
-    public void openStrongs(final String aStrongs, final String aColumnUid) {
+    public void openStrongs(final String aStrongs, final String aColumnUid, final String aSource) {
         if (aStrongs == null || !aStrongs.matches("H\\d{1,5}")) return;
+        final String source = PassageLabels.clean(aSource);       // the verse the number was double-clicked in
+        trackEvent("strongs-lookup", "strongs", aStrongs, "via", "window", "source", source);
         strongsDialog.open(aStrongs, HEBREW_WORDS_EDITION, LocaleUtil.currentLocale(), translationFor(aColumnUid),
-            occ -> afterRoundTrip(() -> openOccurrence(occ)));
+            occ -> {
+                // Choosing a passage in the window is the second step: report it with the
+                // verse the lookup began from, so one row says "from here, to there".
+                trackEvent("strongs-follow", "strongs", aStrongs, "source", source,
+                           "target", PassageLabels.of(occ.book(), occ.chapter(), occ.verse()));
+                afterRoundTrip(() -> openOccurrence(occ));
+            });
     }
 
     /** The Bible the Strong's window shows under each Hebrew verse, in this order: the column the number
@@ -2035,6 +2044,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         xrefsToggle.getElement().setAttribute("aria-label", t("reader.xrefs.toggleMarkers"));
         xrefsToggle.addClickListener(e -> {
             aState.showXrefs = !aState.showXrefs;
+            trackEvent("xrefs-toggle", "state", aState.showXrefs ? "on" : "off",
+                       "edition", editionLabel(aState));
             styleXrefToggle(aState);
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
         });
@@ -2052,6 +2063,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         strongsToggle.getElement().setAttribute("aria-label", t("reader.strongs.toggle"));
         strongsToggle.addClickListener(e -> {
             aState.showStrongs = !aState.showStrongs;
+            trackEvent("strongs-toggle", "state", aState.showStrongs ? "on" : "off",
+                       "edition", editionLabel(aState));
             if (aState.showStrongs)
                 aState.rungDepth = aState.totalRungs();           // every ancestor, the originals included
             styleStrongsToggle(aState);
@@ -2572,10 +2585,25 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             .set("line-height", "1.5")
             .set("margin", "0 3px");
         b.getElement().setAttribute("title", t("reader.xrefs.title"));
-        b.addClickListener(e -> xrefDialog.open(
-            bookHeading(aState, aBookName) + " " + aChapter + ":" + aVerseNo,
-            aState.col.getSourceId(), theXrefs,
-            ref -> afterRoundTrip(() -> openXrefInNewColumn(ref, aState))));
+        b.addClickListener(e -> {
+            // aBookName is the English name, so the passage reads the same whatever
+            // language the column is in and one passage is one value in Umami.
+            final String source = aBookName + " " + aChapter + ":" + aVerseNo;
+            trackEvent("xref-open", "edition", editionLabel(aState), "book", aBookName,
+                       "chapter", aChapter, "verse", aVerseNo, "source", source,
+                       "count", theXrefs.size());
+            xrefDialog.open(
+                bookHeading(aState, aBookName) + " " + aChapter + ":" + aVerseNo,
+                aState.col.getSourceId(), theXrefs,
+                ref -> {
+                    // The target is only known now, when a cross-reference is chosen in the
+                    // dialog — hence a second event, with the source it was reached from.
+                    trackEvent("xref-follow", "edition", editionLabel(aState), "source", source,
+                               "target", PassageLabels.range(ref.toBook(), ref.toChapter(), ref.toVerse(),
+                                                             ref.toEndChapter(), ref.toEndVerse()));
+                    afterRoundTrip(() -> openXrefInNewColumn(ref, aState));
+                });
+        });
         return b;
     }
 
@@ -3939,8 +3967,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private void trackReaderView(final ColState aState, final String aBook, final int aChapter) {
         final String sourceId = aState.col.getSourceId();
         if (sourceId == null) return;
-        final SourceRow row = SourceRow.of(catalog.byId(sourceId));
-        final String edition = row == null ? sourceId : row.name();
+        final String edition = editionLabel(aState);
         // `passage` joins book and chapter into one value ("Ephesians 5"): Umami's
         // Properties tab breaks each property down on its own, so a bare chapter
         // number says nothing without its book. aBook is the English name, so the
@@ -3949,6 +3976,40 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             "window.umami && window.umami.track($0, {edition: $1, book: $2, chapter: $3, passage: $4})",
             "reader-view", edition, aBook, String.valueOf(aChapter), aBook + " " + aChapter);
     }
+
+
+    /** The column's edition as a person would name it (the catalogue's display name),
+     *  falling back to the bare token; empty when the column has no source yet. */
+    private String editionLabel(final ColState aState) {
+        final String sourceId = aState.col.getSourceId();
+        if (sourceId == null) return "";
+        final SourceRow row = SourceRow.of(catalog.byId(sourceId));
+        return row == null ? sourceId : row.name();
+    }
+
+    /** Sends one custom Umami event. {@code aKeyValues} alternate property name and
+     *  value; values are Strings or Numbers (a Number reaches Umami as a number, so it
+     *  can be summed or averaged). Property names are our own constants — never user
+     *  input — which is why they are written into the script text, while every value
+     *  travels as a bound parameter. A silent no-op where {@code window.umami} is
+     *  undefined (dev/local, or a visitor who has opted out). */
+    private void trackEvent(final String aName, final java.io.Serializable... aKeyValues) {
+        final StringBuilder js = new StringBuilder("window.umami && window.umami.track($0, {");
+        // Serializable[], not Object[]: executeJs takes Serializable..., and an Object[] is
+        // itself Serializable, so it would be sent as ONE parameter and fail to encode.
+        final java.util.List<java.io.Serializable> params = new java.util.ArrayList<>();
+        params.add(aName);
+        for (int i = 0; i + 1 < aKeyValues.length; i += 2) {
+            if (aKeyValues[i + 1] == null) continue;       // a property with no value is left out
+            if (params.size() > 1) js.append(',');
+            js.append(aKeyValues[i]).append(":$").append(params.size());
+            params.add(aKeyValues[i + 1]);
+        }
+        js.append("})");
+        getElement().executeJs(js.toString(), params.toArray(new java.io.Serializable[0]));
+    }
+
+
 
 
     // ── Sync (seq-based) ──────────────────────────────────────────────────────

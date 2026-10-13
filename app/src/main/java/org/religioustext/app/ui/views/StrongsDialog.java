@@ -171,7 +171,8 @@ final class StrongsDialog {
                     anOpener.accept(o);
                     return;
                 }
-                detail.add(VerseWindowRenderer.strongsLine(verse, aLocale == null ? "en" : aLocale.toLanguageTag(), aStrongs, 0));
+                detail.add(VerseWindowRenderer.strongsLine(verse, aLocale == null ? "en" : aLocale.toLanguageTag(), aStrongs, 0,
+                    PassageLabels.of(o.book(), o.chapter(), o.verse())));
                 final Div line = translationLine(o, aTranslation, aLocale, theChapters);
                 if (line != null) detail.add(line);
                 built[0] = true;

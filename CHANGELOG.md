@@ -72,6 +72,32 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.10.1] — 2026-10-13
+
+### Added
+- **NIV edition info page** in all 14 locales.
+- **Belle Liu Apologetics** added to the tracked YouTube channels
+  (`channels.properties`), and the argument ledger grew by about 1,200 entries from
+  the latest extractor runs.
+- **Umami events for cross-references and Strong's numbers**, so feature use shows up
+  next to the traffic. All fire only on a person's own click or hover, never when a
+  toggle is restored from saved preferences or a shared link. Passages are English
+  labels ("Genesis 1:1", "Proverbs 8:22-30") built from the USFM code, so one passage
+  is one value whatever the language or edition.
+  - `xrefs-toggle` and `strongs-toggle`: the ✝ and ⓝ column toggles, with `state`
+    (on/off) and `edition`.
+  - `xref-open`: opening a verse's cross-references, with `edition`, `book`, `chapter`,
+    `verse`, `source` (the verse) and `count` (the number of cross-references).
+  - `xref-follow`: choosing a cross-reference in that dialog, with `edition`, `source`
+    and `target`. The target only exists at this second step, which is why it is its
+    own event; set against `xref-open` it gives the follow-through rate.
+  - `strongs-lookup`: viewing a Strong's entry, with `strongs` (e.g. H430), `via`
+    (`tooltip` or `window`) and `source`, the verse the number sits in. The tooltip
+    reports once per number per page load, so a pointer sweeping over the same word
+    counts once; a double-click opens the full window and reports it as well.
+  - `strongs-follow`: choosing a passage in the Strong's window, with `strongs`,
+    `source` (where the lookup began) and `target`.
+
 ## [0.10.0] — 2026-10-12
 
 ### Added

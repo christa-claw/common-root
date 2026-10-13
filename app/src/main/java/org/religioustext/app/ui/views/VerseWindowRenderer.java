@@ -173,9 +173,22 @@ final class VerseWindowRenderer {
             final java.util.Map<String, List<Word>> m = aState.rungWords.get(aRungId);
             final List<Word> ws = m == null ? null : m.get(aKey);
             if (ws != null && !ws.isEmpty() && WordLayerService.reconstruct(ws).equals(aText.strip()))
-                return strongsLine(ws, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null, aState.uid);
+                return strongsLine(ws, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null,
+                                   aState.uid, passageOfKey(aKey));
         }
         return new Span(aText);
+    }
+
+    /** "Genesis 1:1" for a rung key {@code CODE|chapter|verse}, or null when the key is not that shape. */
+    private static String passageOfKey(final String aKey) {
+        if (aKey == null) return null;
+        final String[] p = aKey.split("\\|");
+        if (p.length != 3) return null;
+        try {
+            return PassageLabels.of(p[0], Integer.parseInt(p[1]), Integer.parseInt(p[2]));
+        } catch (final NumberFormatException e) {
+            return null;     // a verse such as "1a": no label rather than a wrong one
+        }
     }
 
     /** The words of the COLUMN'S OWN verse with their numbers when this column's edition has a word
@@ -191,17 +204,20 @@ final class VerseWindowRenderer {
 
     /** One verse's text: the words with numbers if they rebuild the verse exactly, else the plain text. */
     private static com.vaadin.flow.component.Component ownLine(final List<Word> theWords, final String aBody,
-                                                                final int aColUid) {
+                                                                final int aColUid, final String aPassage) {
         if (theWords != null && !theWords.isEmpty() && WordLayerService.reconstruct(theWords).equals(aBody.strip()))
-            return strongsLine(theWords, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null, aColUid);
+            return strongsLine(theWords, org.religioustext.app.i18n.LocaleUtil.currentLocale().toLanguageTag(), null,
+                               aColUid, aPassage);
         return new Span(aBody);
     }
 
     /** Words with a small superscript number after each numbered word, laid out like the corpus line.
      *  Words carrying {@code aHighlight} (a Strong's id, or null) are marked — the Strong's window uses
-     *  this to show where in a verse the word it is about stands. */
+     *  this to show where in a verse the word it is about stands. {@code aPassage} ("Genesis 1:1",
+     *  or null) is stamped on each number as {@code data-p}, so the analytics events can say which
+     *  verse a lookup came from. */
     static Span strongsLine(final List<Word> theWords, final String aLang, final String aHighlight,
-                            final int aColUid) {
+                            final int aColUid, final String aPassage) {
         final Span line = new Span();
         for (int i = 0; i < theWords.size(); i++) {
             final Word w = theWords.get(i);
@@ -217,6 +233,7 @@ final class VerseWindowRenderer {
                 n.getElement().setAttribute("data-s", w.strongs());
                 n.getElement().setAttribute("data-l", aLang);
                 if (aColUid > 0) n.getElement().setAttribute("data-col", String.valueOf(aColUid));   // which column it was clicked in
+                if (aPassage != null) n.getElement().setAttribute("data-p", aPassage);                // which verse it sits in
                 n.getElement().setAttribute("tabindex", "0");
                 n.getElement().setAttribute("role", "button");
                 n.getStyle()
@@ -530,7 +547,8 @@ final class VerseWindowRenderer {
                     }
                     primary.add(num);
                 }
-                primary.add(ownLine(ownWords.get(verse.getVerseNumber()), body, aState.uid));
+                primary.add(ownLine(ownWords.get(verse.getVerseNumber()), body, aState.uid,
+                                    PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())));
                 final List<VerseComment> ayahComments =
                     verseComments.get(String.valueOf(verse.getVerseNumber()));
                 if (ayahComments != null)
@@ -698,7 +716,8 @@ final class VerseWindowRenderer {
             final List<Word> own = theOwnWords.get(verse.getVerseNumber());
             if (own != null && WordLayerService.reconstruct(own).equals(body.strip())) {
                 // the column's own text carries Strong's numbers (the Hebrew column with ⓝ on)
-                aTarget.appendChild(ownLine(own, body, aState.uid).getElement());
+                aTarget.appendChild(ownLine(own, body, aState.uid,
+                                            PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())).getElement());
                 aTarget.appendChild(new Span(" ").getElement());
             } else {
                 aTarget.appendChild(new Span(body + " ").getElement());
