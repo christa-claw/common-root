@@ -72,6 +72,32 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-10-18
+
+### Added
+- **Strong's numbers for the Greek New Testament.** The ⓝ toggle now also numbers the Textus
+  Receptus (`bible-grc-tr`) — in its own column and as the Greek rung under every Bible — and a
+  double-click on a `G####` number opens the same window as for Hebrew (lexicon entry, "Used N
+  times in the Greek New Testament", the passages, each expandable in place with the reader's Bible
+  beneath). Numbers come from STEPBible's TAGNT (CC BY 4.0, Tyndale House) matched to the corpus's
+  own TR words: 139,970 of 141,041 words (99.24%) carry a number; the stored verses are untouched.
+  The Greek lexicon is `i18n/lexicon/greek.properties` (5,523 entries from STEPBible's TBESG, built
+  on Abbott-Smith), translated per locale by the same nightly job as the Hebrew one
+  (`check_lexicon_translations.py --lexicon greek`). Endpoint `GET /lexicon/greek/{G####}?lang=`.
+- **Edition info pages** for IRVHIN, SYN and SV1917 in all 14 locales.
+- Nightly argument refreshes: about 1,400 more anchored arguments, including 161 new ones
+  from Belle Liu Apologetics (not yet reviewed card by card).
+- Belle Liu Apologetics and Elijah Johnson Apologetics recorded as vetted in
+  `docs/channel-vetting.md`.
+
+### Changed
+- The Strong's toggle is shown from the start, drawn like the cross-reference one.
+
+### Removed
+- The 12 auto-flagged Elijah Johnson Apologetics arguments (the summary voiced the position the
+  apologist was refuting) are tombstoned in the ledger; they will not be re-extracted. Cards
+  already seeded on the site are removed separately.
+
 ## [0.10.1] — 2026-10-13
 
 ### Added

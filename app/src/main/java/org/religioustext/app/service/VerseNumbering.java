@@ -90,6 +90,18 @@ public class VerseNumbering {
         };
     }
 
+    /** Where this edition has the verse that the Greek New Testament (the TR, numbered like the KJV) calls
+     *  {@code book chapter:verse}; empty when the edition's numbering is unknown or the chapter's verse
+     *  count differs from the KJV's. The New Testament is numbered alike in the Hebrew scheme. */
+    public Optional<Ref> fromGreek(final String anEditionId, final String aBook, final int aChapter, final int aVerse) {
+        final Ref greek = new Ref(aBook, aChapter, aVerse);
+        return switch (schemeOf(anEditionId)) {
+            case HEBREW -> Optional.of(greek);
+            case KJV -> Optional.of(greek).filter(r -> !differs(anEditionId, r));
+            case UNKNOWN -> Optional.empty();
+        };
+    }
+
     /** Whether this edition counts the chapter's verses differently from the KJV (so verse numbers in it
      *  may sit one off). */
     private boolean differs(final String anEditionId, final Ref aKjvRef) {

@@ -33,8 +33,9 @@ import java.util.regex.Pattern;
  * {@code scripts/strongs/import_words.py} fills. The corpus's verse text is never read or
  * changed here.
  *
- * <p>Only verses whose source text matched the edition's own text exactly ({@code align="exact"})
- * are served, so a number never lands on text that is not on the page. The caller should still
+ * <p>Only verses whose words rebuild the edition's own text are served ({@code align} exact; and for
+ * the Greek layer also reordered or partial, whose words ARE the corpus words with numbers attached
+ * where TAGNT gave one), so a number never lands on text that is not on the page. The caller should still
  * compare {@link #reconstruct(List)} with the line it is about to replace, which makes that
  * guarantee independent of the data.
  *
@@ -99,7 +100,7 @@ public class WordLayerService {
         return chapters.computeIfAbsent(anEditionId + "|" + aBookCode + "|" + aChapter, k -> {
             final String q = NS_DECL + "for $v in db:open('" + wordsDb + "')/words[@edition='" + anEditionId
                 + "']/book[@code='" + aBookCode + "']/chapter[@number='" + aChapter
-                + "']/verse[@align='exact'] for $w in $v/w return string-join(("
+                + "']/verse[@align=('exact','reordered','partial')] for $w in $v/w return string-join(("
                 + "string($v/@number), string($w/@id), string($w/@strongs), string($w/@sense),"
                 + " string($w/@after), string($w)), '|')";
             return parse(query(q));

@@ -21,9 +21,9 @@ class CheckTest(unittest.TestCase):
         self.assertEqual(self.fails({"H1.gloss": "isä", "H2.def": "(aramea) vastaa sanaa H1"}), [])
 
     def test_only_gloss_and_def_belong_in_a_locale_file(self):
-        self.assertTrue(any("only H####.gloss" in f for f in self.fails({"H1.lemma": "x"})))
-        self.assertTrue(any("only H####.gloss" in f for f in self.fails({"H1.xlit": "x"})))
-        self.assertTrue(any("only H####.gloss" in f for f in self.fails({"junk": "x"})))
+        self.assertTrue(any("only <id>.gloss" in f for f in self.fails({"H1.lemma": "x"})))
+        self.assertTrue(any("only <id>.gloss" in f for f in self.fails({"H1.xlit": "x"})))
+        self.assertTrue(any("only <id>.gloss" in f for f in self.fails({"junk": "x"})))
 
     def test_a_key_with_no_english_original_fails(self):
         self.assertTrue(any("no English original" in f for f in self.fails({"H99.gloss": "x"})))

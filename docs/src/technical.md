@@ -4,8 +4,8 @@
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.10.1 |
-| Generated | 2026-10-13 |
+| Version | 0.11.1 |
+| Generated | 2026-10-18 |
 <!-- /AUTOGEN:meta -->
 
 > **Naming note.** The user-facing application is **Common Root?**. Internal
@@ -286,7 +286,7 @@ The following reflects the current state of the BaseX database at the time this
 document was generated:
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 ## Transcript & argument pipeline

@@ -6,8 +6,8 @@ _Studieren Sie die Texte, die unsere Welt prägen._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.10.1 |
-| Generated | 2026-10-13 |
+| Version | 0.11.1 |
+| Generated | 2026-10-18 |
 <!-- /AUTOGEN:meta -->
 
 ## Was es ist
@@ -84,7 +84,7 @@ in einer Übersetzung erstellter Link in einer anderen korrekt öffnet.
 ## Derzeit verfügbare Texte
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 Weitere Übersetzungen und Traditionen — darunter der Koran, Hadith-Sammlungen und

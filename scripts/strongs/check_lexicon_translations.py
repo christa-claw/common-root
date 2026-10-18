@@ -5,17 +5,18 @@
 check_lexicon_translations.py — coverage and the verification gate for the Strong's lexicon
 translations (docs/lexicon-translation-job.md; docs/strongs-design.md).
 
-The English base is app/src/main/resources/i18n/lexicon/hebrew.properties. Each other interface
-language has hebrew_<lang>.properties holding ONLY `H####.gloss` and `H####.def` keys; a key a
+The English base is app/src/main/resources/i18n/lexicon/hebrew.properties (or greek.properties with
+`--lexicon greek`). Each other interface language has hebrew_<lang>.properties holding ONLY
+`H####.gloss` and `H####.def` keys (`G####` for Greek); a key a
 locale does not have falls back to English in the app. This script
 
   * reports, per locale, how many glosses and definitions are translated;
   * `--next N` prints the next batch of entries to translate (TSV), most frequent words first
-    (docs/lexicon-frequency-hebrew.tsv). A batch is done when EVERY locale has its keys;
+    (docs/lexicon-frequency-<lexicon>.tsv). A batch is done when EVERY locale has its keys;
   * checks the files (the gate: exit 1 on any failure, the job must not commit then):
       - only .gloss / .def keys, each for a number the English file has; no duplicates;
       - no empty values; one line each; raw UTF-8 (no \\uXXXX escapes);
-      - every H#### reference in the English definition survives in the translation.
+      - every H#### / G#### reference in the English definition survives in the translation.
 
 Locales come from LocaleUtil.java (the authority); English is the base and is not translated.
 
@@ -25,16 +26,24 @@ Usage:
     python3 scripts/strongs/check_lexicon_translations.py --next 400       # next batch (auto phase)
     python3 scripts/strongs/check_lexicon_translations.py --next 100 --phase definitions
     python3 scripts/strongs/check_lexicon_translations.py --quiet          # only failures
+    python3 scripts/strongs/check_lexicon_translations.py --lexicon greek  # the Greek New Testament lexicon
 """
 import argparse, collections, os, re, sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 LEX = os.path.join(REPO, "app", "src", "main", "resources", "i18n", "lexicon")
-FREQ = os.path.join(REPO, "docs", "lexicon-frequency-hebrew.tsv")
+LEXICONS = ("hebrew", "greek")
+
+
+def freq_path(lexicon="hebrew"):
+    return os.path.join(REPO, "docs", "lexicon-frequency-%s.tsv" % lexicon)
+
+
+FREQ = freq_path()
 LOCALE_UTIL = os.path.join(REPO, "app", "src", "main", "java", "org", "religioustext", "app", "i18n", "LocaleUtil.java")
 
-KEY = re.compile(r"^(H\d+)\.(lemma|xlit|gloss|def)$")
-REF = re.compile(r"\bH\d+\b")
+KEY = re.compile(r"^([HG]\d+)\.(lemma|xlit|gloss|def)$")
+REF = re.compile(r"\b[HG]\d+\b")
 ESC = re.compile(r"\\u[0-9a-fA-F]{4}")
 
 
@@ -71,7 +80,7 @@ def check_locale(tag, english, loc, dups, bad):
     for k, v in loc.items():
         m = KEY.match(k)
         if not m or m.group(2) not in ("gloss", "def"):
-            fails.append("%s: %s — only H####.gloss and H####.def belong in a locale file" % (tag, k))
+            fails.append("%s: %s — only <id>.gloss and <id>.def belong in a locale file" % (tag, k))
             continue
         if k not in english:
             fails.append("%s: %s has no English original" % (tag, k))
@@ -87,10 +96,10 @@ def check_locale(tag, english, loc, dups, bad):
     return fails
 
 
-def frequency_order(english):
+def frequency_order(english, freq=FREQ):
     ids = []
-    if os.path.exists(FREQ):
-        for line in open(FREQ, encoding="utf-8"):
+    if os.path.exists(freq):
+        for line in open(freq, encoding="utf-8"):
             if line.startswith("#") or not line.strip():
                 continue
             sid = line.split("\t", 1)[0]
@@ -111,15 +120,17 @@ def main():
     ap.add_argument("--coverage", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--next", type=int, metavar="N", help="print the next N entries to translate (TSV) and exit")
+    ap.add_argument("--lexicon", choices=LEXICONS, default="hebrew", help="which lexicon (default hebrew)")
     ap.add_argument("--phase", choices=("auto", "glosses", "definitions"), default="auto")
     a = ap.parse_args()
 
-    english, _, _ = read_props(os.path.join(LEX, "hebrew.properties"))
+    lex = a.lexicon
+    english, _, _ = read_props(os.path.join(LEX, "%s.properties" % lex))
     ids = [k[:-6] for k in english if k.endswith(".gloss")]
     tags = locales()
     locs, fails = {}, []
     for tag in tags:
-        path = os.path.join(LEX, "hebrew_%s.properties" % tag)
+        path = os.path.join(LEX, "%s_%s.properties" % (lex, tag))
         if os.path.exists(path):
             loc, dups, bad = read_props(path)
             fails += check_locale(tag, english, loc, dups, bad)
@@ -128,7 +139,7 @@ def main():
         locs[tag] = loc
 
     if a.next:
-        order = frequency_order(english)
+        order = frequency_order(english, freq_path(lex))
         phase = a.phase
         if phase == "auto":
             phase = "glosses" if pending(order, locs, "gloss") else "definitions"
@@ -143,7 +154,7 @@ def main():
     if not a.quiet or fails:
         if not a.quiet:
             n = len(ids)
-            print("Hebrew lexicon: %d entries; %d locales (%s)\n" % (n, len(tags), " ".join(tags)))
+            print("%s lexicon: %d entries; %d locales (%s)\n" % (lex.capitalize(), n, len(tags), " ".join(tags)))
             print("  %-6s %9s %12s" % ("locale", "glosses", "definitions"))
             for tag in tags:
                 g = sum(1 for i in ids if i + ".gloss" in locs[tag])

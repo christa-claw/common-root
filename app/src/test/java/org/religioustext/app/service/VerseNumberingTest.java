@@ -86,4 +86,11 @@ class VerseNumberingTest {
         assertThat(broken.fromHebrew("bible-kjv-1611", "GEN", 32, 1)).isEmpty();           // never the unmapped (wrong) verse
         assertThat(broken.fromHebrew("bible-he-wlc", "GEN", 32, 1)).contains(new Ref("GEN", 32, 1));
     }
+
+    @Test
+    void theGreekNewTestamentKeepsItsNumbersInKjvAndHebrewNumberedEditions() {
+        assertThat(n.fromGreek("bible-kjv-1611", "JHN", 3, 16)).contains(new Ref("JHN", 3, 16));
+        assertThat(n.fromGreek("bible-he-wlc", "JHN", 3, 16)).contains(new Ref("JHN", 3, 16));
+        assertThat(n.fromGreek("bible-ru-synodal", "JHN", 3, 16)).isEmpty();      // numbering unknown: no guess
+    }
 }

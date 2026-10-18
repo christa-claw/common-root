@@ -261,8 +261,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private final WordLayerService wordLayer;
     private final StrongsDialog strongsDialog;
     private final VerseNumbering numbering;
-    /** The edition whose word layer the Strong's window counts and lists passages from (Hebrew). */
+    /** The editions whose word layers the Strong's window counts and lists passages from: Hebrew for an
+     *  H number, the Greek New Testament (Textus Receptus) for a G number. */
     private static final String HEBREW_WORDS_EDITION = "bible-he-wlc";
+    private static final String GREEK_WORDS_EDITION = "bible-grc-tr";
     private final CommentAuthorService commentAuthor;
     private final CommentAclService commentAcl;
     private final PersonalNoteService noteService;
@@ -353,16 +355,18 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  ({@code data-p}), checked before it is used. */
     @com.vaadin.flow.component.ClientCallable
     public void openStrongs(final String aStrongs, final String aColumnUid, final String aSource) {
-        if (aStrongs == null || !aStrongs.matches("H\\d{1,5}")) return;
+        if (aStrongs == null || !aStrongs.matches("[HG]\\d{1,5}")) return;
+        final boolean greek = aStrongs.startsWith("G");
         final String source = PassageLabels.clean(aSource);       // the verse the number was double-clicked in
         trackEvent("strongs-lookup", "strongs", aStrongs, "via", "window", "source", source);
-        strongsDialog.open(aStrongs, HEBREW_WORDS_EDITION, LocaleUtil.currentLocale(), translationFor(aColumnUid),
+        strongsDialog.open(aStrongs, greek ? GREEK_WORDS_EDITION : HEBREW_WORDS_EDITION, LocaleUtil.currentLocale(),
+            translationFor(aColumnUid),
             occ -> {
                 // Choosing a passage in the window is the second step: report it with the
                 // verse the lookup began from, so one row says "from here, to there".
                 trackEvent("strongs-follow", "strongs", aStrongs, "source", source,
                            "target", PassageLabels.of(occ.book(), occ.chapter(), occ.verse()));
-                afterRoundTrip(() -> openOccurrence(occ));
+                afterRoundTrip(() -> openOccurrence(occ, greek));
             });
     }
 
@@ -392,11 +396,12 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     /** Open one use of a word in a new column of the original-language text, so the verse numbering is
-     *  the Hebrew text's own. Falls back to the default Bible if that edition is not in the catalogue. */
-    private void openOccurrence(final WordLayerService.Occurrence anOccurrence) {
-        final String[] hebrew = sourceByToken("wlc");
+     *  that text's own (the Hebrew column, or the Greek New Testament for a G number). Falls back to the
+     *  default Bible if that edition is not in the catalogue. */
+    private void openOccurrence(final WordLayerService.Occurrence anOccurrence, final boolean isGreek) {
+        final String[] original = isGreek ? catalog.byId(GREEK_WORDS_EDITION) : sourceByToken("wlc");
         openRefInNewColumn(new VerseComment.Ref(false, anOccurrence.book(), anOccurrence.chapter(), anOccurrence.verse()),
-            hebrew != null ? hebrew : sourceByToken(defaultBibleToken()), false, 0, null);
+            original != null ? original : sourceByToken(defaultBibleToken()), false, 0, null);
     }
 
     /** Installs the Strong's tooltip script; it guards itself, so every attach is safe. */
@@ -977,9 +982,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         updateStrongsToggle(aState);
     }
 
-    /** ⓝ is offered when the column shows verses and one of its ancestor rungs — in practice the
-     *  original-language floor — has a word layer. Otherwise it is hidden and, if it was on, switched
-     *  off so no stale numbers linger. */
+    /** The Strong's toggle is enabled when the column shows verses and one of its ancestor rungs — in
+     *  practice the original-language floor — has a word layer. Otherwise it stays visible but
+     *  disabled and, if it was on, is switched off so no stale numbers linger. */
     private void updateStrongsToggle(final ColState aState) {
         final Button b = aState.strongsToggle;
         if (b == null) return;
@@ -992,7 +997,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 for (final org.religioustext.app.ui.views.reader.SourceCatalog.Rung r : aState.allRungs())
                     if (wordLayer.hasLayer(r.row()[0])) { offered = true; break; }
         }
-        b.setVisible(offered);
+        // Always drawn so the three toggles sit together from the start; greyed out and inert
+        // until the column has a word layer to number.
+        b.setEnabled(offered);
+        b.getStyle().set("opacity", offered ? "" : "0.4");
         if (!offered && aState.showStrongs) {
             aState.showStrongs = false;
             styleStrongsToggle(aState);
@@ -2056,7 +2064,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         // off, it ONLY hides the numbers: the rungs stay as they are (the maintainer, 2026-10-12).
         // Only offered where there is an original-language rung with a word layer
         // (updateStrongsToggle).
-        final Button strongsToggle = new Button("\u24DD");
+        final Button strongsToggle = new Button("#");
         aState.strongsToggle = strongsToggle;
         strongsToggle.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
         strongsToggle.setTooltipText(t("reader.strongs.toggle"));
@@ -2072,7 +2080,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
         });
         styleStrongsToggle(aState);
-        strongsToggle.setVisible(false);                          // shown once the column has the originals
+        strongsToggle.setEnabled(false);                          // enabled once the column has the originals
+        strongsToggle.getStyle().set("opacity", "0.4");
 
         // Native numerals: opt-out per column for a source whose language has its
         // own chapter/verse numeral convention (Arabic, Hebrew today — see

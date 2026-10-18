@@ -14,7 +14,8 @@ import java.util.regex.Pattern;
 /**
  * The text behind a Strong's number — pointed lemma, transliteration, gloss, definition — from the
  * lexicon properties files (docs/strongs-design.md: {@code i18n/lexicon/hebrew.properties}, English,
- * and {@code hebrew_<lang>.properties} per locale). The lemma and transliteration are
+ * and {@code hebrew_<lang>.properties} per locale; the Greek New Testament's likewise, {@code greek*}).
+ * An id starting {@code H} reads the Hebrew bundle, {@code G} the Greek. The lemma and transliteration are
  * language-neutral and live only in the English file; the gloss and definition are translated per
  * locale, and a key a locale file does not have falls back to English by the bundle's own parent
  * chain — no code, no per-language logic.
@@ -30,25 +31,34 @@ public class LexiconService {
     public record Entry(String strongs, String lemma, String xlit, String gloss, String definition,
                         boolean machineTranslated) {}
 
-    private static final Pattern ID = Pattern.compile("H\\d{1,5}");
+    private static final Pattern ID = Pattern.compile("[HG]\\d{1,5}");
     private static final ResourceBundle.Control NO_FALLBACK =
         ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES);
 
-    private final String basename;
+    private final String hebrewBase;
+    private final String greekBase;
 
     @Autowired
-    public LexiconService() { this("i18n.lexicon.hebrew"); }
+    public LexiconService() { this("i18n.lexicon.hebrew", "i18n.lexicon.greek"); }
 
-    /** A different bundle base name — the tests' small bundles. */
-    public LexiconService(final String aBasename) { this.basename = aBasename; }
+    /** A different Hebrew bundle base name and no Greek — the tests' small bundles. */
+    public LexiconService(final String aBasename) { this(aBasename, null); }
 
-    /** The Hebrew entry for a Strong's id such as {@code H430}, in the given locale (English when the
-     *  locale is null or has no file), or empty when the id is malformed or unknown. */
-    public Optional<Entry> hebrew(final String aStrongs, final Locale aLocale) {
+    public LexiconService(final String aHebrewBase, final String aGreekBase) {
+        this.hebrewBase = aHebrewBase;
+        this.greekBase = aGreekBase;
+    }
+
+    /** The entry for a Hebrew Strong's id such as {@code H430} or a Greek one such as {@code G2424}, in the
+     *  given locale (English when the locale is null or has no file), or empty when the id is malformed
+     *  or unknown. */
+    public Optional<Entry> entry(final String aStrongs, final Locale aLocale) {
         if (aStrongs == null || !ID.matcher(aStrongs).matches()) return Optional.empty();
-        final ResourceBundle english = bundle(Locale.ROOT);
+        final String basename = aStrongs.charAt(0) == 'G' ? greekBase : hebrewBase;
+        if (basename == null) return Optional.empty();
+        final ResourceBundle english = bundle(basename, Locale.ROOT);
         if (english == null || !english.containsKey(aStrongs + ".gloss")) return Optional.empty();
-        final ResourceBundle b = aLocale == null ? english : bundle(aLocale);
+        final ResourceBundle b = aLocale == null ? english : bundle(basename, aLocale);
         final ResourceBundle chosen = b == null ? english : b;
         final String gloss = chosen.getString(aStrongs + ".gloss");
         final String def = chosen.containsKey(aStrongs + ".def") ? chosen.getString(aStrongs + ".def") : "";
@@ -60,7 +70,10 @@ public class LexiconService {
             gloss, def, translated));
     }
 
-    private ResourceBundle bundle(final Locale aLocale) {
+    /** Same as {@link #entry}; the name the Hebrew-only callers used. */
+    public Optional<Entry> hebrew(final String aStrongs, final Locale aLocale) { return entry(aStrongs, aLocale); }
+
+    private ResourceBundle bundle(final String basename, final Locale aLocale) {
         try {
             return ResourceBundle.getBundle(basename, aLocale, NO_FALLBACK);
         } catch (final MissingResourceException e) {

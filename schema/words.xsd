@@ -59,6 +59,11 @@
           <xs:enumeration value="words"/>
           <xs:enumeration value="mismatch"/>
           <xs:enumeration value="only_in_source"/>
+          <!-- Greek (words-tagnt.xml): the words ARE the edition's own text, so every verse can be shown;
+               these say how many of its words got a number. reordered = all matched, some out of order;
+               partial = some words have no number. (exact above means the same here: all matched in order.) -->
+          <xs:enumeration value="reordered"/>
+          <xs:enumeration value="partial"/>
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
@@ -69,7 +74,7 @@
       <xs:extension base="xs:string">
         <xs:attribute name="id"     type="xs:string" use="required"/>    <!-- the source's stable word id -->
         <xs:attribute name="strongs" type="wd:StrongsType" use="optional"/> <!-- absent on prefix-only words -->
-        <xs:attribute name="sense"  type="wd:SenseType"  use="optional"/> <!-- homograph letter -->
+        <xs:attribute name="sense"  type="wd:SenseType"  use="optional"/> <!-- homograph letter (Hebrew a-f; Greek A-Z, TAGNT's disambiguation) -->
         <xs:attribute name="plus"   type="xs:boolean"    use="optional"/> <!-- a trailing "+" in the source lemma -->
         <!-- printed marks that follow the word (maqqef, paseq, sof pasuq, paragraph marks), with any
              leading space they carry. Rebuild a verse by joining text + after for each word, with a
@@ -83,6 +88,6 @@
     <xs:restriction base="xs:string"><xs:pattern value="[HG][0-9]+"/></xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="SenseType">
-    <xs:restriction base="xs:string"><xs:pattern value="[a-f]"/></xs:restriction>
+    <xs:restriction base="xs:string"><xs:pattern value="[a-fA-Z]"/></xs:restriction>
   </xs:simpleType>
 </xs:schema>

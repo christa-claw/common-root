@@ -6,8 +6,8 @@ _ادرس النصوص التي تشكّل عالمنا._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.10.1 |
-| Generated | 2026-10-13 |
+| Version | 0.11.1 |
+| Generated | 2026-10-18 |
 <!-- /AUTOGEN:meta -->
 
 ## ما هو
@@ -70,7 +70,7 @@ Common Root? هو قارئ حرّ ومفتوح لاستكشاف نصوص الد�
 ## النصوص المتاحة حاليًا
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 يجري باستمرار إضافة المزيد من الترجمات والتقاليد — بما في ذلك القرآن ومجموعات

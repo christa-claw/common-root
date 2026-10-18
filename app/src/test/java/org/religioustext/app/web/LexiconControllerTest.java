@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LexiconControllerTest {
 
     private final LexiconController c = new LexiconController(
-        new LexiconService("testlexicon.hebrew"), new TranslationProvider());
+        new LexiconService("testlexicon.hebrew", "testlexicon.greek"), new TranslationProvider());
 
     @Test
     void servesAnEntryWithCreditAndADayOfPublicCaching() {
@@ -51,5 +51,22 @@ class LexiconControllerTest {
     @Test
     void anUnknownLanguageIsEnglish() {
         assertThat(c.hebrew("H1", "xx").getBody()).containsEntry("gloss", "father");
+    }
+
+    @Test
+    void aGreekEntryIsLeftToRightWithTheStepBibleCredit() {
+        final ResponseEntity<Map<String, Object>> r = c.greek("G976", "en");
+        assertThat(r.getStatusCode().value()).isEqualTo(200);
+        assertThat(r.getBody()).containsEntry("gloss", "book").containsEntry("lemmaLang", "grc")
+            .containsEntry("lemmaDir", "ltr");
+        assertThat(r.getBody().get("credit").toString()).contains("STEPBible").contains("CC BY 4.0");
+        assertThat(c.hebrew("H1", "en").getBody()).containsEntry("lemmaLang", "he").containsEntry("lemmaDir", "rtl");
+    }
+
+    @Test
+    void eachRouteServesOnlyItsOwnIds() {
+        assertThat(c.greek("H1", "en").getStatusCode().value()).isEqualTo(404);
+        assertThat(c.hebrew("G976", "en").getStatusCode().value()).isEqualTo(404);
+        assertThat(c.greek("g976", "en").getStatusCode().value()).isEqualTo(200);
     }
 }

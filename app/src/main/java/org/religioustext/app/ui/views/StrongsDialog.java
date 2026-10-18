@@ -27,8 +27,9 @@ import java.util.function.Consumer;
 
 /**
  * The window behind a double-clicked Strong's number: the whole lexicon entry (the tooltip clips the
- * definition), how often the word occurs in the Hebrew Bible, and those passages. A passage expands
- * in place — the whole Hebrew verse, the word highlighted, the other words with their numbers — so
+ * definition), how often the word occurs in the Hebrew Bible (or, for a {@code G} number, the Greek New
+ * Testament), and those passages. A passage expands
+ * in place — the whole Hebrew (or Greek) verse, the word highlighted, the other words with their numbers — so
  * nothing has to open to read it; a button on each row opens it in a new column of the
  * original-language text instead. Same dialog setup as the comments and cross-reference dialogs.
  */
@@ -41,6 +42,7 @@ final class StrongsDialog {
     static final String LEXICON_URL = "https://github.com/openscriptures/HebrewLexicon";
     static final String OSHB_URL = "https://github.com/openscriptures/morphhb";
     static final String LICENCE_URL = "https://creativecommons.org/licenses/by/4.0/";
+    static final String STEP_URL = "https://github.com/STEPBible/STEPBible-Data";
 
     /** The Bible shown under each Hebrew verse: its edition id, abbreviation (the chip) and direction. */
     record Translation(String editionId, String abbreviation, boolean rtl) {}
@@ -60,14 +62,15 @@ final class StrongsDialog {
         this.translate = aTranslate;
     }
 
-    /** @param aStrongs e.g. {@code H430}; @param anEditionId the original-language edition whose words are
-     *  counted; @param aTranslation the Bible to show under each Hebrew verse, or null for Hebrew only;
+    /** @param aStrongs e.g. {@code H430} or {@code G2424}; @param anEditionId the original-language edition
+     *  whose words are counted; @param aTranslation the Bible to show under each Hebrew verse, or null for Hebrew only;
      *  @param anOpener opens one passage in a new column. No-op for an unknown number. */
     void open(final String aStrongs, final String anEditionId, final Locale aLocale, final Translation aTranslation,
               final Consumer<Occurrence> anOpener) {
-        final Optional<Entry> found = lexicon.hebrew(aStrongs, aLocale);
+        final Optional<Entry> found = lexicon.entry(aStrongs, aLocale);
         if (found.isEmpty()) return;
         final Entry e = found.get();
+        final boolean greek = aStrongs.startsWith("G");
         final boolean rtl = isRtl(aLocale);
 
         final Dialog dialog = new Dialog();
@@ -84,8 +87,8 @@ final class StrongsDialog {
 
         final Div head = new Div();
         final Span lemma = new Span(e.lemma());
-        lemma.getElement().setAttribute("lang", "he");
-        lemma.getElement().setAttribute("dir", "rtl");
+        lemma.getElement().setAttribute("lang", greek ? "grc" : "he");
+        lemma.getElement().setAttribute("dir", greek ? "ltr" : "rtl");
         lemma.getStyle().set("font-size", "2em").set("margin-inline-end", "0.4em").set("unicode-bidi", "isolate");
         final Span xlit = new Span(e.xlit());
         xlit.getStyle().set("font-style", "italic").set("color", "var(--lumo-secondary-text-color)");
@@ -113,7 +116,7 @@ final class StrongsDialog {
         final int total = words.countOccurrences(anEditionId, aStrongs);
         if (total > 0) {
             final List<Occurrence> all = words.occurrences(anEditionId, aStrongs, LIMIT);
-            final Div h = new Div(new Span(t("reader.strongs.occurrences", total)));
+            final Div h = new Div(new Span(t(greek ? "reader.strongs.occurrences.greek" : "reader.strongs.occurrences", total)));
             h.getStyle().set("font-weight", "600").set("margin", "16px 0 6px")
                 .set("border-top", "1px solid var(--lumo-contrast-10pct)").set("padding-top", "10px");
             body.add(h);
@@ -125,7 +128,7 @@ final class StrongsDialog {
                 final int to = shown[0] == 0 ? Math.min(SHOWN, all.size()) : all.size();
                 for (int i = shown[0]; i < to; i++)
                     rows.add(row(all.get(i), aStrongs, anEditionId, aLocale, aTranslation, chapters,
-                        dialog::close, anOpener));
+                        dialog::close, anOpener, greek));
                 shown[0] = to;
                 more.setVisible(shown[0] < all.size());
             };
@@ -136,25 +139,25 @@ final class StrongsDialog {
             body.add(rows, more);
         }
         dialog.add(body);
-        dialog.getFooter().add(credit());
+        dialog.getFooter().add(credit(greek));
         dialog.open();
     }
 
-    /** One passage: a toggle that expands the whole Hebrew verse in place (the word highlighted, the
+    /** One passage: a toggle that expands the whole original-language verse in place (the word highlighted, the
      *  other words with their numbers), the word as written there, and a button that opens the
      *  passage in a new column. A verse whose text did not match the source exactly has no word
      *  list to show, so for it the toggle opens the column instead. */
     private Div row(final Occurrence o, final String aStrongs, final String anEditionId, final Locale aLocale,
                     final Translation aTranslation, final Map<String, List<VerseRef>> theChapters,
-                    final Runnable aClose, final Consumer<Occurrence> anOpener) {
+                    final Runnable aClose, final Consumer<Occurrence> anOpener, final boolean isGreek) {
         final Div item = new Div();
         final Div head = new Div();
         head.getStyle().set("display", "flex").set("align-items", "baseline").set("gap", "10px").set("padding", "2px 0");
 
         final Div detail = new Div();
         detail.setVisible(false);
-        detail.getElement().setAttribute("dir", "rtl");
-        detail.getStyle().set("text-align", "right").set("font-size", "1.25em").set("line-height", "1.9")
+        detail.getElement().setAttribute("dir", isGreek ? "ltr" : "rtl");
+        detail.getStyle().set("text-align", isGreek ? "left" : "right").set("font-size", "1.25em").set("line-height", "1.9")
             .set("padding", "4px 12px 8px").set("margin", "2px 0 6px")
             .set("background", "var(--lumo-contrast-5pct)").set("border-radius", "6px");
 
@@ -173,7 +176,7 @@ final class StrongsDialog {
                 }
                 detail.add(VerseWindowRenderer.strongsLine(verse, aLocale == null ? "en" : aLocale.toLanguageTag(), aStrongs, 0,
                     PassageLabels.of(o.book(), o.chapter(), o.verse())));
-                final Div line = translationLine(o, aTranslation, aLocale, theChapters);
+                final Div line = translationLine(o, aTranslation, aLocale, theChapters, isGreek);
                 if (line != null) detail.add(line);
                 built[0] = true;
             }
@@ -182,8 +185,8 @@ final class StrongsDialog {
         });
 
         final Span w = new Span(o.text());
-        w.getElement().setAttribute("lang", "he");
-        w.getElement().setAttribute("dir", "rtl");
+        w.getElement().setAttribute("lang", isGreek ? "grc" : "he");
+        w.getElement().setAttribute("dir", isGreek ? "ltr" : "rtl");
         w.getStyle().set("font-size", "1.2em").set("unicode-bidi", "isolate").set("flex", "1");
 
         final Button open = new Button(com.vaadin.flow.component.icon.VaadinIcon.EXTERNAL_LINK.create(), ev -> {
@@ -203,10 +206,11 @@ final class StrongsDialog {
      *  Bible numbers the verse differently from the Hebrew text — where it found it. Null when the Bible's
      *  numbering is unknown or it has no such verse (a Hebrew-only expansion then). */
     private Div translationLine(final Occurrence o, final Translation aTranslation, final Locale aLocale,
-                                final Map<String, List<VerseRef>> theChapters) {
+                                final Map<String, List<VerseRef>> theChapters, final boolean isGreek) {
         if (aTranslation == null) return null;
-        final Optional<VerseNumbering.Ref> target =
-            numbering.fromHebrew(aTranslation.editionId(), o.book(), o.chapter(), o.verse());
+        final Optional<VerseNumbering.Ref> target = isGreek
+            ? numbering.fromGreek(aTranslation.editionId(), o.book(), o.chapter(), o.verse())
+            : numbering.fromHebrew(aTranslation.editionId(), o.book(), o.chapter(), o.verse());
         if (target.isEmpty()) return null;
         final VerseNumbering.Ref r = target.get();
         String text = null;
@@ -237,10 +241,14 @@ final class StrongsDialog {
         return line;
     }
 
-    private Div credit() {
+    private Div credit(final boolean isGreek) {
         final Div d = new Div();
-        d.add(link("Open Scriptures Hebrew Lexicon", LEXICON_URL), new Span(" · "),
-              link("OSHB", OSHB_URL), new Span(" · "), link("CC BY 4.0", LICENCE_URL));
+        if (isGreek)
+            d.add(link("STEPBible TBESG", STEP_URL), new Span(" · "),
+                  link("STEPBible TAGNT", STEP_URL), new Span(" · "), link("CC BY 4.0", LICENCE_URL));
+        else
+            d.add(link("Open Scriptures Hebrew Lexicon", LEXICON_URL), new Span(" · "),
+                  link("OSHB", OSHB_URL), new Span(" · "), link("CC BY 4.0", LICENCE_URL));
         d.getStyle().set("font-size", "var(--lumo-font-size-xs)").set("color", "var(--lumo-secondary-text-color)")
             .set("margin-inline-end", "auto");
         return d;

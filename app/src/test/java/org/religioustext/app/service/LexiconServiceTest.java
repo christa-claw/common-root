@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Against small test bundles (src/test/resources/testlexicon): English base plus a partial Finnish file. */
 class LexiconServiceTest {
 
-    private final LexiconService svc = new LexiconService("testlexicon.hebrew");
+    private final LexiconService svc = new LexiconService("testlexicon.hebrew", "testlexicon.greek");
 
     @Test
     void englishIsTheBaseAndNotMachineTranslated() {
@@ -100,5 +100,30 @@ class LexiconServiceTest {
         final Entry rare = real.hebrew("H8674", fi).orElseThrow();
         assertThat(rare.gloss()).isEqualTo(real.hebrew("H8674", Locale.ENGLISH).orElseThrow().gloss());
         assertThat(rare.machineTranslated()).isFalse();
+    }
+
+    @Test
+    void aGreekIdReadsTheGreekBundleAndAHebrewIdTheHebrewOne() {
+        final Entry g = svc.entry("G976", Locale.ENGLISH).orElseThrow();
+        assertThat(g.gloss()).isEqualTo("book");
+        assertThat(g.lemma()).isEqualTo("βίβλος");
+        assertThat(svc.entry("H1", Locale.ENGLISH).orElseThrow().gloss()).isEqualTo("father");
+    }
+
+    @Test
+    void greekGlossesTranslateAndFallBackPerKeyLikeHebrewOnes() {
+        final Entry fi = svc.entry("G976", Locale.forLanguageTag("fi")).orElseThrow();
+        assertThat(fi.gloss()).isEqualTo("kirja");
+        assertThat(fi.machineTranslated()).isTrue();
+        final Entry untranslated = svc.entry("G2424", Locale.forLanguageTag("fi")).orElseThrow();
+        assertThat(untranslated.gloss()).isEqualTo("Jesus");
+        assertThat(untranslated.machineTranslated()).isFalse();
+    }
+
+    @Test
+    void unknownOrMalformedGreekIdsAreEmptyAndWithoutAGreekBundleThereIsNoGreek() {
+        assertThat(svc.entry("G99999", Locale.ENGLISH)).isEmpty();
+        assertThat(svc.entry("G", Locale.ENGLISH)).isEmpty();
+        assertThat(new LexiconService("testlexicon.hebrew").entry("G976", Locale.ENGLISH)).isEmpty();
     }
 }

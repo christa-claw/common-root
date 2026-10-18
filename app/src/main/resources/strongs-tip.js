@@ -3,7 +3,7 @@
 //
 // The Strong's tooltip (docs/strongs-design.md). Installed once per page by StrongsTip.install().
 // A number is <span class="strongs-n" data-s="H430" data-l="fi">. Hovering it, focusing it, or
-// tapping it fetches the entry from /lexicon/hebrew/{id}?lang=... (cached in memory) and shows ONE
+// tapping it fetches the entry from /lexicon/hebrew|greek/{id}?lang=... (H or G) (cached in memory) and shows ONE
 // shared tooltip, #strongs-tip, fixed to the viewport so no scroll container can clip it.
 //   - mouse: shown on hover, hidden when the pointer leaves;
 //   - touch / click: a tap pins it open; a second tap, a tap elsewhere or Escape closes it.
@@ -36,7 +36,7 @@
   function entry(id, lang) {
     var key = lang + '|' + id;
     if (cache[key]) return Promise.resolve(cache[key]);
-    return fetch('/lexicon/hebrew/' + encodeURIComponent(id) + '?lang=' + encodeURIComponent(lang))
+    return fetch('/lexicon/' + (id.charAt(0) === 'G' ? 'greek' : 'hebrew') + '/' + encodeURIComponent(id) + '?lang=' + encodeURIComponent(lang))
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { if (j) cache[key] = j; return j; })
       .catch(function () { return null; });
@@ -52,8 +52,8 @@
     t.setAttribute('dir', j.dir === 'rtl' ? 'rtl' : 'ltr');
     var head = el('div');
     var lemma = el('span', 'st-lemma', j.lemma);
-    lemma.setAttribute('lang', 'he');
-    lemma.setAttribute('dir', 'rtl');
+    lemma.setAttribute('lang', j.lemmaLang || 'he');
+    lemma.setAttribute('dir', j.lemmaDir || 'rtl');
     head.appendChild(lemma);
     head.appendChild(el('span', 'st-x', j.xlit));
     head.appendChild(el('span', 'st-n', j.strongs));
