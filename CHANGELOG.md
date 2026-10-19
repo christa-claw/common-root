@@ -72,6 +72,17 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.2] — 2026-10-19
+
+### Added
+- **Edition info pages** for NASB, YTC, LSV and NBLA in all 14 locales.
+- Nightly argument refresh: 857 new arguments (873 anchored).
+
+### Changed
+- The About page's "Additional Qur'an translations" coming-soon badge is localised
+  (English and Hebrew; other locales fall back to English), and the Hebrew interlinear-editions
+  header and note are added.
+
 ## [0.11.1] — 2026-10-18
 
 ### Added

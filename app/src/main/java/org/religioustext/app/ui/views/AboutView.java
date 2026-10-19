@@ -907,13 +907,15 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
         final Div coming = new Div();
         coming.getStyle().set("display", "flex").set("flex-wrap", "wrap").set("gap", "10px");
-        // Mostly proper nouns; only the generic last item is localised.
+        // The remaining items here would be proper nouns if any were added back;
+        // both current items are generic phrases and so are localised, same as
+        // the header above them.
         // NBLA was here until 2026-08-03, when it was ingested — a coming-soon
         // badge for a text that has a card two sections up is the same class of
         // error as the sources table that listed translations we did not hold.
         // Anything added here must come out when it lands.
         for (final String text : new String[]{
-                "Additional Qur'an translations",
+                t("about.texts.comingQuran"),
                 t("about.texts.comingMore")}) {
             final Span badge = new Span("⏳ " + text);
             badge.getStyle()
