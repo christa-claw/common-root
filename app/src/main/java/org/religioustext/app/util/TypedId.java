@@ -34,7 +34,9 @@ public final class TypedId {
         ACL         ("acl"),   // access-control list
         ACE         ("ace"),   // access-control entry
         API_KEY     ("key"),   // API key (api_keys; the credential itself is crk_*, not this id)
-        CROSS_REF   ("xrf");   // verse cross-reference (cross_reference; reference data, not a comment)
+        CROSS_REF   ("xrf"),   // verse cross-reference (cross_reference; reference data, not a comment)
+        SAVED_SEARCH("sch"),   // private saved full-text search (saved_searches)
+        HIGHLIGHT   ("hlt");   // private verse highlight (highlights)
 
         private final String prefix;
         Type(final String aPrefix) { this.prefix = aPrefix; }

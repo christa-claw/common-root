@@ -25,6 +25,9 @@ public class UserService {
     /** How long an admin-invitation link stays valid (it is a reset link with a longer leash). */
     public static final long INVITE_TOKEN_VALID_DAYS = 7;
 
+    /** How long an email-change confirmation link stays valid. */
+    public static final long EMAIL_CHANGE_VALID_HOURS = 24;
+
     private final UserRepository  userRepository;
     private final PasswordEncoder passwordEncoder;
     private final MailService     mailService;
@@ -136,6 +139,88 @@ public class UserService {
         user.setVerified(true);
         userRepository.save(user);
         return true;
+    }
+
+    /**
+     * Changes the password of a signed-in user, after re-checking the current one.
+     *
+     * @throws WrongPasswordException if {@code aCurrentPassword} does not match.
+     * @throws WeakPasswordException  if the new password is shorter than 8 characters.
+     */
+    public void changePassword(final String anEmail, final String aCurrentPassword,
+                               final String aNewPassword) {
+        final User user = requireUser(anEmail);
+        if (aCurrentPassword == null
+                || !passwordEncoder.matches(aCurrentPassword, user.getPasswordHash()))
+            throw new WrongPasswordException();
+        if (aNewPassword == null || aNewPassword.length() < 8)
+            throw new WeakPasswordException();
+        user.setPasswordHash(passwordEncoder.encode(aNewPassword));
+        // A pending reset link was issued against the old password — it must not outlive the change.
+        user.setPasswordResetToken(null);
+        user.setPasswordResetExpires(null);
+        userRepository.save(user);
+    }
+
+    /**
+     * Starts an email change: after re-checking the password, parks the new address on the
+     * account and mails a confirmation link to it (and a notice to the current address). The
+     * sign-in address does not change until {@link #confirmEmailChange} succeeds.
+     *
+     * @throws WrongPasswordException    if {@code aCurrentPassword} does not match.
+     * @throws InvalidEmailException     if the new address is not plausibly an email.
+     * @throws EmailAlreadyUsedException if another account already uses it.
+     */
+    public void requestEmailChange(final String anEmail, final String aCurrentPassword,
+                                   final String aNewEmail) {
+        final User user = requireUser(anEmail);
+        if (aCurrentPassword == null
+                || !passwordEncoder.matches(aCurrentPassword, user.getPasswordHash()))
+            throw new WrongPasswordException();
+        final String normalised = aNewEmail == null ? "" : aNewEmail.trim().toLowerCase();
+        if (!normalised.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) throw new InvalidEmailException();
+        if (normalised.equalsIgnoreCase(user.getEmail())) return;      // nothing to change
+        if (userRepository.existsByEmailIgnoreCase(normalised)) throw new EmailAlreadyUsedException();
+
+        final String token = UUID.randomUUID().toString();
+        user.setPendingEmail(normalised);
+        user.setPendingEmailToken(token);
+        user.setPendingEmailExpires(LocalDateTime.now().plusHours(EMAIL_CHANGE_VALID_HOURS));
+        userRepository.save(user);
+        mailService.sendEmailChangeConfirmation(normalised, token, EMAIL_CHANGE_VALID_HOURS);
+        mailService.sendEmailChangeNotice(user.getEmail(), normalised);
+    }
+
+    /**
+     * Completes an email change from the link mailed to the new address. The swap re-checks that
+     * the address is still free, and marks it verified (the click proved the mailbox).
+     *
+     * @return true if the address was changed; false if the token is unknown, expired or the
+     *         address has since been taken.
+     */
+    public boolean confirmEmailChange(final String aToken) {
+        if (aToken == null || aToken.isBlank()) return false;
+        final Optional<User> match = userRepository.findByPendingEmailToken(aToken);
+        if (match.isEmpty()) return false;
+        final User user = match.get();
+        final String target = user.getPendingEmail();
+        final boolean valid = target != null && user.getPendingEmailExpires() != null
+            && user.getPendingEmailExpires().isAfter(LocalDateTime.now())
+            && !userRepository.existsByEmailIgnoreCase(target);
+        if (valid) {
+            user.setEmail(target);
+            user.setVerified(true);
+        }
+        user.setPendingEmail(null);
+        user.setPendingEmailToken(null);
+        user.setPendingEmailExpires(null);
+        userRepository.save(user);
+        return valid;
+    }
+
+    private User requireUser(final String anEmail) {
+        return userRepository.findByEmailIgnoreCase(anEmail == null ? "" : anEmail.trim())
+            .orElseThrow(() -> new IllegalStateException("No user for email: " + anEmail));
     }
 
     /** Updates the display name for the given account (identified by email). */
@@ -266,5 +351,13 @@ public class UserService {
 
     public static class WeakPasswordException extends RuntimeException {
         public WeakPasswordException() { super("Password must be at least 8 characters"); }
+    }
+
+    public static class WrongPasswordException extends RuntimeException {
+        public WrongPasswordException() { super("Current password is incorrect"); }
+    }
+
+    public static class InvalidEmailException extends RuntimeException {
+        public InvalidEmailException() { super("Not a valid email address"); }
     }
 }

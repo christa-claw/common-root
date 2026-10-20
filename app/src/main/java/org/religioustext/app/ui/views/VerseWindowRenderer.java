@@ -13,6 +13,8 @@ import org.religioustext.app.service.CommentQueryService;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
 import org.religioustext.app.service.CrossRefQueryService;
 import org.religioustext.app.service.CrossRefQueryService.XRef;
+import org.religioustext.app.model.user.HighlightColours;
+import org.religioustext.app.service.HighlightService;
 import org.religioustext.app.service.PersonalNoteService;
 import org.religioustext.app.service.TextQueryService;
 import org.religioustext.app.service.WordLayerService;
@@ -63,6 +65,8 @@ final class VerseWindowRenderer {
         /** Superscript note marker for a verse (signed-in readers only). */
         Span noteBadge(ColState aState, String anEmail, String aBookName, String aBookCode,
                       int aChapter, String aVerseNo, String anExisting);
+        /** Whether this reader's own verse highlights are switched on (a reader preference). */
+        boolean showHighlights();
         /** Open the annotate entry for a BARE verse (the note editor, which carries the
          *  write-comment jump) — reached by clicking the verse number when signed in. */
         void openAnnotate(ColState aState, String aBookName, String aBookCode,
@@ -88,6 +92,7 @@ final class VerseWindowRenderer {
     private final CrossRefQueryService xrefService;
     private final WordLayerService wordLayer;
     private final PersonalNoteService noteService;
+    private final HighlightService highlightService;
     private final AuthenticationContext authContext;
     private final Host host;
 
@@ -96,6 +101,7 @@ final class VerseWindowRenderer {
                         final CrossRefQueryService aXrefService,
                         final WordLayerService aWordLayer,
                         final PersonalNoteService aNoteService,
+                        final HighlightService aHighlightService,
                         final AuthenticationContext anAuthContext,
                         final Host aHost) {
         this.queryService   = aQueryService;
@@ -103,6 +109,7 @@ final class VerseWindowRenderer {
         this.xrefService    = aXrefService;
         this.wordLayer      = aWordLayer;
         this.noteService    = aNoteService;
+        this.highlightService = aHighlightService;
         this.authContext    = anAuthContext;
         this.host           = aHost;
     }
@@ -189,6 +196,34 @@ final class VerseWindowRenderer {
         } catch (final NumberFormatException e) {
             return null;     // a verse such as "1a": no label rather than a wrong one
         }
+    }
+
+    /** This reader's highlights for the chapter, keyed by verse number, or NULL when verses are not
+     *  to be tagged at all (guest, verse numbers hidden, or highlights switched off). An empty map
+     *  still means "tag every verse": a highlight added later is applied in place. */
+    private java.util.Map<String, String> highlightsFor(final boolean aSignedIn, final DisplayOptions anOptions,
+                                                        final String anEmail, final String aBookCode,
+                                                        final int aChapter) {
+        if (!aSignedIn || anEmail == null || !anOptions.isShowVerses() || !host.showHighlights()
+                || aBookCode == null || aBookCode.isBlank())
+            return null;
+        return highlightService.forChapter(anEmail, aBookCode, aChapter);
+    }
+
+    /** Tag a verse's body with its address ({@code data-hl}, one string for the verse in every
+     *  column and edition) and, when the reader has highlighted it, tint it. The tag lets the editor
+     *  recolour the verse in every open column without re-rendering. No-op when highlights are off. */
+    private static <C extends com.vaadin.flow.component.Component> C mark(
+            final C aBody, final String aBookCode, final int aChapter, final int aVerse,
+            final java.util.Map<String, String> theHighlights) {
+        if (theHighlights == null || aBookCode == null || aBookCode.isBlank()) return aBody;
+        aBody.getElement().setAttribute("data-hl", aBookCode + "|" + aChapter + "|" + aVerse);
+        final String css = HighlightColours.CSS.get(theHighlights.get(String.valueOf(aVerse)));
+        if (css != null)
+            aBody.getElement().getStyle().set("background", css)
+                .set("border-radius", "3px").set("box-decoration-break", "clone")
+                .set("-webkit-box-decoration-break", "clone");
+        return aBody;
     }
 
     /** The words of the COLUMN'S OWN verse with their numbers when this column's edition has a word
@@ -503,6 +538,8 @@ final class VerseWindowRenderer {
             (signedIn && opts.isShowVerses() && noteEmail != null)
                 ? noteService.forChapter(noteEmail, theVerses.get(0).getBookCode(), aChapter)
                 : java.util.Map.of();
+        final java.util.Map<String, String> verseHighlights =
+            highlightsFor(signedIn, opts, noteEmail, theVerses.get(0).getBookCode(), aChapter);
         final java.util.Map<Integer, List<XRef>> verseXrefs =
             xrefsFor(aState, opts, theVerses.get(0).getBookCode(), aChapter);
         final java.util.Map<Integer, List<Word>> ownWords =
@@ -547,8 +584,9 @@ final class VerseWindowRenderer {
                     }
                     primary.add(num);
                 }
-                primary.add(ownLine(ownWords.get(verse.getVerseNumber()), body, aState.uid,
-                                    PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())));
+                primary.add(mark(ownLine(ownWords.get(verse.getVerseNumber()), body, aState.uid,
+                                    PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())),
+                                 verse.getBookCode(), aChapter, verse.getVerseNumber(), verseHighlights));
                 final List<VerseComment> ayahComments =
                     verseComments.get(String.valueOf(verse.getVerseNumber()));
                 if (ayahComments != null)
@@ -649,7 +687,7 @@ final class VerseWindowRenderer {
         }
 
         appendNormalVerses(text.getElement(), aState, theVerses, aChapter, aBookName, opts,
-            verseComments, verseNotes, verseXrefs, ownWords, signedIn, noteEmail);
+            verseComments, verseNotes, verseHighlights, verseXrefs, ownWords, signedIn, noteEmail);
         div.add(text);
         return div;
     }
@@ -664,6 +702,7 @@ final class VerseWindowRenderer {
             final String aBookName, final DisplayOptions anOptions,
             final java.util.Map<String, List<VerseComment>> theVerseComments,
             final java.util.Map<String, String> theVerseNotes,
+            final java.util.Map<String, String> theVerseHighlights,
             final java.util.Map<Integer, List<XRef>> theVerseXrefs,
             final java.util.Map<Integer, List<Word>> theOwnWords,
             final boolean aSignedInFlag, final String aNoteEmail) {
@@ -716,11 +755,14 @@ final class VerseWindowRenderer {
             final List<Word> own = theOwnWords.get(verse.getVerseNumber());
             if (own != null && WordLayerService.reconstruct(own).equals(body.strip())) {
                 // the column's own text carries Strong's numbers (the Hebrew column with ⓝ on)
-                aTarget.appendChild(ownLine(own, body, aState.uid,
-                                            PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())).getElement());
+                aTarget.appendChild(mark(ownLine(own, body, aState.uid,
+                                            PassageLabels.of(verse.getBookCode(), aChapter, verse.getVerseNumber())),
+                                         verse.getBookCode(), aChapter, verse.getVerseNumber(),
+                                         theVerseHighlights).getElement());
                 aTarget.appendChild(new Span(" ").getElement());
             } else {
-                aTarget.appendChild(new Span(body + " ").getElement());
+                aTarget.appendChild(mark(new Span(body + " "), verse.getBookCode(), aChapter,
+                                         verse.getVerseNumber(), theVerseHighlights).getElement());
             }
             final List<VerseComment> vcs =
                 theVerseComments.get(String.valueOf(verse.getVerseNumber()));
@@ -775,7 +817,8 @@ final class VerseWindowRenderer {
                 ? noteService.forChapter(noteEmail, bookCode, aChapter) : java.util.Map.of();
 
         appendNormalVerses(textEl, aState, aGroup, aChapter, aBookName, opts,
-            verseComments, verseNotes, xrefsFor(aState, opts, bookCode, aChapter),
+            verseComments, verseNotes, highlightsFor(signedIn, opts, noteEmail, bookCode, aChapter),
+            xrefsFor(aState, opts, bookCode, aChapter),
             ownWordsFor(aState, opts, bookCode, aChapter), signedIn, noteEmail);
         groupEl.setAttribute("data-seq-last",
             String.valueOf(host.activeSeq(aState, aGroup.get(aGroup.size() - 1))));

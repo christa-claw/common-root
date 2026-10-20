@@ -9,10 +9,13 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.religioustext.app.i18n.LocaleUtil;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
+import org.religioustext.app.service.SavedSearchService;
 import org.religioustext.app.service.SearchService;
 import org.religioustext.app.service.SearchService.CommentHit;
 import org.religioustext.app.service.SearchService.VerseHit;
@@ -52,6 +55,11 @@ public class SearchDialog extends Dialog {
     }
 
     private final SearchService search;
+    private final SavedSearchService saved;
+    /** Signed-in user's email; null for guests, who get no save controls. */
+    private final String email;
+    private final TextField field = new TextField();
+    private final Button saveBtn = new Button();
     private final OpenRef onOpenRef;
     /** source_id -> full edition name (e.g. "King James Version"); may return null. */
     private final Function<String, String> editionName;
@@ -61,10 +69,14 @@ public class SearchDialog extends Dialog {
     private String lastQuery = "";
 
     public SearchDialog(final SearchService aSearch,
+                        final SavedSearchService aSaved,
+                        final String anEmail,
                         final OpenRef anOpenRef,
                         final Function<String, String> anEditionName,
                         final Function<String, String> aTranslator) {
         this.search      = aSearch;
+        this.saved       = aSaved;
+        this.email       = anEmail;
         this.onOpenRef   = anOpenRef;
         this.editionName = anEditionName;
         this.t           = aTranslator;
@@ -81,7 +93,6 @@ public class SearchDialog extends Dialog {
         setDraggable(true);
         setResizable(true);
 
-        final TextField field = new TextField();
         field.setPlaceholder(t.apply("reader.search.placeholder"));
         field.setPrefixComponent(VaadinIcon.SEARCH.create());
         field.setClearButtonVisible(true);
@@ -95,15 +106,69 @@ public class SearchDialog extends Dialog {
             .set("overflow-y", "auto")
             .set("max-height", "62vh");
         hint();
+        showSaved();
 
-        add(field, results);
+        if (email == null) {
+            add(field, results);
+        } else {
+            saveBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            saveBtn.addClickListener(e -> toggleSaved());
+            refreshSaveBtn();
+            final HorizontalLayout bar = new HorizontalLayout(field, saveBtn);
+            bar.setWidthFull();
+            bar.setSpacing(false);
+            bar.setAlignItems(FlexComponent.Alignment.CENTER);
+            bar.expand(field);
+            add(bar, results);
+        }
+    }
+
+    /** Save the current query, or forget it if it is already saved. */
+    private void toggleSaved() {
+        if (lastQuery.length() < MIN_CHARS) return;
+        if (saved.isSaved(email, lastQuery)) saved.delete(email, lastQuery);
+        else saved.save(email, lastQuery);
+        refreshSaveBtn();
+    }
+
+    private void refreshSaveBtn() {
+        final boolean can = lastQuery.length() >= MIN_CHARS;
+        final boolean on  = can && saved.isSaved(email, lastQuery);
+        saveBtn.setIcon((on ? VaadinIcon.STAR : VaadinIcon.STAR_O).create());
+        saveBtn.setEnabled(can);
+        saveBtn.setTooltipText(t.apply(on ? "reader.search.unsave" : "reader.search.save"));
+    }
+
+    /** The empty-state: the hint, then this user's saved searches (click to re-run, × to forget). */
+    private void showSaved() {
+        if (email == null) return;
+        final List<String> queries = saved.list(email);
+        if (queries.isEmpty()) return;
+        final Span head = new Span(t.apply("reader.search.saved"));
+        head.getStyle().set("font-weight", "600").set("display", "block").set("margin-top", "12px");
+        results.add(head);
+        for (final String q : queries) {
+            final Button run = new Button(q, VaadinIcon.STAR.create(), e -> field.setValue(q));
+            run.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+            final Button del = new Button(VaadinIcon.CLOSE_SMALL.create(), e -> {
+                saved.delete(email, q);
+                runSearch(field.getValue());
+            });
+            del.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_SMALL);
+            del.setTooltipText(t.apply("reader.search.unsave"));
+            final HorizontalLayout row = new HorizontalLayout(run, del);
+            row.setSpacing(true);
+            row.setAlignItems(FlexComponent.Alignment.CENTER);
+            results.add(row);
+        }
     }
 
     private void runSearch(final String aQuery) {
         results.removeAll();
         final String q = aQuery == null ? "" : aQuery.trim();
         lastQuery = q;
-        if (q.length() < MIN_CHARS) { hint(); return; }
+        if (email != null) refreshSaveBtn();
+        if (q.length() < MIN_CHARS) { hint(); showSaved(); return; }
 
         final SearchService.Results r;
         try {

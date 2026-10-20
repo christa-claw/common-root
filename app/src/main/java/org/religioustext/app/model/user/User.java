@@ -44,6 +44,16 @@ public class User implements Accessor {
     @Column(name = "password_reset_expires")
     private LocalDateTime passwordResetExpires;
 
+    /** A requested new address, held until its owner confirms it (see V23). */
+    @Column(name = "pending_email", length = 255)
+    private String pendingEmail;
+
+    @Column(name = "pending_email_token", length = 100)
+    private String pendingEmailToken;
+
+    @Column(name = "pending_email_expires")
+    private LocalDateTime pendingEmailExpires;
+
     @Column(name = "is_admin", nullable = false)
     private boolean admin = false;
 
@@ -102,4 +112,11 @@ public class User implements Accessor {
     public void          setPasswordResetToken(final String aToken)   { this.passwordResetToken = aToken; }
     public LocalDateTime getPasswordResetExpires()               { return passwordResetExpires; }
     public void          setPasswordResetExpires(final LocalDateTime anExpiry) { this.passwordResetExpires = anExpiry; }
+
+    public String        getPendingEmail()                       { return pendingEmail; }
+    public void          setPendingEmail(final String anEmail)   { this.pendingEmail = anEmail; }
+    public String        getPendingEmailToken()                  { return pendingEmailToken; }
+    public void          setPendingEmailToken(final String aToken) { this.pendingEmailToken = aToken; }
+    public LocalDateTime getPendingEmailExpires()                { return pendingEmailExpires; }
+    public void          setPendingEmailExpires(final LocalDateTime anExpiry) { this.pendingEmailExpires = anExpiry; }
 }

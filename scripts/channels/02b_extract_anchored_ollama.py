@@ -94,6 +94,12 @@ def ref_label(ref):
 # Scan order, highest priority first (the maintainer's list, by YouTube handle).
 # Channels not listed run afterwards, alphabetically.
 CHANNEL_PRIORITY = [
+    "Elijah Johnson Apologetics",    # @Eliapologetics - held from contact until
+                                     #   a clean anchored re-extraction exists
+                                     #   (docs/argument-analysis-queue.md)
+    "Belle Liu",                     # @BelleLiuApologetics - held from contact
+                                     #   until a clean anchored re-extraction
+                                     #   exists (docs/argument-analysis-queue.md)
     "Bob of Speaker's Corner",       # @btbsoco
     "ONE FOR ISRAEL Ministry",       # @ONEFORISRAEL
     "SO BE IT",                      # @SOBEIT32AD
@@ -101,7 +107,6 @@ CHANNEL_PRIORITY = [
     "Apologetics Roadshow",          # @apologeticsroadshow
     "Shamounian Explains",           # @ShamounianExplains
     "Alpha & Omega Ministries",      # @AominOrg
-    "Elijah Johnson Apologetics",    # @Eliapologetics
     "Apologia Studios",              # @ApologiaStudios
     "Bible Thinker",                 # @MikeWinger
     "Cross Examined",                # @CrossExamined

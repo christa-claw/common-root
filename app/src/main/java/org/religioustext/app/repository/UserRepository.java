@@ -53,6 +53,9 @@ public interface UserRepository extends JpaRepository<User, String> {
      */
     Optional<User> findByPasswordResetToken(final String aToken);
 
+    /** The account whose pending email-change confirmation link carries this token. */
+    Optional<User> findByPendingEmailToken(final String aToken);
+
     /**
      * Mark a user verified and clear their verification token in one statement (idempotent: a
      * spent token matches no row). The JPQL {@code :token} parameter is bound via {@link Param}

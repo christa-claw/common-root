@@ -15,6 +15,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
 import org.religioustext.app.model.user.Role;
+import org.religioustext.app.service.AccountDataService;
 import org.religioustext.app.service.ApiKeyService;
 import org.religioustext.app.service.UserService;
 
@@ -39,6 +40,7 @@ public class ProfileView extends VerticalLayout {
     public ProfileView(final UserService aUserService,
                        final AuthenticationContext anAuthContext,
                        final ApiKeyService anApiKeyService,
+                       final AccountDataService anAccountData,
                        final BuildInfo aBuildInfo) {
         this.userService = aUserService;
         this.authContext = anAuthContext;
@@ -109,6 +111,7 @@ public class ProfileView extends VerticalLayout {
             .orElse(null);
 
         add(title, emailLine, nameField, errorMsg, save);
+        if (currentUser.isPresent()) add(new AccountSection(userService, anAccountData, authContext, email));
         if (keysSection != null) add(keysSection);
         add(prefsBtn, aclBtn, back, aBuildInfo.pinned());
     }

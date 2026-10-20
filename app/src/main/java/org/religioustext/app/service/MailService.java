@@ -191,4 +191,56 @@ public class MailService {
             log.warn("Invite link (fallback): {}", link);
         }
     }
+
+    /**
+     * Sends the confirmation link for a requested email change to the NEW address — clicking it
+     * proves the new mailbox is the requester's. Same dev fallback: no SMTP → the link is logged.
+     */
+    public void sendEmailChangeConfirmation(final String aNewEmail, final String aToken,
+                                            final long aValidHours) {
+        final String link = baseUrl + "/confirm-email?token=" + aToken;
+        deliver(aNewEmail, "Confirm your new Common Root? email address", "EMAIL CHANGE", link, """
+            <p>Hello,</p>
+            <p>Someone asked to use this address for a <strong>Common Root?</strong> account.
+            Click the link below to confirm the change:</p>
+            <p><a href="%s">%s</a></p>
+            <p>The link is valid for about %d hours. If this was not you, ignore this email —
+            nothing will change.</p>
+            """.formatted(link, link, aValidHours));
+    }
+
+    /** Tells the OLD address that a change was requested, so a hijacked session cannot do it silently. */
+    public void sendEmailChangeNotice(final String anOldEmail, final String aNewEmail) {
+        deliver(anOldEmail, "Email change requested on your Common Root? account", "EMAIL CHANGE NOTICE",
+            "(notice to " + anOldEmail + ": change to " + aNewEmail + " requested)", """
+            <p>Hello,</p>
+            <p>A change of your <strong>Common Root?</strong> sign-in address to <strong>%s</strong>
+            was requested. Nothing changes until that address confirms. If this was not you,
+            change your password now.</p>
+            """.formatted(aNewEmail));
+    }
+
+    /** Send one HTML mail, or log {@code aLogDetail} when no SMTP is configured. */
+    private void deliver(final String aTo, final String aSubject, final String aLabel,
+                         final String aLogDetail, final String aBody) {
+        if (mailSender == null) {
+            log.warn("===== {} (no SMTP configured) =====", aLabel);
+            log.warn("To: {}", aTo);
+            log.warn("{}", aLogDetail);
+            return;
+        }
+        try {
+            final MimeMessage msg = mailSender.createMimeMessage();
+            final MimeMessageHelper h = new MimeMessageHelper(msg, "utf-8");
+            h.setFrom(fromAddress);
+            h.setTo(aTo);
+            h.setSubject(aSubject);
+            h.setText(aBody, true);
+            mailSender.send(msg);
+            log.info("{} mail sent to {}", aLabel, aTo);
+        } catch (final MessagingException | MailException ex) {
+            log.error("Failed to send {} mail to {}: {}", aLabel, aTo, ex.getMessage());
+            log.warn("{}", aLogDetail);
+        }
+    }
 }

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Christa Claw
 package org.religioustext.app.config;
 
+import com.vaadin.flow.spring.security.UidlRedirectStrategy;
 import com.vaadin.flow.spring.security.VaadinWebSecurity;
 import org.religioustext.app.i18n.LocaleUtil;
 import org.religioustext.app.ui.views.LoginView;
@@ -96,10 +97,14 @@ public class SecurityConfig extends VaadinWebSecurity {
             new AntPathRequestMatcher("/api/**"), new AntPathRequestMatcher("/designer/package/**")));
 
         // Logout: clear session and cookie, then land where the user was.
-        // No remember-me cookie is ever issued.
+        // No remember-me cookie is ever issued. AuthenticationContext.logout() runs this handler
+        // INSIDE the Vaadin UIDL request that the Sign Out click made, so a bare sendRedirect
+        // hands the browser HTML where it expects JSON ("Invalid JSON response from server").
+        // UidlRedirectStrategy answers a UIDL request in kind and a normal one with a 302.
+        final UidlRedirectStrategy redirects = new UidlRedirectStrategy();
         aHttp.logout(logout -> logout
             .logoutSuccessHandler((request, response, authentication) ->
-                response.sendRedirect(logoutTarget(
+                redirects.sendRedirect(request, response, logoutTarget(
                     request.getHeader("Referer"), request.getServerName())))
             .invalidateHttpSession(true)
             .deleteCookies("JSESSIONID"));

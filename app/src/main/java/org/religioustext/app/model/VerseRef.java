@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Christa Claw
 package org.religioustext.app.model;
 
+import java.util.regex.Pattern;
+
 /**
  * Immutable reference to a single verse, self-describing
  * with full address so it can stand alone outside tree context.
@@ -65,10 +67,53 @@ public final class VerseRef {
     }
 
     /**
+     * One scripture cross-reference as the Reina-Valera 1909 edition writes it
+     * inline: optional book ordinal, abbreviated book, chapter.verse with
+     * optional ranges/lists, and an optional "y 11.3" continuation
+     * ("Sal. 136.5.", "2 Co. 4.6.", "Col. 1.16,17.", "He. 1.10 y 11.3.").
+     */
+    private static final String XREF =
+        "(?:(?:\\d\\s)?\\p{L}{1,6}\\.?\\s*)?\\d+(?:\\.\\d+)?(?:[-,\u2013]\\d+(?:\\.\\d+)?)*"
+        + "(?:\\s+y\\s+\\d+(?:\\.\\d+)?(?:[-,\u2013]\\d+(?:\\.\\d+)?)*)*\\.?";
+
+    /**
+     * A translator's gloss that rides along with the references ("Heb. nacidos en su
+     * casa.", "q.d. Alabanza.", "Heb. Ararat. 2 R. 19.37."). The edition glues the end
+     * of a note to the next word ("...Sustitución.Seth"), so a gloss is text up to a
+     * period that is immediately followed by a letter; ordinary sentence ends are
+     * followed by a space. It may not run into the next marker, which repeats the
+     * verse's own "chapter.verse" (group 1 of {@link #INLINE_XREF_RUN}).
+     */
+    private static final String GLOSS =
+        "(?:(?!\\1\\s)(?:[^.]|\\.(?=[\\s\\d]))){1,100}\\.(?=\\p{L})";
+
+    /**
+     * An inline cross-reference marker: "1.2" followed by one or more
+     * {@link #XREF} (e.g. "1.2 Jer. 4.23."). Only the marker and its
+     * references are removed; the verse text on either side is kept.
+     */
+    private static final Pattern INLINE_XREF_RUN =
+        Pattern.compile("\\s*(\\d+\\.\\d+)\\s+(?:(?:" + XREF + "|" + GLOSS + ")\\s*)+");
+
+    /**
+     * A footnote appended to the end of the verse: marker, capitalised text, optional
+     * rest. The marker must follow some verse text; a verse that merely begins with
+     * its own number ("1.2 Doy gracias...") is not a footnote.
+     */
+    private static final Pattern TRAILING_FOOTNOTE =
+        Pattern.compile("(?<=.)\\d+\\.\\d+\\s+[A-Z][^.]*(\\..*)?$");
+
+    /**
      * Strips artefacts from raw verse text:
      *   - Pilcrow signs and section markers (paragraph markers in source data)
+     *   - Inline cross-reference runs ("Y la tierra estaba 1.2 Jer. 4.23. desordenada"
+     *     becomes "Y la tierra estaba desordenada"; the surrounding text is kept)
      *   - Footnote text appended to verse (e.g. "1.4 the light from...")
      *   - Carriage returns, newlines, tabs
+     *
+     * Cross-reference runs are removed first, so that only a footnote that is
+     * genuinely trailing is cut off at the end; a reference run in mid-verse must
+     * never take the rest of the verse with it.
      *
      * Public + static so consumers that render raw stored text rather than going
      * through {@link #getDisplayContent(boolean)} (e.g. full-text search results,
@@ -76,12 +121,14 @@ public final class VerseRef {
      */
     public static String clean(final String aRaw) {
         if (aRaw == null) return "";
-        return aRaw
+        final String text = aRaw
             // Strip pilcrow and other paragraph/section markers
             .replace("\u00B6", "")   // ¶
-            .replace("\u00A7", "")   // §
-            // Strip appended footnotes — pattern: digits.digits followed by text
-            .replaceAll("\\d+\\.\\d+\\s+[A-Z][^.]*(\\..*)?$", "")
+            .replace("\u00A7", "");  // §
+        // Strip inline cross-reference runs, keeping the text around them
+        final String noRefs = INLINE_XREF_RUN.matcher(text).replaceAll(" ");
+        // Strip appended footnotes — pattern: digits.digits followed by text
+        return TRAILING_FOOTNOTE.matcher(noRefs).replaceFirst("")
             // Strip carriage returns, newlines, tabs
             .replaceAll("[\\r\\n\\t]+", " ")
             .trim();

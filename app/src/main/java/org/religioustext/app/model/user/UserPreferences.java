@@ -48,6 +48,10 @@ public class UserPreferences {
     @Column(name = "show_xref_markers", nullable = false)
     private boolean showXrefMarkers;
 
+    /** Show the reader's own verse highlights (V24). On unless switched off. */
+    @Column(name = "show_highlights", nullable = false)
+    private boolean showHighlights = true;
+
     /** Newline-separated voices this reader has muted (V17) — channel names and
      *  author display names in one list. Null/blank = mute nothing. */
     @Column(name = "muted_voices", columnDefinition = "TEXT")
@@ -94,6 +98,7 @@ public class UserPreferences {
     public boolean isShowCommentsPanel()   { return showCommentsPanel; }
     public boolean isShowCommentMarkers()  { return showCommentMarkers; }
     public boolean isShowXrefMarkers()     { return showXrefMarkers; }
+    public boolean isShowHighlights()      { return showHighlights; }
     public String  getMutedVoices()         { return mutedVoices; }
     public boolean isResumeEnabled()       { return resumeEnabled; }
     public String  getLastPosition()       { return lastPosition; }
@@ -110,6 +115,7 @@ public class UserPreferences {
     public void setShowCommentsPanel(final boolean aShowCommentsPanel) { this.showCommentsPanel = aShowCommentsPanel; }
     public void setShowCommentMarkers(final boolean aShowCommentMarkers){ this.showCommentMarkers = aShowCommentMarkers; }
     public void setShowXrefMarkers(final boolean aShowXrefMarkers)      { this.showXrefMarkers = aShowXrefMarkers; }
+    public void setShowHighlights(final boolean aShowHighlights)        { this.showHighlights = aShowHighlights; }
     public void setMutedVoices(final String aMutedVoices)          { this.mutedVoices = aMutedVoices; }
     public void setResumeEnabled(final boolean aResumeEnabled)     { this.resumeEnabled = aResumeEnabled; }
     public void setLastPosition(final String aLastPosition)       { this.lastPosition = aLastPosition; }

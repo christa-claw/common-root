@@ -48,7 +48,7 @@ import java.util.Locale;
 public class EditionInfoView extends VerticalLayout implements HasUrlParameter<String>, HasDynamicTitle {
 
     private EditionInfo page;
-    /** Reading order and display mode a reader column handed over (?ordering=…&mode=…),
+    /** Reading order and display mode a reader column handed over ({@code ?ordering=…&mode=…}),
      *  validated, to forward to the order page so what was being read is what is ordered. */
     private String handOffOrdering, handOffMode;
     private final BuildInfo buildInfo;

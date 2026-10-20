@@ -15,6 +15,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -44,7 +45,10 @@ import org.religioustext.app.service.LexiconService;
 import org.religioustext.app.service.VerseNumbering;
 import org.religioustext.app.service.WordLayerService;
 import org.religioustext.app.service.CommentQueryService.VerseComment;
+import org.religioustext.app.model.user.HighlightColours;
+import org.religioustext.app.service.HighlightService;
 import org.religioustext.app.service.PersonalNoteService;
+import org.religioustext.app.service.SavedSearchService;
 import org.religioustext.app.service.SearchService;
 import org.religioustext.app.service.UserPreferencesService;
 import org.religioustext.app.service.UserService;
@@ -268,7 +272,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private final CommentAuthorService commentAuthor;
     private final CommentAclService commentAcl;
     private final PersonalNoteService noteService;
+    private final HighlightService highlightService;
     private final SearchService      searchService;
+    private final SavedSearchService savedSearches;
     private final UserPreferencesService prefsService;
     private final UserService userService;
     private final AuthenticationContext authContext;
@@ -421,7 +427,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                       final CommentAuthorService aCommentAuthor,
                       final CommentAclService aCommentAcl,
                       final PersonalNoteService aNoteService,
+                      final HighlightService aHighlightService,
                       final SearchService aSearchService,
+                      final SavedSearchService aSavedSearches,
                       final UserPreferencesService aPrefsService,
                       final UserService aUserService,
                       final AuthenticationContext anAuthContext,
@@ -437,7 +445,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.commentAuthor = aCommentAuthor;
         this.commentAcl   = aCommentAcl;
         this.noteService  = aNoteService;
+        this.highlightService = aHighlightService;
         this.searchService = aSearchService;
+        this.savedSearches = aSavedSearches;
         this.prefsService = aPrefsService;
         this.userService  = aUserService;
         this.authContext  = anAuthContext;
@@ -446,7 +456,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         this.catalog       = new SourceCatalog(this.sources);
         this.columnsLayout = new Div();
         this.renderer = new VerseWindowRenderer(aQueryService, aCommentService, aXrefService, aWordLayer, aNoteService,
-            anAuthContext, new VerseWindowRenderer.Host() {
+            aHighlightService, anAuthContext, new VerseWindowRenderer.Host() {
                 @Override public int activeSeq(final ColState aState, final VerseRef aVerseRef) {
                     return ReaderView.this.activeSeq(aState, aVerseRef);
                 }
@@ -465,6 +475,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                         final String aBookCode, final int aChapter, final String aVerseNo,
                         final List<XRef> theXrefs) {
                     return ReaderView.this.xrefBadge(aState, aBookName, aBookCode, aChapter, aVerseNo, theXrefs);
+                }
+                @Override public boolean showHighlights() {
+                    return prefs == null || prefs.isShowHighlights();
                 }
                 @Override public Span noteBadge(final ColState aState, final String anEmail,
                         final String aBookName, final String aBookCode, final int aChapter,
@@ -735,7 +748,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  hit routes through openRefInNewColumn — the same new-column + flash
      *  landing the comment panel uses. */
     private void openSearch() {
-        new SearchDialog(searchService, (r, sourceId, synced) -> {
+        new SearchDialog(searchService, savedSearches,
+            authContext.getPrincipalName().orElse(null), (r, sourceId, synced) -> {
             String[] sel = null;
             if (sourceId != null) {
                 final String[] byId = sourceById(sourceId);
@@ -980,6 +994,28 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 ? "reader.lineage.less" : "reader.lineage.newer"));
         }
         updateStrongsToggle(aState);
+        updateXrefToggle(aState);
+    }
+
+    /** Cross-references are OpenBible rows keyed to a Bible book, chapter and verse, so the
+     *  ✝ toggle is only ever useful on a Bible column. On a Qur'an, hadith or Latter-day
+     *  Saint column there is nothing it could show and never will be, so offering it invites a
+     *  click that silently does nothing. It stays drawn — the three marker toggles keep their
+     *  places, as {@link #updateStrongsToggle} explains — but greyed and inert, and any
+     *  marker state is cleared so a column switched from a Bible to the Qur'an does not keep
+     *  a setting it can no longer honour. */
+    private void updateXrefToggle(final ColState aState) {
+        final Button b = aState.xrefsToggle;
+        if (b == null) return;
+        final String sourceId = aState.col.getSourceId();
+        final SourceRow row = sourceId == null ? null : SourceRow.of(catalog.byId(sourceId));
+        final boolean offered = row != null && row.isBible();
+        b.setEnabled(offered);
+        b.getStyle().set("opacity", offered ? "" : "0.4");
+        if (!offered && aState.showXrefs) {
+            aState.showXrefs = false;
+            styleXrefToggle(aState);
+        }
     }
 
     /** The Strong's toggle is enabled when the column shows verses and one of its ancestor rungs — in
@@ -2745,6 +2781,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         final List<CommentAuthorService.OwnComment> mine =
             commentAuthor.forVerse(email, bookCode, aChapter, verse);
         final CommentAuthorService.OwnComment existing = mine.isEmpty() ? null : mine.get(0);
+        // The verse's highlight colour sits on top of the dialog: one place to mark a verse and
+        // (privately) say why. Hidden when the reader has switched highlights off.
+        final com.vaadin.flow.component.Component topRow =
+            (prefs == null || prefs.isShowHighlights()) ? highlightRow(email, bookCode, aChapter, verse) : null;
 
         final String title = bookHeading(aState, aBookName) + " " + aChapter + ":" + aVerseNo
             + " — " + t(existing == null ? "reader.commentForm.titleNew" : "reader.commentForm.titleEdit");
@@ -2773,14 +2813,14 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                     if (!mem.extras().isEmpty()) commentAuthor.addRefs(email, id, mem.extras());
                     if (mem.extUrl() != null) commentAuthor.setExternalLink(email, id, mem.extUrl(), mem.extLabel());
                 },
-                () -> afterOwnCommentChange(aState));
+                () -> afterOwnCommentChange(aState), topRow);
         } else {
             openUnifiedCommentDialog(title, existing.content(),
                 persistedRefs(email, existing.publicId()), publicBox, rejection,
                 () -> commentAuthor.delete(email, existing.id()),
                 text -> commentAuthor.update(email, existing.id(), text,
                     Boolean.TRUE.equals(publicBox.getValue())),
-                () -> afterOwnCommentChange(aState));
+                () -> afterOwnCommentChange(aState), topRow);
         }
     }
 
@@ -2891,9 +2931,66 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         });
         publicComment.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
 
-        dialog.add(ta);
+        dialog.add(highlightRow(anEmail, aBookCode, aChapter, verse), ta);
         dialog.getFooter().add(publicComment, delete, cancel, save);
         dialog.open();
+    }
+
+    /** The colour row of the verse editor: one swatch per palette colour plus "no highlight". A click
+     *  saves at once (separate from the note's Save) and recolours the verse in every open column; the
+     *  chosen colour is ringed, and clicking it again clears it. */
+    private com.vaadin.flow.component.Component highlightRow(final String anEmail, final String aBookCode,
+                                                             final int aChapter, final int aVerse) {
+        final HorizontalLayout row = new HorizontalLayout();
+        row.setAlignItems(FlexComponent.Alignment.CENTER);
+        row.setSpacing(true);
+        final Span label = new Span(t("reader.highlight.label"));
+        label.getStyle().set("font-size", "13px").set("color", "var(--lumo-secondary-text-color)");
+        row.add(label);
+
+        final String[] current = { highlightService.find(anEmail, aBookCode, aChapter, aVerse).orElse(null) };
+        final java.util.Map<String, Button> swatches = new java.util.LinkedHashMap<>();
+        final Runnable ring = () -> swatches.forEach((key, b) -> b.getStyle().set("outline",
+            key.equals(current[0]) ? "2px solid var(--lumo-primary-color)" : "none"));
+
+        for (final java.util.Map.Entry<String, String> c : HighlightColours.CSS.entrySet()) {
+            final String key = c.getKey();
+            final Button b = new Button();
+            b.getStyle().set("background", c.getValue()).set("width", "26px").set("height", "26px")
+                .set("min-width", "26px").set("padding", "0").set("border-radius", "50%")
+                .set("outline-offset", "2px");
+            b.setTooltipText(t("reader.highlight." + key));
+            b.getElement().setAttribute("aria-label", t("reader.highlight." + key));
+            b.addClickListener(e -> {
+                current[0] = key.equals(current[0]) ? null : key;
+                applyHighlight(anEmail, aBookCode, aChapter, aVerse, current[0]);
+                ring.run();
+            });
+            swatches.put(key, b);
+            row.add(b);
+        }
+        final Button none = new Button(t("reader.highlight.none"), e -> {
+            current[0] = null;
+            applyHighlight(anEmail, aBookCode, aChapter, aVerse, null);
+            ring.run();
+        });
+        none.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        row.add(none);
+        ring.run();
+        return row;
+    }
+
+    /** Save a verse's colour (null clears it) and recolour that verse in every open column — each
+     *  verse body carries {@code data-hl="CODE|chapter|verse"} (see VerseWindowRenderer#mark). */
+    private void applyHighlight(final String anEmail, final String aBookCode, final int aChapter,
+                                final int aVerse, final String aColour) {
+        highlightService.set(anEmail, aBookCode, aChapter, aVerse, aColour);
+        final String css = aColour == null ? "" : HighlightColours.CSS.getOrDefault(aColour, "");
+        getUI().ifPresent(ui -> ui.getPage().executeJs(
+            "document.querySelectorAll('[data-hl=\"' + $0 + '\"]').forEach(function(e){"
+          + "e.style.background = $1; e.style.borderRadius = $1 ? '3px' : '';"
+          + "e.style.boxDecorationBreak = 'clone'; e.style.webkitBoxDecorationBreak = 'clone';});",
+            aBookCode + "|" + aChapter + "|" + aVerse, css));
     }
 
     /** Toolbar 💬: toggle the comment-driven browser. Built lazily on first
@@ -3441,7 +3538,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private void openUnifiedCommentDialog(final String aTitle, final String anInitialContent,
             final RefStore aRefStore, final Checkbox aPublicBoxOrNull, final String aRejectionOrNull,
             final Runnable aDeleteActionOrNull,
-            final java.util.function.Consumer<String> aSaveAction, final Runnable anAfterChange) {
+            final java.util.function.Consumer<String> aSaveAction, final Runnable anAfterChange,
+            final com.vaadin.flow.component.Component aTopRowOrNull) {
         final Dialog dialog = new Dialog();
         dialog.setHeaderTitle(aTitle);
         dialog.setWidth("620px");
@@ -3449,6 +3547,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         dialog.setDraggable(true);
         dialog.setResizable(true);
 
+        if (aTopRowOrNull != null) dialog.add(aTopRowOrNull);
         if (aRejectionOrNull != null) {
             final Span rej = new Span(aRejectionOrNull);
             rej.getStyle().set("color", "var(--lumo-error-text-color)").set("font-size", "13px");
@@ -3526,7 +3625,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             null,
             aCanDelete ? () -> commentAuthor.deleteShared(email, aComment.publicId()) : null,
             text -> commentAuthor.updateShared(email, aComment.publicId(), text),
-            after);
+            after, null);
     }
 
     /** (Re)render an editor's references section against its {@link RefStore}: one chip per

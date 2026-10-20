@@ -13,7 +13,7 @@ import java.util.Map;
  * the raw number exactly as before.
  *
  * <p>Registered by language code in {@link #BY_LANGUAGE} — same philosophy
- * as {@link EditionInfo#PAGES} and {@code channels.properties} elsewhere in
+ * as {@code EditionInfo#PAGES} and {@code channels.properties} elsewhere in
  * this project: a language that should get its own numeral convention is an
  * entry in this map plus a small {@link NumeralFormatter}, not a change to
  * any call site. A language with no entry here falls back to {@link

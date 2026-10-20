@@ -72,6 +72,39 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.3] — 2026-10-20
+
+### Added
+- **Verse highlights.** A signed-in reader can tint any verse in one of five colours, from the
+  verse-number dialog (the comment editor, which is private until published, with a colour row above it; the same row is in the private-note editor). A
+  highlight belongs to the verse, so it shows in every edition and column, and recolours in place.
+  Private to the account; a reader preference switches highlights off; included in the data export
+  (migration V24, `highlights`).
+- **Account self-service: download your data, delete your account.** The profile page offers a
+  JSON export (profile, preferences, notes, saved searches, comments, API-key labels — never key
+  hashes) and a password-confirmed, permanent account deletion that removes everything the
+  account owns, public comments included. System and admin accounts cannot self-delete. Deleted
+  comments leave the search index at the next reindex. The delete dialog carries an optional
+  download link for a last copy, and its button names what is lost.
+- **Account self-service: change password, change email.** The profile page now has both,
+  each re-asking for the current password. An email change mails a confirmation link to the
+  *new* address (and a notice to the old one); the sign-in address only changes once the link
+  is clicked, and the old session is asked to sign in again (migration V23).
+- **Saved searches.** Signed-in readers can star a query in the search dialog to keep it; the
+  empty dialog lists their saved searches to re-run or remove. Private to the account
+  (migration V22, `saved_searches`).
+
+### Fixed
+- The saved-search strings were only in the English bundle; they are now in all locales.
+- The ✝ cross-reference toggle is greyed out on Qur'an, hadith and LDS columns, where there are no
+  cross-references to show, instead of inviting a click that did nothing.
+- Signing out no longer ends on an "Invalid JSON response from server" screen. The logout handler
+  sent a plain redirect into the page's own server request; it now answers in the form the
+  Vaadin client expects, and still lands the reader back where they were.
+- Verses with inline cross-reference markers (RVR09 carries them mid-verse) are no longer cut
+  off at the marker: the references are removed and the surrounding text kept. Shipped in the
+  next release.
+
 ## [0.11.2] — 2026-10-19
 
 ### Added
