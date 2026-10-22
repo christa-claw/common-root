@@ -72,6 +72,34 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.4] — 2026-10-22
+
+### Added
+- **German, French and Italian Bible book names.** `booknames_de` (Loccum forms), `booknames_fr`
+  (Segond) and `booknames_it` (CEI) replace the English fallback, so editions in those languages
+  show their own book names, and the full names parse in the reference box. They are drafts for
+  native-speaker review (issues #63, #55, #58), with the open naming questions noted in each file.
+- **French book abbreviations.** `bookabbrev_fr` (Gn, Ex, Mt, Ap and the rest) so French readers can
+  type references the way they write them; "Mc" is Marc and "Jn" is Jean for French users.
+- **Two new editions' info pages**, PDDPT and VBL, in all 14 locales.
+- **Contributors on the About page.** A short "Contributors" block thanks the people who have
+  improved the site, linked to their GitHub profiles, translated into all UI languages. Names
+  are added in `Contributors.java` with a matching `about.contributors.<handle>` string.
+- **Lexicon translation, one language a night.** The Strong's translation job gains `--locale` and
+  `--pick` (least-complete lexicon/language first), so a nightly run translates one language at a
+  time; procedure in `docs/lexicon-translation-job.md`.
+
+### Fixed
+- `/docs/api` and `/docs/api/` (without `index.html`) returned a 404 / login redirect because
+  Vaadin's router caught them before the static Javadoc; they now forward to the API reference.
+  Thanks to @slsgzs-cloud (#65).
+
+### Changed
+- `DocsRedirectControllerTest` is a standalone MockMvc test (it no longer boots the whole app and
+  its databases), and it now pins the trailing-slash case.
+- The weekly corpus-fetch notes no longer list `Gill`, `Geneva` or `Family` as SWORD commentary
+  sources (not in the repository, or no distribution licence).
+
 ## [0.11.3] — 2026-10-20
 
 ### Added

@@ -1288,8 +1288,37 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
 
         s.add(buildSupportCallout());
         s.add(buildDocsDownload());
+        s.add(buildContributors());
 
         return s;
+    }
+
+    // ── Contributors ────────────────────────────────────────
+
+    private Div buildContributors() {
+        final Div wrap = new Div();
+        wrap.getStyle().set("margin-top", "28px").set("max-width", "760px");
+
+        final H3 title = new H3(t("about.contributors.title"));
+        title.getStyle()
+            .set("font-size", "18px").set("font-weight", "700")
+            .set("color", "#1a3a5c").set("margin", "0 0 8px 0");
+        final Paragraph intro = new Paragraph(t("about.contributors.intro"));
+        intro.getStyle()
+            .set("font-size", "14px").set("color", "#555").set("margin", "0 0 10px 0");
+        wrap.add(title, intro);
+
+        for (final Contributors.Contributor c : Contributors.ALL) {
+            final Anchor who = new Anchor(c.url(), "@" + c.handle());
+            who.setTarget("_blank");
+            who.getElement().setAttribute("rel", "noopener");
+            who.getStyle().set("font-weight", "600").set("color", "#1a3a5c");
+            final Paragraph line = new Paragraph();
+            line.add(who, new com.vaadin.flow.component.html.Span(" — " + t(c.descriptionKey())));
+            line.getStyle().set("font-size", "14px").set("color", "#555").set("margin", "0 0 6px 0");
+            wrap.add(line);
+        }
+        return wrap;
     }
 
     // ── Documentation downloads ─────────────────────────────

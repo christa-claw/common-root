@@ -18,6 +18,11 @@ locale does not have falls back to English in the app. This script
       - no empty values; one line each; raw UTF-8 (no \\uXXXX escapes);
       - every H#### / G#### reference in the English definition survives in the translation.
 
+  * `--locale TAG` limits `--next` to one language (the nightly job translates one language at a
+    time); `--pick` prints tonight's "<lexicon> <locale> <phase>": the least-complete
+    (lexicon, locale) pair — all glosses, in both lexicons, before any definition; ties go to Greek,
+    then to LocaleUtil order — so the languages rotate without any state file.
+
 Locales come from LocaleUtil.java (the authority); English is the base and is not translated.
 
 Usage:
@@ -25,6 +30,8 @@ Usage:
     python3 scripts/strongs/check_lexicon_translations.py --coverage       # coverage only
     python3 scripts/strongs/check_lexicon_translations.py --next 400       # next batch (auto phase)
     python3 scripts/strongs/check_lexicon_translations.py --next 100 --phase definitions
+    python3 scripts/strongs/check_lexicon_translations.py --pick           # tonight's lexicon, locale, phase
+    python3 scripts/strongs/check_lexicon_translations.py --lexicon greek --locale fi --next 400
     python3 scripts/strongs/check_lexicon_translations.py --quiet          # only failures
     python3 scripts/strongs/check_lexicon_translations.py --lexicon greek  # the Greek New Testament lexicon
 """
@@ -115,6 +122,34 @@ def pending(order, locs, kind):
     return [sid for sid in order if any((sid + "." + kind) not in loc for loc in locs.values())]
 
 
+def load_lexicon(lex, tags):
+    """(english, {tag: translations}) for one lexicon; a missing locale file is empty."""
+    english, _, _ = read_props(os.path.join(LEX, "%s.properties" % lex))
+    locs = {}
+    for tag in tags:
+        path = os.path.join(LEX, "%s_%s.properties" % (lex, tag))
+        locs[tag] = read_props(path)[0] if os.path.exists(path) else {}
+    return english, locs
+
+
+def pick(tags):
+    """(lexicon, locale, phase) for tonight, or None when everything is translated."""
+    for phase, kind in (("glosses", "gloss"), ("definitions", "def")):
+        best = None
+        for lex in reversed(LEXICONS):  # Greek first, so it wins ties
+            english, locs = load_lexicon(lex, tags)
+            ids = [k[:-6] for k in english if k.endswith(".gloss")]
+            for tag in tags:
+                done = sum(1 for i in ids if i + "." + kind in locs[tag])
+                if done < len(ids):
+                    frac = done / len(ids)
+                    if best is None or frac < best[0]:
+                        best = (frac, lex, tag)
+        if best:
+            return best[1], best[2], phase
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--coverage", action="store_true")
@@ -122,7 +157,16 @@ def main():
     ap.add_argument("--next", type=int, metavar="N", help="print the next N entries to translate (TSV) and exit")
     ap.add_argument("--lexicon", choices=LEXICONS, default="hebrew", help="which lexicon (default hebrew)")
     ap.add_argument("--phase", choices=("auto", "glosses", "definitions"), default="auto")
+    ap.add_argument("--locale", help="with --next: only this language (one language at a time)")
+    ap.add_argument("--pick", action="store_true", help="print tonight's '<lexicon> <locale> <phase>' and exit")
     a = ap.parse_args()
+
+    if a.pick:
+        choice = pick(locales())
+        print(" ".join(choice) if choice else "done")
+        return
+    if a.locale and a.locale not in locales():
+        ap.error("--locale %s is not one of %s" % (a.locale, " ".join(locales())))
 
     lex = a.lexicon
     english, _, _ = read_props(os.path.join(LEX, "%s.properties" % lex))
@@ -140,14 +184,15 @@ def main():
 
     if a.next:
         order = frequency_order(english, freq_path(lex))
+        sel = {a.locale: locs[a.locale]} if a.locale else locs
         phase = a.phase
         if phase == "auto":
-            phase = "glosses" if pending(order, locs, "gloss") else "definitions"
+            phase = "glosses" if pending(order, sel, "gloss") else "definitions"
         kind = "gloss" if phase == "glosses" else "def"
-        batch = pending(order, locs, kind)[:a.next]
+        batch = pending(order, sel, kind)[:a.next]
         print("# phase=%s kind=%s entries=%d  columns: id, english, locales still missing it" % (phase, kind, len(batch)))
         for sid in batch:
-            missing = ",".join(t for t in tags if (sid + "." + kind) not in locs[t])
+            missing = ",".join(t for t in sel if (sid + "." + kind) not in locs[t])
             print("%s\t%s\t%s" % (sid, english.get(sid + "." + kind, ""), missing))
         return
 
