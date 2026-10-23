@@ -72,6 +72,24 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.7] — 2026-10-23
+
+### Security
+- **Embedded Tomcat 10.1.20 → 10.1.61.** Spring Boot 3.2.5 ships Tomcat 10.1.20, which the OSV
+  database lists 34 advisories against (7 critical, 16 high): HTTP request smuggling, multipart
+  and HTTP/2 denial of service, and several authentication and constraint bypasses. 10.1.61 is
+  the current 10.1.x release and has none. Most of those need configuration this app does not
+  use (HTTP/2, `web.xml` security constraints, Digest or FORM authenticators, WebDAV), so this
+  reduces exposure rather than closing a known hole; the multipart denial of service, reachable
+  through Spring's default multipart handling, is the one that plausibly applied. The three
+  `tomcat-embed` artifacts are pinned in the parent pom's `dependencyManagement`, ahead of the
+  imports: the pom imports the Spring Boot BOM rather than inheriting from the starter parent,
+  so the usual `tomcat.version` property is ignored.
+- **Not fixed by this, and why.** Spring Security 6.2.4 (the "headers not written" advisory),
+  Vaadin 24.4.4 (an unauthenticated `/VAADIN` request skipping the Spring Security filters,
+  availability impact only) and Jackson 2.15 have fixes only on newer minor lines, so they need
+  the Spring Boot and Vaadin upgrade, planned as its own change rather than a patch bump.
+
 ## [0.11.6] — 2026-10-23
 
 ### Changed

@@ -8,7 +8,7 @@
 
     <groupId>org.religioustext</groupId>
     <artifactId>religious-texts-parent</artifactId>
-    <version>0.11.6</version>
+    <version>0.11.7</version>
     <packaging>pom</packaging>
 
     <name>Common Root - Parent</name>
@@ -39,10 +39,34 @@
         <vaadin.version>24.4.4</vaadin.version>
         <exist.version>6.2.0</exist.version>
         <xmldb.api.version>1.0</xmldb.api.version>
+
+        <!-- Embedded Tomcat, pinned ahead of the Spring Boot BOM (see dependencyManagement). Boot 3.2.5
+             ships 10.1.20; 10.1.x is still maintained and 10.1.61 carries the fixes since. -->
+        <tomcat.version>10.1.61</tomcat.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
+            <!-- Tomcat is pinned HERE, ahead of the imports below. This pom imports the Spring Boot BOM
+                 rather than inheriting from spring-boot-starter-parent, so the usual tomcat.version
+                 property override is ignored; an explicit entry in this section is what wins. The
+                 first declaration of an artifact decides its version, hence before the BOM. -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
 
             <!-- Spring Boot BOM -->
             <dependency>

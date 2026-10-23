@@ -6,7 +6,7 @@ _Tutki tekstejä, jotka muovaavat maailmaamme._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.11.6 |
+| Version | 0.11.7 |
 | Generated | 2026-10-23 |
 <!-- /AUTOGEN:meta -->
 
