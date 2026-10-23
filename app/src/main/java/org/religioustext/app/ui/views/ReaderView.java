@@ -54,6 +54,7 @@ import org.religioustext.app.service.UserPreferencesService;
 import org.religioustext.app.service.UserService;
 import org.religioustext.app.model.user.ReaderLook;
 import org.religioustext.app.model.user.UserPreferences;
+import org.religioustext.app.ui.Analytics;
 import org.religioustext.app.ui.components.LanguageSelect;
 import org.religioustext.app.ui.components.SearchDialog;
 import org.religioustext.app.i18n.LocaleUtil;
@@ -262,6 +263,8 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     private final CommentQueryService commentService;
     private final CrossRefQueryService xrefService;
     private final CrossRefDialog xrefDialog;
+    /** Whether the search event carries the query text (off by default; see trackSearch). */
+    private final boolean analyticsSearchText;
     private final WordLayerService wordLayer;
     private final StrongsDialog strongsDialog;
     private final VerseNumbering numbering;
@@ -433,7 +436,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                       final UserPreferencesService aPrefsService,
                       final UserService aUserService,
                       final AuthenticationContext anAuthContext,
-                      final BuildInfo aBuildInfo) {
+                      final BuildInfo aBuildInfo,
+                      @org.springframework.beans.factory.annotation.Value("${religioustext.analytics.search-text:false}")
+                      final boolean aSearchText) {
+        this.analyticsSearchText = aSearchText;
         this.queryService = aQueryService;
         this.audioIndex   = anAudioIndex;
         this.commentService = aCommentService;
@@ -634,7 +640,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             .set("font-weight", "600").set("text-decoration", "none")
             .set("white-space", "nowrap");
 
-        final Button addBtn = new Button(t("action.addColumn"), VaadinIcon.PLUS.create(), e -> addColumn());
+        final Button addBtn = new Button(t("action.addColumn"), VaadinIcon.PLUS.create(), e -> {
+            addColumn();
+            trackEvent("column-add", "columns", states.size(), "via", "button");
+        });
         addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         addBtn.setTooltipText(t("tooltip.addColumn"));
 
@@ -764,7 +773,36 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         }, id -> {
             final String[] row = sourceById(id);
             return row != null && row.length > 1 ? stripLangGloss(row[1]) : null;
-        }, this::t).open();
+        }, this::t, searchTracker()).open();
+    }
+
+    /** What the search dialog tells us: a search that ran, and the backend being down. */
+    private SearchDialog.SearchTracker searchTracker() {
+        return new SearchDialog.SearchTracker() {
+            @Override public void ran(final String aQuery, final int aVerseHits, final int aCommentHits) {
+                trackSearch(aQuery, aVerseHits, aCommentHits);
+            }
+            @Override public void unavailable() {
+                // Debounced like the searches themselves: it would otherwise fire on every typing pause.
+                Analytics.trackDebounced(ReaderView.this, "searchdown", SEARCH_SETTLE_MS, "search-unavailable");
+            }
+        };
+    }
+
+    /** How long a search box must sit still before its search is counted. The box searches as
+     *  a person types, so without this "ala", "alam" and "alamainen" would be three searches. */
+    private static final int SEARCH_SETTLE_MS = 1500;
+
+    /** One {@code search-run} per settled search: how many hits it found and in what, its length,
+     *  and the interface language. The query TEXT is sent only when
+     *  {@code religioustext.analytics.search-text} is true; it is off by default, because what a
+     *  person looks up is the most personal thing the site sees. */
+    private void trackSearch(final String aQuery, final int aVerseHits, final int aCommentHits) {
+        Analytics.trackDebounced(this, "search", SEARCH_SETTLE_MS, "search-run",
+            "hits", aVerseHits + aCommentHits, "verse_hits", aVerseHits, "comment_hits", aCommentHits,
+            "length", aQuery.codePointCount(0, aQuery.length()),
+            "language", LocaleUtil.currentLocale().toLanguageTag(),
+            "query", analyticsSearchText ? aQuery : null);
     }
 
     /** Toolbar multi-ref open: parse the comma-separated reference list and open
@@ -1514,9 +1552,17 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  gesture; here we just keep the target fresh and show feedback. */
     private void copyCurrentLink() {
         final String path = buildCurrentLinkPath();
+        // Sharing intent. "ranged" says whether the link carries a verse range (EPH.5.24-28).
+        if (path != null)
+            trackEvent("link-copy", "columns", states.size(),
+                       "ranged", LINK_RANGE.matcher(path).find() ? "yes" : "no");
         refreshCopyLink();
         Notification.show(path == null ? t("reader.link.empty") : t("reader.link.copied"));
     }
+
+    /** A column's {@code cK.ref=} value with a dash in it, i.e. a verse range. */
+    private static final java.util.regex.Pattern LINK_RANGE =
+        java.util.regex.Pattern.compile("[?&]c\\d+\\.ref=[^&]*-");
 
     private boolean isQuranSource(final String aSourceId) {
         return catalog.isQuran(aSourceId);
@@ -1854,6 +1900,10 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         sourceCombo.setEnabled(false);
         langCombo.addValueChangeListener(e -> {
             final String lang = e.getValue();
+            // Only a person's own pick: the column's default (the interface language) is set in
+            // code when it is built, and that fires this listener too.
+            if (e.isFromClient() && lang != null)
+                trackEvent("column-language-change", "from", e.getOldValue(), "to", lang);
             sourceCombo.clear();
             sourceCombo.setEnabled(lang != null);
             final List<String[]> rows = lang == null ? List.<String[]>of() : primary.stream()
@@ -1925,6 +1975,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // or anything downstream that asks the mode a question NPEs and
             // aborts the whole column setup.
             if (e.getValue() == null) return;
+            if (e.isFromClient()) readerOption(aState, "mode", e.getValue().name());
             aColumn.getDisplayOptions().setMode(e.getValue());
             updateRungButtons(aState);   // rung controls exist only in verse-granular modes
             updateAttribution(aState);
@@ -1943,6 +1994,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // order — the seq value itself changes meaning between orders.
             final String book = aState.currentBookName();
             final int    chap = aState.visibleChapter;
+            if (e.isFromClient() && e.getValue() != null) readerOption(aState, "order", e.getValue().name());
             aColumn.getDisplayOptions().setOrderMode(e.getValue());
             if (aColumn.getSourceId() == null) return;
             loadBookList(aState);
@@ -1984,6 +2036,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         aState.companionToggle = companionToggle;
         companionToggle.addClickListener(e -> {
             aState.showCompanion = !aState.showCompanion;
+            readerOption(aState, "companion", aState.showCompanion ? "on" : "off");
             // Swap the glyph itself (EYE = shown, EYE_SLASH = hidden) so the state
             // is visible at a glance; colour alone was indistinguishable.
             companionToggle.setIcon((aState.showCompanion ? VaadinIcon.EYE : VaadinIcon.EYE_SLASH).create());
@@ -2026,6 +2079,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 if (found) d = -n;
             }
             aState.rungDepth = d;
+            readerOption(aState, "rungs", String.valueOf(d));   // signed: + ancestors, - descendants
             updateRungButtons(aState);
             updateAttribution(aState);
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
@@ -2057,6 +2111,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 if (!found) d = aState.rungDepth;
             }
             aState.rungDepth = d;
+            readerOption(aState, "rungs", String.valueOf(d));   // signed: + ancestors, - descendants
             updateRungButtons(aState);
             updateAttribution(aState);
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
@@ -2072,6 +2127,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         commentsToggle.setTooltipText(t("reader.comments.toggleMarkers"));
         commentsToggle.addClickListener(e -> {
             aState.showComments = !aState.showComments;
+            readerOption(aState, "comments", aState.showComments ? "on" : "off");
             commentsToggle.setIcon((aState.showComments ? VaadinIcon.COMMENT : VaadinIcon.COMMENT_O).create());
             commentsToggle.getStyle().set("color",
                 aState.showComments ? "var(--lumo-primary-color)" : "");
@@ -2131,6 +2187,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         numeralsToggle.setVisible(Numerals.supports(aState.srcLang));
         numeralsToggle.addClickListener(e -> {
             aState.nativeNumerals = !aState.nativeNumerals;
+            readerOption(aState, "numerals", aState.nativeNumerals ? "native" : "latin");
             styleNumeralsToggle(aState);
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
         });
@@ -2142,6 +2199,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         aState.syncBtn = syncBtn;
         syncBtn.addClickListener(e -> {
             aColumn.toggleSync();
+            readerOption(aState, "sync", aColumn.isSynced() ? "on" : "off");
             syncBtn.setIcon(aColumn.isSynced() ? VaadinIcon.LINK.create() : VaadinIcon.UNLINK.create());
             if (aColumn.isSynced() && aColumn.getSourceId() != null && currentBook != null) {
                 final int seq = queryService.seqForBookChapter(
@@ -2161,14 +2219,19 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         infoBtn.addClickListener(e -> {
             final String url = editionInfoUrl(aColumn,
                 org.religioustext.app.i18n.LocaleUtil.currentLocale().getLanguage());
-            if (url != null) UI.getCurrent().getPage().open(url, "_blank");
+            if (url == null) return;
+            trackEvent("edition-info-open", "edition", editionLabel(aState), "from", "reader");
+            UI.getCurrent().getPage().open(url, "_blank");
         });
         aState.infoBtn = infoBtn;
 
         final Button removeBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
         removeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
         removeBtn.setTooltipText(t("tooltip.removeColumn"));
-        removeBtn.addClickListener(e -> removeColumn(aState));
+        removeBtn.addClickListener(e -> {
+            removeColumn(aState);
+            trackEvent("column-remove", "columns", states.size(), "edition", editionLabel(aState));
+        });
 
         // The (i) describes the edition just picked, so it travels with the picker:
         // one flex item, so the two wrap together and never part.
@@ -2371,6 +2434,12 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         final List<String[]> books = queryService.listBooksWithChapterCounts(
             aState.col.getSourceId(), aState.order());
         aState.books = books;
+        // Health: a column asked for an edition and got nothing back. Whatever the cause (a corpus that
+        // did not ship, a stale volume, a reading order the edition has no stamps for), it is what a
+        // reader would see as "selected, but empty". `order` tells the last of those from the rest.
+        if (books.isEmpty() && aState.col.getSourceId() != null)
+            trackEvent("edition-empty", "edition", editionLabel(aState), "source", aState.col.getSourceId(),
+                       "order", String.valueOf(aState.order()));
         // Build the display-name map. Priority: a localised name for the book's
         // standard code in the SOURCE'S OWN language (a Swedish Bible shows
         // Swedish book names regardless of UI locale — book names belong to the
@@ -2812,14 +2881,24 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                         aChapter, verse, text, Boolean.TRUE.equals(publicBox.getValue()));
                     if (!mem.extras().isEmpty()) commentAuthor.addRefs(email, id, mem.extras());
                     if (mem.extUrl() != null) commentAuthor.setExternalLink(email, id, mem.extUrl(), mem.extLabel());
+                    // Only the shape of it: never the text, and nothing about the author.
+                    trackEvent("comment-post", "kind", "own",
+                               "public", Boolean.TRUE.equals(publicBox.getValue()) ? "yes" : "no",
+                               "extra_refs", mem.extras().size(), "link", mem.extUrl() != null ? "yes" : "no");
                 },
                 () -> afterOwnCommentChange(aState), topRow);
         } else {
             openUnifiedCommentDialog(title, existing.content(),
                 persistedRefs(email, existing.publicId()), publicBox, rejection,
-                () -> commentAuthor.delete(email, existing.id()),
-                text -> commentAuthor.update(email, existing.id(), text,
-                    Boolean.TRUE.equals(publicBox.getValue())),
+                () -> {
+                    commentAuthor.delete(email, existing.id());
+                    trackEvent("comment-delete", "kind", "own");
+                },
+                text -> {
+                    commentAuthor.update(email, existing.id(), text, Boolean.TRUE.equals(publicBox.getValue()));
+                    trackEvent("comment-edit", "kind", "own",
+                               "public", Boolean.TRUE.equals(publicBox.getValue()) ? "yes" : "no");
+                },
                 () -> afterOwnCommentChange(aState), topRow);
         }
     }
@@ -3623,8 +3702,14 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             persistedRefs(email, aComment.publicId()),
             null,   // moderation/public state deliberately untouched on shared edits
             null,
-            aCanDelete ? () -> commentAuthor.deleteShared(email, aComment.publicId()) : null,
-            text -> commentAuthor.updateShared(email, aComment.publicId(), text),
+            aCanDelete ? () -> {
+                commentAuthor.deleteShared(email, aComment.publicId());
+                trackEvent("comment-delete", "kind", "channel");
+            } : null,
+            text -> {
+                commentAuthor.updateShared(email, aComment.publicId(), text);
+                trackEvent("comment-edit", "kind", "channel");
+            },
             after, null);
     }
 
@@ -3800,6 +3885,9 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                                     final ColState anOrigin) {
         if (aSelection == null) return;
         final ColState st = addColumn(-1);
+        // A column opened FROM a passage — a cross-reference, a Strong's occurrence, a search
+        // hit, a comment's reference or the open-passages box — as opposed to the Add button.
+        trackEvent("column-add", "columns", states.size(), "via", "passage");
         if (anOrigin != null) {
             st.showComments = anOrigin.showComments;
             st.showXrefs = anOrigin.showXrefs;
@@ -4087,10 +4175,11 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
 
 
     /** The column's edition as a person would name it (the catalogue's display name),
-     *  falling back to the bare token; empty when the column has no source yet. */
+     *  falling back to the bare token; null when the column has no source yet, so an
+     *  event leaves the property out rather than carrying an empty one. */
     private String editionLabel(final ColState aState) {
         final String sourceId = aState.col.getSourceId();
-        if (sourceId == null) return "";
+        if (sourceId == null) return null;
         final SourceRow row = SourceRow.of(catalog.byId(sourceId));
         return row == null ? sourceId : row.name();
     }
@@ -4102,19 +4191,14 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  travels as a bound parameter. A silent no-op where {@code window.umami} is
      *  undefined (dev/local, or a visitor who has opted out). */
     private void trackEvent(final String aName, final java.io.Serializable... aKeyValues) {
-        final StringBuilder js = new StringBuilder("window.umami && window.umami.track($0, {");
-        // Serializable[], not Object[]: executeJs takes Serializable..., and an Object[] is
-        // itself Serializable, so it would be sent as ONE parameter and fail to encode.
-        final java.util.List<java.io.Serializable> params = new java.util.ArrayList<>();
-        params.add(aName);
-        for (int i = 0; i + 1 < aKeyValues.length; i += 2) {
-            if (aKeyValues[i + 1] == null) continue;       // a property with no value is left out
-            if (params.size() > 1) js.append(',');
-            js.append(aKeyValues[i]).append(":$").append(params.size());
-            params.add(aKeyValues[i + 1]);
-        }
-        js.append("})");
-        getElement().executeJs(js.toString(), params.toArray(new java.io.Serializable[0]));
+        Analytics.track(this, aName, aKeyValues);
+    }
+
+    /** One {@code reader-option} event for a column control a person changed: which option, the value
+     *  it was set to (always a string, so the Properties view groups cleanly), and the edition. One
+     *  event name for all of them keeps the list short; {@code option} is the breakdown. */
+    private void readerOption(final ColState aState, final String anOption, final String aValue) {
+        trackEvent("reader-option", "option", anOption, "value", aValue, "edition", editionLabel(aState));
     }
 
 

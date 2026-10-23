@@ -14,6 +14,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import org.religioustext.app.ui.Analytics;
 
 /**
  * Sign-in page. Accessible without authentication.
@@ -87,6 +88,8 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
         final var params = anEvent.getLocation().getQueryParameters().getParameters();
         if (params.containsKey("error")) {
             loginForm.setError(true);
+            // A failed sign-in. No property: which email or password it was is not ours to record.
+            Analytics.trackWhenReady(anEvent.getUI(), "login-failure");
         }
         if (params.containsKey("registered")) {
             Notification.show("Check your inbox — click the verification link to activate your account.",

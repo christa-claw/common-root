@@ -12,7 +12,7 @@
   if (window.__strongsTip) return;
   window.__strongsTip = true;
 
-  var cache = {}, tip = null, current = null, pinned = null, looked = {};
+  var cache = {}, tip = null, current = null, pinned = null, looked = {}, failed = {};
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -94,10 +94,18 @@
     if (passage) data.source = passage;      // the verse the number sits in ("Genesis 1:1")
     window.umami.track('strongs-lookup', data);
   }
+  // Health: the entry could not be fetched (the lexicon route is down or the number unknown), so the
+  // tooltip never appears. Once per number per page load, like the lookups.
+  function fail(id) {
+    if (!id || failed[id] || !window.umami) return;
+    failed[id] = true;
+    window.umami.track('strongs-lookup-failed', { strongs: id });
+  }
   function show(anchor) {
     current = anchor;
     entry(anchor.getAttribute('data-s'), anchor.getAttribute('data-l') || 'en').then(function (j) {
-      if (!j || current !== anchor || !document.body.contains(anchor)) return;
+      if (!j) { fail(anchor.getAttribute('data-s')); return; }
+      if (current !== anchor || !document.body.contains(anchor)) return;
       render(j);
       place(anchor);
       track(anchor.getAttribute('data-s'), anchor.getAttribute('data-p'));

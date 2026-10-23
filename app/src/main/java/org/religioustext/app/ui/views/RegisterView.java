@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Christa Claw
 package org.religioustext.app.ui.views;
 
+import org.religioustext.app.ui.Analytics;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -136,10 +137,13 @@ public class RegisterView extends VerticalLayout {
 
         try {
             userService.register(emailVal, nameVal.isEmpty() ? null : nameVal, passVal);
+            Analytics.trackWhenReady(this, "register-complete");
             getUI().ifPresent(ui -> ui.navigate("login?registered"));
         } catch (final UserService.EmailAlreadyUsedException ex) {
+            Analytics.trackWhenReady(this, "register-failure", "reason", "email-taken");   // never the address itself
             error(anErrorMsg, "That email address is already registered.");
         } catch (final Exception ex) {
+            Analytics.trackWhenReady(this, "register-failure", "reason", "error");
             log.error("Registration failed for {}", emailVal, ex);
             error(anErrorMsg, "Something went wrong — please try again.");
         }

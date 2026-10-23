@@ -193,6 +193,10 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
             .set("font-weight", "700").set("font-size", "16px")
             .set("padding", "13px 30px").set("border-radius", "4px").set("text-decoration", "none");
 
+        // Umami reacts to data-umami-event itself (and sends it before following the link): the step
+        // from reading ABOUT an edition to reading it. `abbr` is language-independent ("KJV").
+        openReader.getElement().setAttribute("data-umami-event", "edition-open-reader");
+        openReader.getElement().setAttribute("data-umami-event-abbr", page.abbr);
         hero.add(abbrTag, heading, openReader);
         if (PRINT_READY.contains(page.abbr)) {
             // The print offer belongs with the edition, not with a reader
@@ -213,6 +217,8 @@ public class EditionInfoView extends VerticalLayout implements HasUrlParameter<S
             // router catches the click and asks the server to navigate, which
             // answers "Could not navigate to 'edition-designer.html'".
             print.getElement().setAttribute("router-ignore", true);
+            print.getElement().setAttribute("data-umami-event", "print-link-click");   // the way to a printed book
+            print.getElement().setAttribute("data-umami-event-abbr", page.abbr);
             hero.add(print);
         }
         return hero;

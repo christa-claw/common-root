@@ -65,6 +65,7 @@ public class SearchDialog extends Dialog {
     private final Function<String, String> editionName;
     private final Function<String, String> t;
     private final ResourceBundle bookNames;
+    private final SearchTracker tracker;
     private final Div results = new Div();
     private String lastQuery = "";
 
@@ -73,7 +74,9 @@ public class SearchDialog extends Dialog {
                         final String anEmail,
                         final OpenRef anOpenRef,
                         final Function<String, String> anEditionName,
-                        final Function<String, String> aTranslator) {
+                        final Function<String, String> aTranslator,
+                        final SearchTracker aTracker) {
+        this.tracker     = aTracker;
         this.search      = aSearch;
         this.saved       = aSaved;
         this.email       = anEmail;
@@ -163,6 +166,15 @@ public class SearchDialog extends Dialog {
         }
     }
 
+    /** Told about every search that actually ran (not one that was too short or whose backend
+     *  was down), with the number of hits it found in verses and in comments. */
+    public interface SearchTracker {
+        void ran(String aQuery, int aVerseHits, int aCommentHits);
+
+        /** A search was attempted and the search backend could not answer. */
+        void unavailable();
+    }
+
     private void runSearch(final String aQuery) {
         results.removeAll();
         final String q = aQuery == null ? "" : aQuery.trim();
@@ -174,9 +186,11 @@ public class SearchDialog extends Dialog {
         try {
             r = search.search(q);
         } catch (final SearchService.SearchUnavailableException ex) {
+            if (tracker != null) tracker.unavailable();
             results.add(message(t.apply("reader.search.unavailable")));
             return;
         }
+        if (tracker != null) tracker.ran(q, r.verseTotal(), r.commentTotal());
         if (r.isEmpty()) {
             results.add(message(t.apply("reader.search.empty")));
             return;

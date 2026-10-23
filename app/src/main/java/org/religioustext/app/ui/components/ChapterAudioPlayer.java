@@ -246,6 +246,16 @@ public class ChapterAudioPlayer extends Div {
             const nextButton = nextHost.querySelector('vaadin-button, button');
             if (nextButton) nextButton.click();
         });
+        // Analytics (a no-op where Umami is not installed): a chapter played to its end, and a file
+        // that would not play. `file` names the mp3 so a 404 can be traced to the chapter.
+        audio.addEventListener('ended', () => {
+            if (window.umami) window.umami.track('audio-complete', { book: $2, chapter: Number($3) });
+        });
+        audio.addEventListener('error', () => {
+            if (window.umami) window.umami.track('audio-error', { kind: 'chapter', book: $2,
+                chapter: Number($3), file: new URL($0, location.href).pathname,
+                code: audio.error ? audio.error.code : 0 });
+        });
         audio.play().catch(() => {});
         """;
 

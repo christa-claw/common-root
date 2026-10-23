@@ -1071,7 +1071,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
                 .set("width", "100%").set("align-items", "stretch");
             open.getStyle().set("flex", "1 1 auto");
             wrapper.add(open);
-            if (editionInfo != null) wrapper.add(infoCorner(anAbbr));
+            if (editionInfo != null) wrapper.add(infoCorner(anAbbr, aName));
             if (printable) wrapper.add(printCorner(anAbbr));
             aContainer.add(wrapper);
         } else {
@@ -1117,7 +1117,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         return print;
     }
 
-    private Anchor infoCorner(final String anAbbr) {
+    private Anchor infoCorner(final String anAbbr, final String aName) {
         final String slug =
             EditionInfo.slugFor(anAbbr, LocaleUtil.currentLocale().getLanguage());
         final Anchor info = new Anchor(EditionInfo.PREFIX + slug, "\u2139");
@@ -1133,6 +1133,11 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("color", "#3f6285").set("text-decoration", "none")
             .set("background", "#f2f6fa");
         info.addClassName("text-card-info");
+        // Umami's tracker already reacts to any element carrying data-umami-event (the audio play
+        // button relies on it), and for a link it sends the event before following it.
+        info.getElement().setAttribute("data-umami-event", "edition-info-open");
+        info.getElement().setAttribute("data-umami-event-edition", aName);
+        info.getElement().setAttribute("data-umami-event-from", "about");
         return info;
     }
 

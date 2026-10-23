@@ -5,7 +5,9 @@ package org.religioustext.app.ui.components;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.select.Select;
 import org.religioustext.app.i18n.LocaleUtil;
+import org.religioustext.app.ui.Analytics;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -122,13 +124,20 @@ public class LanguageSelect extends Select<Locale> {
             }
             LocaleUtil.store(e.getValue());
 
+            // The page is about to reload, so an event sent now would be lost as it unloads.
+            // Queue it instead: Analytics.REPLAY_SCRIPT sends it once the next page's tracker
+            // has loaded. `from` is the language the select was showing, i.e. the current one.
+            final String from = e.getOldValue() == null ? null : e.getOldValue().toLanguageTag();
+            final String to = e.getValue().toLanguageTag();
+
             // A page that knows where this language lives: go straight there,
             // no parsing of the current URL at all.
             final String target =
                 aTargetPath == null ? null : aTargetPath.apply(e.getValue());
             if (target != null) {
+                final Analytics.Call q = Analytics.queueForNextPage(1, "ui-language-change", "from", from, "to", to);
                 UI.getCurrent().getPage().executeJs(
-                    RECORD_SCROLL + " location.assign($0);", target);
+                    RECORD_SCROLL + q.script() + " location.assign($0);", withFirst(target, q.params()));
                 return;
             }
 
@@ -140,8 +149,14 @@ public class LanguageSelect extends Select<Locale> {
             // language path variant (/read/:code, admin...) fall back to
             // ?lang=<tag>.
             // toLanguageTag(), not getLanguage(): the latter is "iw" for Hebrew.
+            final Analytics.Call queued = Analytics.queueForNextPage(2, "ui-language-change", "from", from, "to", to);
+            final Serializable[] rewriteParams = new Serializable[] {
+                e.getValue().toLanguageTag(),
+                String.join(",", LocaleUtil.LOCALES.stream().map(Locale::toLanguageTag).toList())
+            };
             UI.getCurrent().getPage().executeJs(
                 RECORD_SCROLL
+                + queued.script()
                 + " const u = new URL(location.href);"
                 + " const langs = $1.split(',');"
                 + " const segs = u.pathname.split('/').filter(s => s);"
@@ -158,9 +173,19 @@ public class LanguageSelect extends Select<Locale> {
                 + " u.pathname = '/' + segs.join('/');"
                 + " u.searchParams.delete('lang');"
                 + " location.assign(u.toString());",
-                e.getValue().toLanguageTag(),
-                String.join(",", LocaleUtil.LOCALES.stream()
-                    .map(Locale::toLanguageTag).toList()));
+                concat(rewriteParams, queued.params()));
         });
+    }
+
+    /** {@code [aFirst, aRest...]}: a Serializable[] (an Object[] would be sent as one parameter). */
+    private static Serializable[] withFirst(final Serializable aFirst, final Serializable[] aRest) {
+        return concat(new Serializable[] { aFirst }, aRest);
+    }
+
+    private static Serializable[] concat(final Serializable[] aHead, final Serializable[] aTail) {
+        final Serializable[] out = new Serializable[aHead.length + aTail.length];
+        System.arraycopy(aHead, 0, out, 0, aHead.length);
+        System.arraycopy(aTail, 0, out, aHead.length, aTail.length);
+        return out;
     }
 }

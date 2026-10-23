@@ -72,6 +72,56 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.5] — 2026-10-23
+
+### Added
+- **Umami events for language, edition info, sharing, search and columns**, to show which
+  parts of the site are used and in what languages. Like the others they fire only on a
+  person's own action, never when a control is set in code or restored from a link.
+  - `ui-language-change` (`from`, `to`): the interface language. The switch reloads the
+    page, so the event is queued in `sessionStorage` and sent by the next page once its
+    tracker has loaded; sent before the reload it would be lost as the page unloads.
+  - `column-language-change` (`from`, `to`): the language a column reads in.
+  - `edition-info-open` (`edition`, `from` = `reader` or `about`): opening an edition's
+    info page from the reader's (i) button or an About-page card.
+  - `link-copy` (`columns`, `ranged`): copying the link to the current view.
+  - `column-add` (`columns` after, `via` = `button` or `passage`) and `column-remove`
+    (`columns` after, `edition`): the second is a column opened from a cross-reference,
+    a Strong's occurrence, a search hit, a comment's reference or the open-passages box.
+  - `search-run` (`hits`, `verse_hits`, `comment_hits`, `length`, `language`): one event
+    per search, sent once the box has been still for 1.5 s, because it searches as a
+    person types and "ala", "alam", "alamainen" are one search. **The query text is not
+    sent** unless `religioustext.analytics.search-text=true`, which is off: what a person
+    looks up is the most personal thing the site sees, so collecting it is a decision, and
+    the About page should say so if it is made.
+  - A shared `Analytics` helper builds the calls (property names checked as identifiers,
+    values always bound as parameters, null values left out). The queued-event replay
+    script must contain no `&`, `<` or `>`: the app shell HTML-escapes inline content, and
+    an `&&` reached the browser as `&amp;&amp;`, a syntax error on every page load.
+- **Umami events for sign-in, contribution, audio, reader options and the site's own health.**
+  The same rules: only a person's own action, nothing about the person.
+  - Sign-up funnel: `register-complete`; `register-failure` (`reason` = `email-taken` or
+    `error`, never the address); `email-verified`; `email-verify-failure` (`reason`);
+    `login-failure`; `login-success`. A sign-in is a form POST answered by a redirect, so there
+    is no page to report from: `LoginAnalytics` marks the session when Spring Security
+    announces the login, and the next page reports it once and clears the mark. Events raised
+    while a page is still loading use `Analytics.trackWhenReady`, which waits for the tracker.
+  - Contribution: `comment-post`, `comment-edit`, `comment-delete`, each with `kind` (`own` or
+    `channel`); a post also carries `public`, `extra_refs` and `link`, an edit `public`. The
+    comment's text is never sent.
+  - Audio: `audio-complete` (a chapter played to its end) and `about-listen` (`locale`,
+    `section`, read from the file's path), beside the existing `audio-play`.
+  - `reader-option` (`option`, `value`, `edition`): one event name for the column controls a
+    person changes: `mode`, `order`, `companion`, `rungs` (signed ladder depth), `comments`,
+    `numerals` and `sync`. Selects count only a person's own pick.
+  - From the edition info page: `edition-open-reader` and `print-link-click` (`abbr`, e.g. KJV),
+    the step from reading about an edition to reading it, or ordering it printed.
+  - Health, so a broken deploy shows in the dashboard before a reader writes in:
+    `edition-empty` (a column loaded an edition and got no books; `order` tells a missing
+    corpus from a reading order the edition has no stamps for), `audio-error` (`kind`, `file`,
+    the browser's error `code`), `strongs-lookup-failed` (once per number per page load) and
+    `search-unavailable` (debounced like `search-run`).
+
 ## [0.11.4] — 2026-10-22
 
 ### Added
@@ -195,7 +245,6 @@ in the reader toolbar and About-page nav.
     counts once; a double-click opens the full window and reports it as well.
   - `strongs-follow`: choosing a passage in the Strong's window, with `strongs`,
     `source` (where the lookup began) and `target`.
-
 ## [0.10.0] — 2026-10-12
 
 ### Added

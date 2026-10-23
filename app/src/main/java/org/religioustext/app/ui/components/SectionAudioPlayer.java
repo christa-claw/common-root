@@ -56,8 +56,22 @@ public class SectionAudioPlayer extends Div {
             if (!audio.paused) audio.pause();
         });
 
+        audio.addEventListener('error', () => {
+            if (window.umami) window.umami.track('audio-error', { kind: 'about',
+                file: new URL($0, location.href).pathname, code: audio.error ? audio.error.code : 0 });
+        });
         audio.play().catch(() => {});
         """;
+
+    private static final java.util.regex.Pattern ABOUT_PATH =
+        java.util.regex.Pattern.compile("^/audio/about/([A-Za-z0-9-]+)/([A-Za-z0-9_-]+)\\.mp3$");
+
+    /** {@code {locale, section}} from {@code /audio/about/<locale>/<section>.mp3}, else null. */
+    static String[] aboutPath(final String aMp3Url) {
+        if (aMp3Url == null) return null;
+        final java.util.regex.Matcher m = ABOUT_PATH.matcher(aMp3Url);
+        return m.matches() ? new String[] { m.group(1), m.group(2) } : null;
+    }
 
     /**
      * @param aMp3Url  public URL of the section's mp3
@@ -84,6 +98,13 @@ public class SectionAudioPlayer extends Div {
         play.getElement().setAttribute("aria-label", label);
         play.getStyle().set("min-width", "0").set("padding", "0")
                        .set("color", anIconColor == null ? "var(--lumo-secondary-text-color)" : anIconColor);
+        // Umami's own click handling reports a listen; the section and locale come from the file's path.
+        final String[] where = aboutPath(aMp3Url);
+        if (where != null) {
+            play.getElement().setAttribute("data-umami-event", "about-listen");
+            play.getElement().setAttribute("data-umami-event-locale", where[0]);
+            play.getElement().setAttribute("data-umami-event-section", where[1]);
+        }
         play.addClickListener(e -> getElement().executeJs(JS, aMp3Url));
         add(play);
     }

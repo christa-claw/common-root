@@ -57,6 +57,9 @@ public class ReligiousTextsApp implements AppShellConfigurator {
                 "<script defer src=\"" + umamiSrc + "\" data-website-id=\""
                     + umamiWebsiteId + "\"></script>",
                 Inline.Wrapping.NONE);
+            // Sends an event that a page reload had to queue (a language switch), once the tracker is up.
+            settings.addInlineWithContents(Inline.Position.APPEND,
+                org.religioustext.app.ui.Analytics.REPLAY_SCRIPT, Inline.Wrapping.NONE);
         }
     }
 

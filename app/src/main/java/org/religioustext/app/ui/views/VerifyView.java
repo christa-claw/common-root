@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Christa Claw
 package org.religioustext.app.ui.views;
 
+import org.religioustext.app.ui.Analytics;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
@@ -38,6 +39,7 @@ public class VerifyView extends VerticalLayout implements BeforeEnterObserver {
         final var tokens = params.get("token");
 
         if (tokens == null || tokens.isEmpty()) {
+            Analytics.trackWhenReady(event.getUI(), "email-verify-failure", "reason", "no-token");
             showError("No verification token supplied.");
             return;
         }
@@ -45,8 +47,10 @@ public class VerifyView extends VerticalLayout implements BeforeEnterObserver {
         final String token = tokens.get(0);
         if (userService.verifyEmail(token)) {
             // Token valid — redirect to login with a success flag.
+            Analytics.trackWhenReady(event.getUI(), "email-verified");
             event.forwardTo("login?verified");
         } else {
+            Analytics.trackWhenReady(event.getUI(), "email-verify-failure", "reason", "invalid-or-used");
             showError("This verification link has already been used or is invalid."
                 + " If you're having trouble signing in, please register again.");
         }
