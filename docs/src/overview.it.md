@@ -6,7 +6,7 @@ _Studia i testi che plasmano il nostro mondo._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.11.5 |
+| Version | 0.11.6 |
 | Generated | 2026-10-23 |
 <!-- /AUTOGEN:meta -->
 

@@ -72,6 +72,24 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.11.6] — 2026-10-23
+
+### Changed
+- **Finnish interface: the first native-speaker review.** A native Finnish reader went through
+  the machine-translated interface and 25 wordings were corrected across 16 strings, in the
+  reading-order descriptions, the chapter-and-verse "problem" pages and the Qur'an section.
+  Mostly naturalness rather than accuracy: "silmiä avaavaa" for "paljastava harjoitus", book
+  names capitalised as titles (Psalmit), and sentences split where the machine had run two
+  clauses together. One suggestion was deliberately not applied: *arvovaltainen* to
+  *autoritaarinen* in the paragraph on how the Qur'an was standardised. The English says "an
+  authoritative written text", which *arvovaltainen* carries; *autoritaarinen* means
+  authoritarian, a different and loaded claim on that page, and it reads as a false friend
+  rather than a judgement. It has been raised with the reviewer.
+- **One quotation style throughout the Finnish interface.** The file mixed `»…»` (32), straight
+  `"…"` (10) and `”…”` (4) — each correct Finnish alone, incoherent on one page. All 42 are now
+  `”…”`, the Kielitoimisto primary form. No key was added or removed, and every placeholder is
+  unchanged.
+
 ## [0.11.5] — 2026-10-23
 
 ### Added
