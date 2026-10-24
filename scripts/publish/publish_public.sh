@@ -150,7 +150,15 @@ case "$MODE" in
     if [ -x /usr/libexec/java_home ] && /usr/libexec/java_home -v 21 >/dev/null 2>&1; then
       export JAVA_HOME; JAVA_HOME="$(/usr/libexec/java_home -v 21)"; fi
     if ! (cd "$TMP" && mvn -q -o -DskipTests compile >"$TMP.build.log" 2>&1); then
-      echo "refusing: the export does not compile — see $TMP.build.log" >&2; exit 3
+      echo "refusing: the export does not compile — see $TMP.build.log" >&2
+      # The check is OFFLINE (mvn -o) and builds every module. After a dependency bump, a module that
+      # was never built here (usually ingestion) has libraries missing from ~/.m2, which fails exactly
+      # like a real compile error. 0.12.0 hit this: "Cannot access central ... in offline mode".
+      if grep -q 'offline mode' "$TMP.build.log" 2>/dev/null; then
+        echo "hint: a dependency is missing from the local Maven cache. Fetch it once, online, then retry:" >&2
+        echo "      mvn -q compile        # from the repo root, so every module resolves" >&2
+      fi
+      exit 3
     fi
     rm -rf "$TMP"/target "$TMP"/*/target
     # mirror the tree: everything except .git is replaced by the export

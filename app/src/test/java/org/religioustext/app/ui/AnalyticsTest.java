@@ -13,7 +13,7 @@ class AnalyticsTest {
     void anEventNamesItsPropertiesInTheScriptAndBindsTheValuesAsParameters() {
         final Analytics.Call c = Analytics.build("xref-open", "edition", "King James Version", "count", 61);
 
-        assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {edition: $1, count: $2})");
+        assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {\"edition\": $1, \"count\": $2})");
         assertThat(c.params()).containsExactly("xref-open", "King James Version", 61);
     }
 
@@ -29,7 +29,7 @@ class AnalyticsTest {
     void aPropertyWithNoValueIsLeftOutAndTheParametersStayContiguous() {
         final Analytics.Call c = Analytics.build("search-run", "hits", 0, "query", null, "length", 5);
 
-        assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {hits: $1, length: $2})");
+        assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {\"hits\": $1, \"length\": $2})");
         assertThat(c.params()).containsExactly("search-run", 0, 5);
     }
 
@@ -39,6 +39,21 @@ class AnalyticsTest {
 
         assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {})");
         assertThat(c.params()).containsExactly("ping");
+    }
+
+    @Test
+    void aHyphenatedPropertyNameIsAllowedBecauseItIsWrittenAsAQuotedKey() {
+        final Analytics.Call c = Analytics.build("ui-language-change", "from-to", "en \u2192 fi");
+
+        assertThat(c.script()).isEqualTo("window.umami && window.umami.track($0, {\"from-to\": $1})");
+        assertThat(c.params()).containsExactly("ui-language-change", "en \u2192 fi");
+    }
+
+    @Test
+    void aPropertyNameThatCouldBreakOutOfTheQuotedKeyIsStillRefused() {
+        assertThatThrownBy(() -> Analytics.build("e", "a\": $0}); evil({\"", "x")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Analytics.build("e", "a b", "x")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Analytics.build("e", "-leading", "x")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -53,7 +68,7 @@ class AnalyticsTest {
         final Analytics.Call c = Analytics.buildWhenReady("login-failure", "reason", "bad-password");
 
         assertThat(c.script())
-            .startsWith("(function send(n) { if (window.umami) { window.umami.track($0, {reason: $1}); }")
+            .startsWith("(function send(n) { if (window.umami) { window.umami.track($0, {\"reason\": $1}); }")
             .contains("n !== 50")
             .contains("setTimeout(function () { send(n + 1); }, 200)")
             .endsWith("})(0);");
@@ -67,7 +82,7 @@ class AnalyticsTest {
         assertThat(c.script())
             .contains("clearTimeout(window.__crDeb.search)")
             .contains("window.__crDeb.search = setTimeout(")
-            .contains("window.umami.track($0, {hits: $1})")
+            .contains("window.umami.track($0, {\"hits\": $1})")
             .endsWith(", 1500);");
         assertThat(c.params()).containsExactly("search-run", 3);
     }
@@ -84,7 +99,7 @@ class AnalyticsTest {
 
         assertThat(c.script())
             .contains("sessionStorage.setItem('cr.pendingEvent'")
-            .contains("name: $2, data: {from: $3, to: $4}");
+            .contains("name: $2, data: {\"from\": $3, \"to\": $4}");
         assertThat(c.params()).containsExactly("ui-language-change", "en", "fi");
     }
 

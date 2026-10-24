@@ -127,15 +127,18 @@ public class LanguageSelect extends Select<Locale> {
             // The page is about to reload, so an event sent now would be lost as it unloads.
             // Queue it instead: Analytics.REPLAY_SCRIPT sends it once the next page's tracker
             // has loaded. `from` is the language the select was showing, i.e. the current one.
-            final String from = e.getOldValue() == null ? null : e.getOldValue().toLanguageTag();
-            final String to = e.getValue().toLanguageTag();
+            final String from = e.getOldValue() == null ? "?" : e.getOldValue().toLanguageTag();
+            // One value, not two properties: Umami breaks each property down on its own, so "from" and "to"
+            // apart say little ("fi" a hundred times: leaving Finnish, or arriving?). Together they read
+            // "en → fi", and the most common switches rank as one row each.
+            final String change = from + " \u2192 " + e.getValue().toLanguageTag();
 
             // A page that knows where this language lives: go straight there,
             // no parsing of the current URL at all.
             final String target =
                 aTargetPath == null ? null : aTargetPath.apply(e.getValue());
             if (target != null) {
-                final Analytics.Call q = Analytics.queueForNextPage(1, "ui-language-change", "from", from, "to", to);
+                final Analytics.Call q = Analytics.queueForNextPage(1, "ui-language-change", "from-to", change);
                 UI.getCurrent().getPage().executeJs(
                     RECORD_SCROLL + q.script() + " location.assign($0);", withFirst(target, q.params()));
                 return;
@@ -149,7 +152,7 @@ public class LanguageSelect extends Select<Locale> {
             // language path variant (/read/:code, admin...) fall back to
             // ?lang=<tag>.
             // toLanguageTag(), not getLanguage(): the latter is "iw" for Hebrew.
-            final Analytics.Call queued = Analytics.queueForNextPage(2, "ui-language-change", "from", from, "to", to);
+            final Analytics.Call queued = Analytics.queueForNextPage(2, "ui-language-change", "from-to", change);
             final Serializable[] rewriteParams = new Serializable[] {
                 e.getValue().toLanguageTag(),
                 String.join(",", LocaleUtil.LOCALES.stream().map(Locale::toLanguageTag).toList())

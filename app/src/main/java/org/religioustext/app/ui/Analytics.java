@@ -13,8 +13,8 @@ import com.vaadin.flow.component.UI;
 /**
  * Sends custom Umami events from server-side UI code.
  *
- * <p>Property NAMES are our own constants and are written into the script text, so
- * they are checked against a strict identifier pattern; every VALUE travels as a bound
+ * <p>Property NAMES are our own constants and are written into the script text (as quoted keys), so
+ * they are checked against a strict pattern; every VALUE travels as a bound
  * {@code executeJs} parameter and is never spliced into script. A property whose value
  * is {@code null} is left out, so a caller can pass an optional value without a branch.
  *
@@ -60,7 +60,12 @@ public final class Analytics {
         + "if(window.umami){window.umami.track(ev.name,ev.data);return;}"
         + "if(tries++!==50){setTimeout(send,200);}})();}catch(e){}})();</script>";
 
+    /** A debounce timer key: written bare into the script as {@code window.__crDeb.<key>}. */
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+
+    /** An event property name: letters, digits, underscore and hyphen ("from-to"). It is written into the
+     *  script as a QUOTED key, so the hyphen is safe; nothing else (no quote, colon, space or $) is allowed. */
+    private static final Pattern PROPERTY_NAME = Pattern.compile("[A-Za-z_][A-Za-z0-9_-]*");
 
     /** A script and the parameters it expects, ready for {@code executeJs}. */
     public record Call(String script, Serializable[] params) { }
@@ -141,14 +146,19 @@ public final class Analytics {
         final StringBuilder obj = new StringBuilder("{");
         for (int i = 0; i + 1 < aKeyValues.length; i += 2) {
             final Serializable key = aKeyValues[i];
-            requireIdentifier(String.valueOf(key));
+            requireProperty(String.valueOf(key));
             if (aKeyValues[i + 1] == null) continue;           // a property with no value is left out
             if (values.size() > 1) obj.append(", ");
-            obj.append(key).append(": $").append(aFirstParam + values.size());
+            obj.append('"').append(key).append("\": $").append(aFirstParam + values.size());
             values.add(aKeyValues[i + 1]);
         }
         obj.append('}');
         return new Parts(obj.toString(), values.toArray(new Serializable[0]));
+    }
+
+    private static void requireProperty(final String aName) {
+        if (aName == null || !PROPERTY_NAME.matcher(aName).matches())
+            throw new IllegalArgumentException("not a usable analytics property name: " + aName);
     }
 
     private static void requireIdentifier(final String aKey) {

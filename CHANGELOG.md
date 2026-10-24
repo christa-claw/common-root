@@ -72,6 +72,22 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-10-24
+
+### Changed
+- **`ui-language-change` now sends one coupled property, `from-to`** (for example `en → fi`),
+  instead of separate `from` and `to`. Umami breaks each property down on its own, so apart they
+  say little (`fi` a hundred times: people leaving Finnish, or arriving?); together the most
+  common switches rank as one row each. To allow the hyphen, event property names are now written
+  into the script as quoted keys; names are still validated strictly and anything that could
+  break out of the quotes is refused. Checked in a real browser on all three delivery paths
+  (immediate, debounced, and queued across the language reload).
+- **The public-mirror check explains the cache problem it can hit.** It compiles every module
+  offline, so after a dependency bump a module never built locally fails with "Cannot access
+  central in offline mode", which looks like a real compile error. 0.12.0 was refused that way; the
+  script now says what to run (`mvn -q compile` once, online). 0.12.0 was published to the mirror
+  afterwards but never deployed: 0.12.1 is the first release of the upgraded stack to go to production.
+
 ## [0.12.0] — 2026-10-24
 
 ### Security
