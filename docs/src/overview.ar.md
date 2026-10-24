@@ -6,8 +6,8 @@ _ادرس النصوص التي تشكّل عالمنا._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.11.7 |
-| Generated | 2026-10-23 |
+| Version | 0.12.0 |
+| Generated | 2026-10-24 |
 <!-- /AUTOGEN:meta -->
 
 ## ما هو

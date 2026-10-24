@@ -72,6 +72,63 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-10-24
+
+### Security
+- **The whole Java stack moves past the point where fixes stopped arriving.** Spring Boot 3.2.5 →
+  3.5.16 (Spring Framework 6.1.6 → 6.2.19, Spring Security 6.2.4 → 6.5.11, Hibernate 6.4 → 6.6,
+  Flyway 9 → 11, Logback 1.4 → 1.5, MySQL Connector/J 8.3 → 9.7) and Vaadin 24.4.4 → 24.9.18.
+  Jackson (2.21.7) and Netty (4.1.137) are pinned one patch above what Boot manages, for advisories
+  published after it was cut; the Tomcat 10.1.61 pin from 0.11.7 stays. Measured against the
+  shipped jar with the OSV database: **184 advisories (17 critical, 64 high) before, 4 after (none
+  critical, one high)**. Fixed along the way: Spring Security's "headers not written" advisory
+  (only fixed from 6.5.9) and Vaadin's `/VAADIN` filter bypass (CVE-2026-2742). The four left are
+  jsoup (used here only to adjust the HTML head of pages Vaadin generates, never to parse hostile
+  XML), commons-lang3 and log4j-api. 180 of the 226 shipped libraries carry coordinates the scan
+  can read, so this is strong evidence, not a proof.
+- **Vaadin is held at 24.9.18 on purpose.** Flow 24.9.22 and later (Vaadin 24.9.19+) check a Vaadin
+  license for Flow itself at runtime: in development mode the app will not start without a
+  validated account or a paid maintenance key, and production builds need a server key. 24.9.18
+  bundles Flow 24.9.21, the newest without it, and already carries both Vaadin fixes. Vaadin's core
+  stays Apache 2.0; the way past 24.9 without a subscription is Vaadin 25, which needs Spring
+  Boot 4. The reasoning sits next to `vaadin.version` in the parent pom so nobody bumps it blind.
+- **An unused dependency is gone.** The eXist-db client (`exist-core`) was imported nowhere and had
+  been pulling about a hundred libraries into the jar: cglib, Jetty 9.4 (end of life), Lucene, LDAP
+  and Apache MINA, which accounted for the six critical MINA deserialization advisories. It also
+  made the Vaadin 24.9 frontend build fail (it supplied ASM 7.1). Removed from the app; the
+  separate `ingestion` module still declares it. The shipped jar is 114 MB, down from about 180.
+
+### Added
+- **A daily, validated MySQL backup.** There was no scheduled backup and the newest was three days
+  old, while user comments are irreplaceable source data. `scripts/automation/mysql_backup.sh`
+  (launchd, 03:40) streams a consistent dump of both databases over SSH, compresses it on the
+  Mac, and keeps it only if it validates: gzip-intact, mysqldump's completion marker, at least 30
+  tables, the schema-history table present. A failed run leaves the old backups untouched and
+  says why in `~/Library/Logs/commonroot/mysql_backup.log`; pruning to the newest 30 happens only
+  after a good new backup exists. Nothing is written on the server.
+
+### Changed
+- No application source changed for the upgrade. It was checked against a copy of production's
+  data on MySQL 8.3 with `ddl-auto=validate` (Flyway 11 validates all 25 migrations, Hibernate 6.6's
+  schema validation passes), the 413 tests pass, and in a real browser against the production jar:
+  registration, verification, sign-in, comments, cross-references, Strong's numbers, search, the
+  language switch and every analytics event.
+- **`app/node_modules` is no longer tracked.** 22,942 files of the frontend toolchain were committed
+  by accident in 2026-05; nothing reads them from git (the Docker build installs the frontend from
+  `package-lock.json`) and every dev run left about 23,000 files showing as changed. They are
+  ignored now, along with the production build's cached `app/src/main/bundles/`.
+- **The About page's "what's next" paragraph now says what is true.** It claimed full-text
+  search across "every text and comment" and listed cross-reference links as still to come.
+  Search currently covers every comment and five Bibles (the King James and four Finnish
+  editions), not the Qur'an, Hadith or LDS texts, and cross-references have been live since
+  0.10.x, so it now reads: *"…cross-references link related Bible passages, and full-text search
+  covers every comment and a growing number of the texts. Commentary integration is next."*
+  Commentary is the one item genuinely still ahead (the corpus holds no commentary texts yet).
+  All 14 interface languages were updated together. Seven of them (ar, de, es, it, ru, sv, zh)
+  still said the Qur'an and Hadith were upcoming and have caught up; the Finnish keeps its
+  native-reviewed first half. The new clauses in all 13 translations are machine drafts awaiting
+  native readers, like the rest of the interface.
+
 ## [0.11.7] — 2026-10-23
 
 ### Security

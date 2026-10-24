@@ -88,3 +88,12 @@ sources/
 
 # Rendered copies of docs/*.md (generated)
 exportToHTML/
+
+# Vaadin installs the frontend toolchain here on every build (npm install from package-lock.json).
+# It was committed by accident in 2026-05 and nothing reads it from git: the Docker build copies
+# only the poms and src/, and CI runs "mvn clean test". Keep it out, or each dev run dirties ~23,000 files.
+app/node_modules/
+
+# Written by the Vaadin production build (a zipped copy of the compiled frontend, ~800 KB).
+# Not tracked: builds work without it, and a committed copy could silently serve a stale frontend.
+app/src/main/bundles/
