@@ -72,6 +72,18 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.2] — 2026-10-25
+
+### Added
+- Edition info pages for the Qur'an translations Q-YA and Q-SAB, in all 14 interface languages.
+- `scripts/channels/drop_channel.py`: takes a whole channel off the site (ledger entries, fetch block,
+  transcripts moved aside rather than deleted) so a removal cannot be undone by the nightly backfill.
+
+### Changed
+- One channel removed from the site: 1,426 ledger entries (755 seedable comments). The comments
+  on prod are cleared by the seeder's orphan sweep on this deploy.
+- Nightly refresh: 23 new arguments, and one new corpus fetch.
+
 ## [0.12.1] — 2026-10-24
 
 ### Changed
