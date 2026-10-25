@@ -72,6 +72,12 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.3] — 2026-10-25
+
+### Fixed
+- The Comments panel no longer lists translator notes (such as 和合本 1919) as a commenter, in its list or
+  its filter. Notes belong to their edition's text and still appear under that column.
+
 ## [0.12.2] — 2026-10-25
 
 ### Added

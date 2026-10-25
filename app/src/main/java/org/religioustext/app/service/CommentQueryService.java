@@ -265,6 +265,9 @@ public class CommentQueryService {
         final List<Comment> cs = em.createQuery(
                 "SELECT DISTINCT c FROM Comment c LEFT JOIN FETCH c.references LEFT JOIN FETCH c.user "
               + "WHERE c.isPublic = true AND c.moderationStatus = :ms "
+              // Translator notes ('notes-%' ledgers) belong to their edition's text, not to
+              // this browser: listed here they showed up as a "commenter" (e.g. 和合本 1919).
+              + "AND (c.seedLedger IS NULL OR c.seedLedger NOT LIKE 'notes-%') "
               + "ORDER BY c.createdAt", Comment.class)
             .setParameter("ms", Comment.ModerationStatus.approved)
             .getResultList();
