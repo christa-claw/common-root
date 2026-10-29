@@ -72,6 +72,18 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.4] — 2026-10-29
+
+### Added
+- **Edition info pages** for Sahih al-Bukhari (BUK) and Sahih Muslim (MUS), in all 14 locales.
+- Nightly argument refreshes (Belle Liu, Elijah Johnson Apologetics, Bob of Speaker's Corner).
+- `scripts/phonon_compare.py`, a listening test of Ollama Phonon against the Azure chapters.
+
+### Changed
+- Finnish: the translator's final wording for the About and reader copy, and the reading-lineage
+  term "puola" is now "askelma" throughout.
+- Weekly living-documentation refresh.
+
 ## [0.12.3] — 2026-10-25
 
 ### Fixed
