@@ -72,6 +72,17 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.5] — 2026-11-01
+
+### Added
+- **Arrow-key navigation** in the active column (the one last clicked): Left/Right step chapters,
+  Up/Down step verses. While audio is running it follows: a chapter step starts the new chapter's
+  player and a verse step seeks to that verse's offset. Ignored while typing, in menus and dialogs,
+  or on the audio controls. Up/Down no longer scroll the column natively.
+- **Edition info pages** for NAS, NAW, QUD, ABD, TIR, IBM and MAL, in all 14 locales.
+- Channels: The Jay Smith Show and HeartCry Missionary Society added to the fetch list.
+- Nightly argument refreshes and corpus fetches (Malbim on Torah and Neviim, Rabbeinu Bahya on Torah).
+
 ## [0.12.4] — 2026-10-29
 
 ### Added

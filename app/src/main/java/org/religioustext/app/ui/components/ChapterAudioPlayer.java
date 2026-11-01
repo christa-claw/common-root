@@ -176,6 +176,11 @@ public class ChapterAudioPlayer extends Div {
                           .map(e => [Number(e[0]), Number(e[1])])
                           .filter(e => !isNaN(e[0]) && !isNaN(e[1]))
                           .sort((a, b) => a[1] - b[1]);
+            // Arrow-key navigation (reader-keys.js) seeks the running chapter to a verse.
+            host._crSeekVerse = n => {
+                const m = marks.find(e => e[0] === n);
+                if (m) audio.currentTime = m[1] / 1000;
+            };
         }).catch(() => {});
 
         // Scoped to THIS column: verse ids repeat across columns.

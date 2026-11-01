@@ -418,6 +418,25 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     protected void onAttach(final com.vaadin.flow.component.AttachEvent anEvent) {
         super.onAttach(anEvent);
         StrongsTip.install(anEvent.getUI(), getElement());
+        ReaderKeys.install(anEvent.getUI(), getElement());
+    }
+
+    /** Arrow-key chapter step in one column (reader-keys.js). Returns "BOOKCODE|chapter" of where the
+     *  column landed so the script can start that chapter's audio, or null when nothing moved. */
+    @com.vaadin.flow.component.ClientCallable
+    public String stepChapterKey(final String aColumnUid, final int aDelta) {
+        if (aDelta != -1 && aDelta != 1) return null;
+        for (final ColState st : states) {
+            if (!String.valueOf(st.uid).equals(aColumnUid)) continue;
+            final int before = st.visibleChapter;
+            final String bookBefore = st.currentBookName();
+            stepChapter(st, aDelta);
+            final String book = st.currentBookName();
+            if (before == st.visibleChapter && java.util.Objects.equals(bookBefore, book)) return null;
+            final String code = st.bookCode(book);
+            return code == null ? null : code + "|" + st.visibleChapter;
+        }
+        return null;
     }
 
     public ReaderView(final TextQueryService aQueryService,

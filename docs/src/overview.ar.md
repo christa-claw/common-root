@@ -6,8 +6,8 @@ _ادرس النصوص التي تشكّل عالمنا._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.12.4 |
-| Generated | 2026-10-29 |
+| Version | 0.12.5 |
+| Generated | 2026-11-01 |
 <!-- /AUTOGEN:meta -->
 
 ## ما هو
@@ -70,7 +70,7 @@ Common Root? هو قارئ حرّ ومفتوح لاستكشاف نصوص الد�
 ## النصوص المتاحة حاليًا
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Max retries exceeded with url: /rest/religioustext (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8984): Failed to establish a new connection: [Errno 61] Connection refused"))); ingestion table not refreshed._
 <!-- /AUTOGEN:translations -->
 
 يجري باستمرار إضافة المزيد من الترجمات والتقاليد — بما في ذلك القرآن ومجموعات
@@ -135,9 +135,9 @@ _No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COM
 | Christian | 5 |
 | Critical | 2 |
 | Neutral | 1 |
-| Not yet classified | 18 |
+| Not yet classified | 20 |
 
-_32 channels configured._
+_34 channels configured._
 <!-- /AUTOGEN:channels -->
 
 ## الدعم

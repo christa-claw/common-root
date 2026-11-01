@@ -6,8 +6,8 @@ _研读塑造我们世界的文本。_
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.12.4 |
-| Generated | 2026-10-29 |
+| Version | 0.12.5 |
+| Generated | 2026-11-01 |
 <!-- /AUTOGEN:meta -->
 
 ## 这是什么
@@ -61,7 +61,7 @@ Common Root? 是一款免费、开放的阅读工具，用于并排探索亚伯�
 ## 当前可用的文本
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Max retries exceeded with url: /rest/religioustext (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8984): Failed to establish a new connection: [Errno 61] Connection refused"))); ingestion table not refreshed._
 <!-- /AUTOGEN:translations -->
 
 更多译本与传统——包括《古兰经》、各圣训集，以及多种语言的更多圣经版本——正在持续添加。
@@ -117,9 +117,9 @@ _No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COM
 | Christian | 5 |
 | Critical | 2 |
 | Neutral | 1 |
-| Not yet classified | 18 |
+| Not yet classified | 20 |
 
-_32 channels configured._
+_34 channels configured._
 <!-- /AUTOGEN:channels -->
 
 ## 支持
