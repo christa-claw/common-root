@@ -1133,11 +1133,6 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("color", "#3f6285").set("text-decoration", "none")
             .set("background", "#f2f6fa");
         info.addClassName("text-card-info");
-        // Umami's tracker already reacts to any element carrying data-umami-event (the audio play
-        // button relies on it), and for a link it sends the event before following it.
-        info.getElement().setAttribute("data-umami-event", "edition-info-open");
-        info.getElement().setAttribute("data-umami-event-edition", aName);
-        info.getElement().setAttribute("data-umami-event-from", "about");
         return info;
     }
 

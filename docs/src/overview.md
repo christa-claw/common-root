@@ -6,8 +6,8 @@ _Study the texts that shape our world._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.12.5 |
-| Generated | 2026-11-01 |
+| Version | 0.12.6 |
+| Generated | 2026-11-02 |
 <!-- /AUTOGEN:meta -->
 
 ## What it is
@@ -79,7 +79,7 @@ another.
 ## Texts currently available
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Max retries exceeded with url: /rest/religioustext (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8984): Failed to establish a new connection: [Errno 61] Connection refused"))); ingestion table not refreshed._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 More translations and traditions — including the Quran, Hadith collections, and

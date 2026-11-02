@@ -1922,7 +1922,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // Only a person's own pick: the column's default (the interface language) is set in
             // code when it is built, and that fires this listener too.
             if (e.isFromClient() && lang != null)
-                trackEvent("column-language-change", "from", e.getOldValue(), "to", lang);
+                trackEvent("column-language-change", "change", e.getOldValue() + "->" + lang);
             sourceCombo.clear();
             sourceCombo.setEnabled(lang != null);
             final List<String[]> rows = lang == null ? List.<String[]>of() : primary.stream()
@@ -1994,7 +1994,6 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // or anything downstream that asks the mode a question NPEs and
             // aborts the whole column setup.
             if (e.getValue() == null) return;
-            if (e.isFromClient()) readerOption(aState, "mode", e.getValue().name());
             aColumn.getDisplayOptions().setMode(e.getValue());
             updateRungButtons(aState);   // rung controls exist only in verse-granular modes
             updateAttribution(aState);
@@ -2013,7 +2012,6 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             // order — the seq value itself changes meaning between orders.
             final String book = aState.currentBookName();
             final int    chap = aState.visibleChapter;
-            if (e.isFromClient() && e.getValue() != null) readerOption(aState, "order", e.getValue().name());
             aColumn.getDisplayOptions().setOrderMode(e.getValue());
             if (aColumn.getSourceId() == null) return;
             loadBookList(aState);
@@ -2164,7 +2162,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         xrefsToggle.addClickListener(e -> {
             aState.showXrefs = !aState.showXrefs;
             trackEvent("xrefs-toggle", "state", aState.showXrefs ? "on" : "off",
-                       "edition", editionLabel(aState));
+                       "edition", editionLabel(aState), "passage", currentPassage(aState));
             styleXrefToggle(aState);
             if (aState.col.getSourceId() != null && aState.visibleSeq >= 0) reloadAtVisible(aState);
         });
@@ -2239,7 +2237,6 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
             final String url = editionInfoUrl(aColumn,
                 org.religioustext.app.i18n.LocaleUtil.currentLocale().getLanguage());
             if (url == null) return;
-            trackEvent("edition-info-open", "edition", editionLabel(aState), "from", "reader");
             UI.getCurrent().getPage().open(url, "_blank");
         });
         aState.infoBtn = infoBtn;
@@ -4188,10 +4185,20 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
         // number says nothing without its book. aBook is the English name, so the
         // value is the same in every edition and language and their counts add up.
         getElement().executeJs(
-            "window.umami && window.umami.track($0, {edition: $1, book: $2, chapter: $3, passage: $4})",
-            "reader-view", edition, aBook, String.valueOf(aChapter), aBook + " " + aChapter);
+            "window.umami && window.umami.track($0, {edition: $1, book: $2, passage: $3})",
+            "reader-view", edition, aBook, aBook + " " + aChapter);
     }
 
+
+    /** Where the column is now as "Book Chapter", or "Book Chapter:Verse" when it was opened at a
+     *  verse and still shows that chapter; null with no book yet. English book name, like reader-view. */
+    private String currentPassage(final ColState aState) {
+        final String book = aState.currentBookName();
+        if (book == null) return null;
+        final boolean atOpenedVerse = aState.openedRefVerse > 0 && book.equals(aState.openedRefBook)
+            && aState.visibleChapter == aState.openedRefChapter;
+        return book + " " + aState.visibleChapter + (atOpenedVerse ? ":" + aState.openedRefVerse : "");
+    }
 
     /** The column's edition as a person would name it (the catalogue's display name),
      *  falling back to the bare token; null when the column has no source yet, so an

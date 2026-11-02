@@ -72,6 +72,18 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.6] — 2026-11-02
+
+### Changed
+- **Umami events tidied.** `column-language-change` is one `change` property (`from->to`);
+  `reader-view` no longer sends the bare `chapter` property; `reader-option` is no longer sent for
+  mode or order; `edition-info-open` is removed (reader and About); `xrefs-toggle` now carries a
+  `passage` (book chapter, plus the verse when the column was opened at one).
+
+### Added
+- **Edition info page** for DEH, in all 14 locales.
+- Nightly argument refreshes and corpus fetch (Malbim on Ketuvim).
+
 ## [0.12.5] — 2026-11-01
 
 ### Added
