@@ -54,6 +54,8 @@ transcripts/README.md
 # ── Explicitly private (listed so the decision is visible, not implied) ────
 !CLAUDE.md
 !CLAUDE_NOTES.md
+!docs/notes/
+!.claude/
 !COMMANDS.md
 !RUNGS.md
 !channels.properties

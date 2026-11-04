@@ -72,6 +72,17 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.7] — 2026-11-04
+
+### Added
+- **Edition info pages** for BOM and DC, in all 14 locales; FB1776's page updated.
+- Nightly argument refreshes (2026-11-02, 2026-11-03) and a refresh of `transcripts/arguments.json`.
+
+### Changed
+- **Claude project config restructured.** `CLAUDE_NOTES.md` is now an index over `docs/notes/`;
+  standing policies moved to path-scoped `.claude/rules/`; a `PreToolUse` guard hook enforces the
+  `hub`-only push, no `git add -A`, and prod-data rules. Development tooling only; no runtime change.
+
 ## [0.12.6] — 2026-11-02
 
 ### Changed
