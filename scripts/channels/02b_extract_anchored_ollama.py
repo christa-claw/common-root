@@ -105,7 +105,6 @@ CHANNEL_PRIORITY = [
     "SO BE IT",                      # @SOBEIT32AD
     "GodLogic Apologetics",          # @GodLogicApologetics
     "Apologetics Roadshow",          # @apologeticsroadshow
-    "Shamounian Explains",           # @ShamounianExplains
     "Alpha & Omega Ministries",      # @AominOrg
     "Apologia Studios",              # @ApologiaStudios
     "Bible Thinker",                 # @MikeWinger

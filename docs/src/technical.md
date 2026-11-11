@@ -4,8 +4,8 @@
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.12.7 |
-| Generated | 2026-11-04 |
+| Version | 0.12.8 |
+| Generated | 2026-11-11 |
 <!-- /AUTOGEN:meta -->
 
 > **Naming note.** The user-facing application is **Common Root?**. Internal
@@ -147,6 +147,120 @@ The link's clipboard copy runs client-side within the button's own click event,
 so it works in browsers that restrict clipboard access outside a user gesture
 (including Safari over plain HTTP).
 
+## Lineage rungs
+
+A Bible column can show a translation's antecedents beneath each verse, one
+rung per click. Lineage is corpus data, not application data: three attributes
+on each `rt:text` element in BaseX.
+
+| Attribute | Meaning |
+|---|---|
+| `@basedOn` | Comma-separated document ids of the edition's antecedents, main line first |
+| `@original` | `true` on the original-language witnesses (WLC, TR) |
+| `@year` | Edition year, shown on the rung chip |
+
+`scripts/bibles/07_patch_lineage.py` stamps them from a curated map keyed by
+abbreviation. It is idempotent and convergent: a chain removed from the map is
+cleared from the corpus on the next run, and `--list` audits what is stamped.
+Only well-attested revision lines are recorded; an edition whose real source is
+not in the corpus roots there.
+
+- **One signed depth.** `rungDepth` runs from −descendants to +ancestors; ▾
+  increments and ▴ decrements. Ancestors follow `@basedOn` and end in an
+  original-language floor (WLC, TR), appended as a *witness* and rendered with
+  `≈` when it is not a recorded parent. Descendants follow recorded `@basedOn`
+  only, so that side is always attested.
+- **Content-aware stepping.** A rung with no text for the current book still
+  counts toward the depth but is stepped over, so ▾ never opens a silent line.
+- **Mode gating.** Rungs render only in the verse-numbered modes (Verses,
+  Titles). The depth persists across a mode change.
+- **Link.** `cK.companion=N` carries the depth (clamped 0–9; legacy `1`/`true`
+  parse as 1). See `docs/link-format.md`.
+
+Because the reader takes lineage from the source catalogue it reads at boot,
+**lineage ships in the BaseX image, not the app image**: recreate BaseX first,
+then restart the app.
+
+## Cross-references
+
+Verse-to-verse references from OpenBible.info (CC BY 4.0, about 340,000 rows,
+mostly the public-domain *Treasury of Scripture Knowledge*, ranked by votes).
+
+- **Storage.** MySQL table `cross_reference` (Flyway V20), seeded at boot by
+  `XrefSeeder` from a zip in the jar, gated by the file's sha256 and upserted on
+  the natural key, so a restart with unchanged data does no work.
+- **Reader.** A ✝ toggle per column (`ColState.showXrefs`), off by default; the
+  account preference `show_xref_markers` (V21) sets the default for new columns.
+  A badge after the verse opens `CrossRefDialog`: top 10 by votes, Show all,
+  Open all, one line of each target verse in the column's edition, and the CC BY
+  credit with a statement of changes. Not offered on Quran, Hadith or
+  Latter-day Saint columns.
+- **Link.** `cK.xrefs=1`. A column opened from a reference inherits the origin
+  column's marker toggles.
+- **API.** `GET /api/v1/crossrefs/{book}/{chapter}`, attribution in every
+  payload.
+- **Limit.** Anchors are in KJV numbering and cover the Protestant canon only.
+
+## Strong's numbers (word layer)
+
+Word tags are a separate layer, never markup in the stored verses: verse text
+stays a plain string, so search indexing, the API's attested text and print
+typesetting are untouched, and an edition without a layer renders as before.
+
+- **Data.** BaseX database `words`, beside the corpus database and shipped in
+  the same image, with an attribute index on `w/@strongs`. Hebrew is built from
+  the Open Scriptures Hebrew Bible (`scripts/strongs/build_words_oshb.py`:
+  23,213 verses, 305,507 words, 299,556 numbered); Greek from STEPBible's TAGNT,
+  selecting the Textus Receptus reading (`build_words_tagnt.py`: 7,957 verses,
+  139,970 of 141,041 words numbered). Import is `scripts/strongs/import_words.py`
+  (curl, per the project rule).
+- **Alignment.** Each verse carries an `align` value. The reader builds a line
+  from words only when the words rebuild the corpus line exactly; otherwise it
+  shows the plain line with no numbers. Homographs the corpus cannot tell apart
+  are left unnumbered.
+- **Reach.** Every edition resolves, by reference, to the same verse on its
+  original-language rung, so no edition's own text is tagged. The ⓝ toggle
+  (`ColState.showStrongs`) opens every ancestor rung and shows the numbers;
+  switching it off hides the numbers and leaves the rungs. Link: `cK.strongs=1`.
+- **Lexicon.** `i18n/lexicon/hebrew.properties` (8,674 entries, Open Scriptures
+  Hebrew Lexicon) and `greek.properties` (5,523 entries, STEPBible TBESG):
+  `.lemma` and `.xlit` are language-neutral, `.gloss` and `.def` are translated
+  per locale with per-key English fallback. Served at
+  `GET /lexicon/{hebrew|greek}/{id}?lang=` (public, cached a day, credit in
+  the payload).
+- **Lexicon translations.** Machine-translated and labelled as such, one
+  language a night, most frequent words first;
+  `scripts/strongs/check_lexicon_translations.py` reports coverage and is the
+  gate. Existing keys are never overwritten, so hand corrections stick.
+  Procedure: `docs/lexicon-translation-job.md`.
+- **Occurrences and numbering.** `StrongsDialog` lists a word's passages from
+  `WordLayerService`. The translation line under each passage goes through
+  `VerseNumbering` (OSHB's `VerseMap.xml` plus per-edition scheme files); an
+  edition with an unknown scheme, or a chapter whose verse count differs, gets
+  no line rather than a wrong one.
+
+## Accounts and the personal layer
+
+An account exists to give back what an anonymous reader cannot have. Everything
+below is MySQL data owned by the account; none of it is derived, so the
+production backup is its only insurance.
+
+| Feature | Storage | Visibility |
+|---|---|---|
+| Comments (private-first, publishable) | `comments` + references | private until published; publishing needs the contributor role |
+| Personal notes | `personal_notes` (V6) | private |
+| Highlights (five colours, per verse, edition-independent) | `highlights` (V24) | private |
+| Saved searches | `saved_searches` (V22) | private |
+| Preferences (default Bible, mode, order, look, markers, language, resume) | `user_preferences` (V9 onward) | private |
+| Muted commenters | V17 | private |
+| API keys (`crk_…`, up to five, hashed at rest) | see Web API | private |
+
+Self-service on the profile page: change password, change email (confirmed by a
+link mailed to the new address, V23), a JSON export of everything the account
+owns (never key hashes), and password-confirmed permanent deletion, public
+comments included. System and admin accounts cannot self-delete. Private rows
+are never indexed into Meilisearch and never enter the moderation queue.
+
 ## Interface localization
 
 The reader interface ships in **14 languages**: English, Arabic, Spanish, Finnish,
@@ -286,7 +400,101 @@ The following reflects the current state of the BaseX database at the time this
 document was generated:
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+| Document | Language | Books | Verses |
+|---|---|---|---|
+| `bible-ar-onav` | ar | 66 | 31103 |
+| `bible-ar-vandyck` | ar | 66 | 31102 |
+| `bible-ar-vd-ebible` | ar | 66 | 31104 |
+| `bible-asv-1901` | en | 66 | 31102 |
+| `bible-bes` | es | 66 | 31103 |
+| `bible-bsb` | en | 66 | 31086 |
+| `bible-byz1904-1904` | grc | 27 | 7958 |
+| `bible-de-1545` | de | 66 | 31170 |
+| `bible-de-elberfelder` | de | 66 | 31102 |
+| `bible-de-textbibel-1906` | de | 66 | 31157 |
+| `bible-diaglott-il-1864` | en | 27 | 7955 |
+| `bible-dra-1899` | en | 72 | 35598 |
+| `bible-en-asv-byzantine` | en | 66 | 31099 |
+| `bible-en-bbe-1949` | en | 66 | 31102 |
+| `bible-en-brenton-lxx-1851` | en | 37 | 22970 |
+| `bible-en-brenton-lxx-updated` | en | 36 | 22603 |
+| `bible-en-darby-1890` | en | 66 | 31099 |
+| `bible-en-leeser-1853` | en | 39 | 23143 |
+| `bible-en-msb` | en | 66 | 31098 |
+| `bible-en-tyndale-1534` | en | 27 | 7954 |
+| `bible-en-webster-1833` | en | 66 | 31102 |
+| `bible-en-ylt-1898` | en | 66 | 31102 |
+| `bible-fbv` | en | 66 | 31104 |
+| `bible-fi-1548` | fi | 71 | 13616 |
+| `bible-fi-1642` | fi | 78 | 35545 |
+| `bible-fi-1776` | fi | 66 | 31102 |
+| `bible-fi-1933` | fi | 78 | 35438 |
+| `bible-fr-darby` | fr | 66 | 31167 |
+| `bible-fr-ostervald` | fr | 66 | 31107 |
+| `bible-fr-segond-1910` | fr | 66 | 31170 |
+| `bible-gnv-1599` | en | 66 | 31090 |
+| `bible-grc-majority-nt` | grc | 27 | 7953 |
+| `bible-grc-solidrock-nt` | grc | 27 | 7961 |
+| `bible-grc-tischendorf-1872` | grc | 27 | 7939 |
+| `bible-grc-tr` | grc | 27 | 7957 |
+| `bible-he-delitzsch` | he | 66 | 31102 |
+| `bible-he-salkinson-1885` | he | 27 | 7957 |
+| `bible-he-wlc` | he | 39 | 23213 |
+| `bible-hlt-olcim` | hlt | 66 | 31104 |
+| `bible-irvhin-2019` | hi | 66 | 31104 |
+| `bible-it-diodati-1885` | it | 66 | 31095 |
+| `bible-it-diodati` | it | 66 | 31102 |
+| `bible-it-riveduta-1927` | it | 66 | 31102 |
+| `bible-ja-freedom-2026` | ja | 66 | 31098 |
+| `bible-jps1917-1917` | en | 39 | 23145 |
+| `bible-kjv-1611` | en | 80 | 36820 |
+| `bible-la-clementina-1598` | la | 66 | 31434 |
+| `bible-la-vulgate` | la | 73 | 35809 |
+| `bible-lsv` | en | 66 | 31104 |
+| `bible-lut1912-1912` | de | 66 | 31171 |
+| `bible-lxx-1851` | grc | 45 | 26219 |
+| `bible-nasb-2020` | en | 66 | 31073 |
+| `bible-nbla` | es | 66 | 31090 |
+| `bible-niv-2011` | en | 66 | 30752 |
+| `bible-pddpt` | es | 66 | 31078 |
+| `bible-ru-synodal` | ru | 77 | 37027 |
+| `bible-rv-1885` | en | 80 | 36873 |
+| `bible-rvr09-1909` | es | 66 | 31102 |
+| `bible-sv-1917` | sv | 78 | 35350 |
+| `bible-tr-ytc-2023` | tr | 66 | 31059 |
+| `bible-vbl` | es | 66 | 31102 |
+| `bible-web` | en | 80 | 37839 |
+| `bible-zh-cuv1919` | zh | 66 | 31102 |
+| `bible-zh-cuv` | zh | 66 | 31101 |
+| `hadith-abudawud-ar` | ar | 43 | 5274 |
+| `hadith-abudawud-en` | en | 43 | 5274 |
+| `hadith-bukhari-ar` | ar | 98 | 7589 |
+| `hadith-bukhari-en` | en | 98 | 7589 |
+| `hadith-dehlawi-ar` | ar | 1 | 40 |
+| `hadith-dehlawi-en` | en | 1 | 40 |
+| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
+| `hadith-ibnmajah-en` | en | 38 | 4343 |
+| `hadith-malik-ar` | ar | 62 | 1858 |
+| `hadith-malik-en` | en | 62 | 1858 |
+| `hadith-muslim-ar` | ar | 57 | 7563 |
+| `hadith-muslim-en` | en | 57 | 7563 |
+| `hadith-nasai-ar` | ar | 52 | 5765 |
+| `hadith-nasai-en` | en | 52 | 5765 |
+| `hadith-nawawi-ar` | ar | 1 | 42 |
+| `hadith-nawawi-en` | en | 1 | 42 |
+| `hadith-qudsi-ar` | ar | 1 | 40 |
+| `hadith-qudsi-en` | en | 1 | 40 |
+| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
+| `hadith-tirmidhi-en` | en | 49 | 3998 |
+| `lds-book-of-mormon` | en | 15 | 6604 |
+| `lds-doctrine-and-covenants` | en | 1 | 3654 |
+| `lds-pearl-of-great-price` | en | 5 | 635 |
+| `quran-ar-uthmani` | ar | 114 | 6236 |
+| `quran-en-pickthall` | en | 114 | 6236 |
+| `quran-en-yusufali` | en | 114 | 6236 |
+| `quran-ru-sablukov` | ru | 114 | 6236 |
+
+_91 translations, 1,897,949 verses total._
 <!-- /AUTOGEN:translations -->
 
 ## Transcript & argument pipeline
@@ -324,9 +532,9 @@ or format:
 | Christian | 5 |
 | Critical | 2 |
 | Neutral | 1 |
-| Not yet classified | 20 |
+| Not yet classified | 21 |
 
-_34 channels configured._
+_35 channels configured._
 <!-- /AUTOGEN:channels -->
 
 ## Chapter audio

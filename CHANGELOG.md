@@ -72,6 +72,28 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.8] — 2026-11-11
+
+### Added
+- **Documentation for the study features.** The overview (English and its nine translations) gains
+  sections on lineage rungs, cross-references and Strong's numbers — what each shows, how to switch
+  it on, where the data comes from and its limits (witness rungs marked `≈`, unnumbered words
+  rather than guessed ones, machine-translated lexicon text with English fallback) — and the short
+  notes paragraph becomes "What a free account adds": the private study layer, contributing, and
+  export/deletion. The technical document gains the matching sections on the lineage attributes,
+  the `cross_reference` table, the `words` layer and lexicon, and the account-owned tables.
+- **Edition info pages** for LXX, PGP and TYN, in all 14 locales; Finnish and Swedish corrections to
+  the BOM and DC pages.
+- Corpus fetches: Or HaChaim, Kli Yakar and Haamek Davar on the Torah.
+- Nightly argument refreshes (2026-11-04 to 2026-11-10); new channels in `channels.properties`.
+
+### Fixed
+- Spanish and Turkish interface string corrections.
+
+### Changed
+- Nightly content job and anchored extractor adjustments (`scripts/automation/nightly_content.sh`,
+  `scripts/channels/02b_extract_anchored_ollama.py`).
+
 ## [0.12.7] — 2026-11-04
 
 ### Added
