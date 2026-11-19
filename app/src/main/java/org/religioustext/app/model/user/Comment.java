@@ -62,6 +62,10 @@ public class Comment {
     @Column(name = "locally_edited", nullable = false)
     private boolean locallyEdited = false;
 
+    /** Whether the author spoke this comment (V25). The recording stays on their device. */
+    @Column(nullable = false)
+    private boolean dictated = false;
+
     // Which seed ledger this row belongs to (V16): 'arguments' for
     // transcripts/arguments.json rows, 'notes-<edition>' for a translator-note
     // ledger (e.g. 'notes-lut1912'), NULL for user-authored comments. Each
@@ -139,9 +143,11 @@ public class Comment {
     public List<CommentReference> getReferences()     { return references; }
     public String               getAclId()            { return aclId; }
     public boolean              isLocallyEdited()     { return locallyEdited; }
+    public boolean              isDictated()          { return dictated; }
     public String               getSeedLedger()       { return seedLedger; }
 
     public void setLocallyEdited(final boolean aLocallyEdited) { this.locallyEdited = aLocallyEdited; }
+    public void setDictated(final boolean theDictatedFlag) { this.dictated = theDictatedFlag; }
     public void setUser(final User aUser)      { this.user = aUser; }
     public void setContent(final String aContent) { this.content = aContent; }
     public void setAclId(final String anAclId)   { this.aclId = anAclId; }

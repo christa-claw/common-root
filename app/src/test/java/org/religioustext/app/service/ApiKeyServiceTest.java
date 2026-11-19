@@ -131,4 +131,48 @@ class ApiKeyServiceTest {
         assertThat(resolved.get().owner()).isSameAs(owner);
         assertThat(live.getLastUsedAt()).isNotNull();   // K11: successful use is recorded
     }
+
+    // G1 — a guest key has no account, a label, and only its hash at rest
+    @Test
+    void guestKeyIsIssuedWithoutAnAccount() {
+        when(apiKeys.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        final ApiKeyService.CreatedKey created = service.createGuest();
+
+        assertThat(ApiKeyService.looksLikeKey(created.key())).isTrue();
+        assertThat(created.record().isGuest()).isTrue();
+        assertThat(created.record().getUserId()).isNull();
+        assertThat(created.record().getLabel()).isEqualTo(ApiKeyService.GUEST_LABEL);
+        assertThat(created.record().getKeyHash()).isEqualTo(ApiKeyService.sha256Hex(created.key()));
+    }
+
+    // G2 — a guest key resolves with no owner, and no account is looked up
+    @Test
+    void guestKeyResolvesWithNoOwner() {
+        final ApiKey guest = new ApiKey();
+        when(apiKeys.findByKeyHash(anyString())).thenReturn(Optional.of(guest));
+        when(apiKeys.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        final Optional<ApiKeyService.ResolvedKey> resolved = service.resolve("crk_" + "a".repeat(40));
+
+        assertThat(resolved).isPresent();
+        assertThat(resolved.get().owner()).isNull();
+        assertThat(resolved.get().isGuest()).isTrue();
+        assertThat(guest.getLastUsedAt()).isNotNull();
+        org.mockito.Mockito.verifyNoInteractions(users);
+    }
+
+    // G3 — a revoked guest key fails like any other, and no account can revoke one
+    @Test
+    void guestKeyRevocationRules() {
+        final ApiKey guest = new ApiKey();
+        guest.setRevokedAt(LocalDateTime.now());
+        when(apiKeys.findByKeyHash(anyString())).thenReturn(Optional.of(guest));
+        assertThat(service.resolve("crk_" + "a".repeat(40))).isEmpty();
+
+        final ApiKey live = new ApiKey();
+        when(apiKeys.findById("key-guest")).thenReturn(Optional.of(live));
+        assertThat(service.revoke("usr-1", "key-guest")).isFalse();
+        assertThat(live.isRevoked()).isFalse();
+    }
 }

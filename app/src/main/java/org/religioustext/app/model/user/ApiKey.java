@@ -25,6 +25,10 @@ import java.time.LocalDateTime;
  * it carry exactly the account's privileges. It raises capacity (a quota),
  * never entitlement — the download licence gate knows nothing about keys.
  *
+ * <p>A <em>guest</em> key (V26) has no account: {@link #userId} is {@code null}.
+ * The phone app takes one on first launch so a reader can start without signing
+ * up. It reads only — see {@link #isGuest()}.
+ *
  * @author Christa Claw
  * @version 0.8.0-SNAPSHOT
  * @since 0.8.0
@@ -37,8 +41,8 @@ public class ApiKey {
     @Column(length = 40)
     private String id;
 
-    /** Owning account ({@code usr-} id). A soft-typed reference like the accessor ids. */
-    @Column(name = "user_id", nullable = false, length = 40)
+    /** Owning account ({@code usr-} id), or {@code null} for a guest key. A soft-typed reference like the accessor ids. */
+    @Column(name = "user_id", length = 40)
     private String userId;
 
     /** First 8 characters after {@code crk_}, plaintext, for display only. */
@@ -78,6 +82,14 @@ public class ApiKey {
     public LocalDateTime getRevokedAt()  { return revokedAt; }
 
     public boolean isRevoked() { return revokedAt != null; }
+
+    /**
+     * Whether this is a guest key: one with no account behind it, which may read
+     * but never write — there is no one to write as.
+     *
+     * @return {@code true} when no account owns the key
+     */
+    public boolean isGuest() { return userId == null; }
 
     public void setUserId(final String aUserId)              { this.userId = aUserId; }
     public void setKeyId(final String aKeyId)                { this.keyId = aKeyId; }

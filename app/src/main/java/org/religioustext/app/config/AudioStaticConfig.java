@@ -100,6 +100,10 @@ public class AudioStaticConfig {
                 final String pathInfo = aReq.getPathInfo();
                 aReq.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE,
                                   pathInfo == null ? "" : pathInfo);
+                // Public narration, linked from the API's chapter answers: any
+                // origin may read it, so a web client of the API can fetch the
+                // verse offsets JSON (an <audio> element never needed this).
+                aRes.setHeader("Access-Control-Allow-Origin", "*");
                 try {
                     aHandler.handleRequest(aReq, aRes);
                 } catch (final IOException e) {

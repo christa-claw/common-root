@@ -57,6 +57,37 @@ public class PersonalNoteService {
         return byVerse;
     }
 
+    /**
+     * One note with its marker.
+     *
+     * @param content  the text
+     * @param dictated whether the author spoke it
+     */
+    public record Note(String content, boolean dictated) { }
+
+    /**
+     * {@link #forChapter} with each note's dictated marker — what the API serves.
+     *
+     * @param anEmail   the author's email ({@code null}/blank → empty map)
+     * @param aBookCode the USFM book code (or surah number)
+     * @param aChapter  the chapter number
+     * @return the author's notes keyed by verse number string
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Note> detailedForChapter(final String anEmail, final String aBookCode,
+                                                final int aChapter) {
+        if (anEmail == null || anEmail.isBlank() || aBookCode == null || aBookCode.isBlank())
+            return Map.of();
+        final Map<String, Note> byVerse = new HashMap<>();
+        for (final PersonalNote n : em.createQuery(
+                "SELECT n FROM PersonalNote n WHERE n.user.email = :email "
+              + "AND n.bookCode = :code AND n.chapter = :ch", PersonalNote.class)
+            .setParameter("email", anEmail).setParameter("code", aBookCode)
+            .setParameter("ch", aChapter).getResultList())
+            byVerse.put(String.valueOf(n.getVerse()), new Note(n.getContent(), n.isDictated()));
+        return byVerse;
+    }
+
     /** This user's note on a single verse, for the editor dialog (empty if none). */
     @Transactional(readOnly = true)
     public Optional<String> find(final String anEmail, final String aBookCode,
@@ -78,6 +109,27 @@ public class PersonalNoteService {
     @Transactional
     public void save(final String anEmail, final String aSourceId, final String aBookCode,
                      final int aChapter, final int aVerse, final String aContent) {
+        save(anEmail, aSourceId, aBookCode, aChapter, aVerse, aContent, null);
+    }
+
+    /**
+     * {@link #save(String, String, String, int, int, String)} that also sets the dictated
+     * marker.
+     *
+     * @param anEmail    the author's email
+     * @param aSourceId  optional provenance
+     * @param aBookCode  the USFM book code (or surah number)
+     * @param aChapter   the chapter number
+     * @param aVerse     the verse number
+     * @param aContent   the text; blank deletes the note
+     * @param aDictated  whether the text was spoken; {@code null} keeps an existing note's
+     *                   marker (and leaves a new note unmarked) — the site's editor, which
+     *                   knows nothing of dictation, must not clear it
+     */
+    @Transactional
+    public void save(final String anEmail, final String aSourceId, final String aBookCode,
+                     final int aChapter, final int aVerse, final String aContent,
+                     final Boolean aDictated) {
         if (aContent == null || aContent.isBlank()) { delete(anEmail, aBookCode, aChapter, aVerse); return; }
 
         final User user = em.createQuery("SELECT u FROM User u WHERE u.email = :email", User.class)
@@ -101,10 +153,12 @@ public class PersonalNoteService {
             n.setChapter(aChapter);
             n.setVerse(aVerse);
             n.setContent(aContent.strip());
+            if (aDictated != null) n.setDictated(aDictated);
             em.persist(n);
         } else {
             final PersonalNote n = existing.get(0);     // managed — flush persists the change
             n.setContent(aContent.strip());
+            if (aDictated != null) n.setDictated(aDictated);
             if (aSourceId != null && !aSourceId.isBlank()) n.setSourceId(aSourceId);
         }
     }

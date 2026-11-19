@@ -95,7 +95,7 @@ sweep() {
   # Reviewed and accepted (2026-09-08): dev seed accounts, the site's own
   # public addresses, documentation placeholders, and the superuser seed in
   # V11 (the maintainer's public commit address).
-  local BENIGN='noreply@|example\.(com|org)|a@b\.cd|@author|@test\.local|info@common-root\.org|system@religioustext\.platform|your@|you@|crk_0{20,}|crk_REPLACE|christa\.claw@proton\.me'
+  local BENIGN='noreply@|example\.(com|org|test)|a@b\.cd|@author|@test\.local|info@common-root\.org|system@religioustext\.platform|your@|you@|crk_0{20,}|crk_REPLACE|christa\.claw@proton\.me'
   local hits
   hits=$(grep -rEIn --exclude-dir=node_modules --exclude=publish_public.sh --exclude=CHANGELOG.md "$pat" "$out" \
          | grep -vE "$BENIGN" || true)

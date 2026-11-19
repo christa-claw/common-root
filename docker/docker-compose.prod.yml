@@ -117,6 +117,17 @@ services:
       - API_ATTEST_KID=${API_ATTEST_KID:-k1}
       - API_ATTEST_RETIRED=${API_ATTEST_RETIRED:-}
       - API_CORPUS_HASH=${API_CORPUS_HASH:-unlabelled}
+      # Dictation (spoken notes through the API). Both stay OFF while these are
+      # empty: the routes answer 503 and nothing leaves the box. Set in
+      # /opt/common-root/.env to switch on — ANTHROPIC_API_KEY for tidying a
+      # transcript; DICTATION_SPEECH_URL (+ _KEY, _MODEL) for server-side
+      # transcription, any service speaking POST {url}/audio/transcriptions.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DICTATION_TIDY_MODEL=${DICTATION_TIDY_MODEL:-claude-haiku-5-5}
+      - DICTATION_SPEECH_URL=${DICTATION_SPEECH_URL:-}
+      - DICTATION_SPEECH_KEY=${DICTATION_SPEECH_KEY:-}
+      - DICTATION_SPEECH_MODEL=${DICTATION_SPEECH_MODEL:-whisper-1}
+      - DICTATION_CALLS_PER_DAY=${DICTATION_CALLS_PER_DAY:-50}
       # Umami tracking snippet — injected by ReligiousTextsApp.configurePage ONLY
       # when both are non-empty. Leave UMAMI_WEBSITE_ID unset until the site has
       # been created in the Umami dashboard and the id copied into .env.
@@ -142,20 +153,43 @@ services:
     networks:
       - religioustext-net
 
+  # Umami's own PostgreSQL. Umami 3 dropped MySQL, so analytics moved off the shared
+  # MySQL container (docs/notes/umami-postgres-migration.md). No published port.
+  # Measured at ~45 MB idle with the 2026-11 data; the cap is headroom, not a target.
+  umami-db:
+    image: postgres:17-alpine
+    container_name: religioustext-umami-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=umami
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=${UMAMI_PG_PASSWORD}
+      - TZ=UTC                   # Umami stores UTC; the data move depends on it too
+      - PGTZ=UTC
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - religioustext-net
+
   umami:
-    image: ghcr.io/umami-software/umami:mysql-latest
+    # Pinned, not :latest — a major version here has meant a database change before.
+    image: ghcr.io/umami-software/umami:3.5.0
     container_name: religioustext-umami
     restart: unless-stopped
     # No published port — public access is via Caddy (analytics.common-root.org).
-    # Shares the existing MySQL container via its own `umami` database (created
-    # manually on prod — mysql-init only runs on first-ever boot of the volume).
     # ~150-250 MB Node process; watch `docker stats` on the 4 GB box after deploy.
     environment:
-      - DATABASE_URL=mysql://umami:${UMAMI_DB_PASSWORD}@mysql:3306/umami
-      - APP_SECRET=${UMAMI_APP_SECRET}
+      - DATABASE_URL=postgresql://umami:${UMAMI_PG_PASSWORD}@umami-db:5432/umami
+      - APP_SECRET=${UMAMI_APP_SECRET}     # required since 3.5.0; keep the value, it signs logins
       - DISABLE_TELEMETRY=1
     depends_on:
-      mysql:
+      umami-db:
         condition: service_healthy
     networks:
       - religioustext-net
@@ -171,6 +205,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./audio:/srv/audio:ro    # chapter mp3s + verse-offset JSON, rsynced from the Mac mini
+      - ./downloads:/srv/downloads:ro   # Android APKs for /app, copied per release
       - caddy-data:/data         # cert + ACME account storage — MUST persist
       - caddy-config:/config
     depends_on:
@@ -184,6 +219,7 @@ networks:
 
 volumes:
   mysql-data:
+  umami-db-data:
   caddy-data:
   caddy-config:
   meili-data:

@@ -30,6 +30,20 @@ common-root.org {
         file_server
     }
 
+    # The Android app's APKs, offered on /app (AppDownloadView). Copied here by
+    # hand per release (COMMANDS.md, "Android app"), never through git or the
+    # image. A file name carries its version, so a URL's content never changes;
+    # android-release.properties in the app says which file is current.
+    #
+    # Needs the directory bind-mounted into the caddy container in
+    # docker-compose.prod.yml:  - ./downloads:/srv/downloads:ro
+    handle_path /downloads/* {
+        root * /srv/downloads
+        header /android/*.apk Content-Type "application/vnd.android.package-archive"
+        header Cache-Control "public, max-age=31536000, immutable"
+        file_server
+    }
+
     reverse_proxy religioustext-app:8090
 }
 

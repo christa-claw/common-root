@@ -33,7 +33,15 @@ the served page `GET /api/docs` (source: `app/src/main/resources/api-docs.html`)
   `GET /texts/{token}/books` (table of contents: code, name, native name,
   chapter numbers actually present — surahs for a Qur'an, books for a hadith
   collection), `GET /texts/{token}/{ref}` (text). `/books` is new, §3 did not
-  have it.
+  have it. `/books?lang=fi` adds `localName` per book from the reader's
+  book-name bundles (English when the language has none) — for an app
+  labelling books in its UI language.
+- **Audio (2026-11-18, for the phone's Listen):** edition records carry
+  `audio: true|false` (any narrated chapter). A chapter or verse-span response
+  carries `audio: {mp3, offsets}` when that chapter is narrated — site paths
+  under `/audio/`, outside `/api`, served without a key and with range
+  requests; `offsets` is the JSON of the millisecond each verse starts at.
+  Both from the same audio index the web player uses, both or neither.
 - **Passages carry their edition each.** `/passages` has no header object:
   `{ passages: [ { text, direction, ref, book, chapter, verses, found }… ],
   attestation }`. A reference may be prefixed `kjv:1JN.5.7`; `src` is the
@@ -61,11 +69,66 @@ the served page `GET /api/docs` (source: `app/src/main/resources/api-docs.html`)
   anonymous `/download/{key}` answers 410 with a pointer; the `/download` index
   stays as a plain-text pointer. About page: card buttons gone, download
   sentence rewritten in 13 bundles.
+- **Built 2026-11-13 (0.12.9), for a separate client (the phone app):**
+  - `GET /comments` (§3.6), with `kinds` replacing the drafted `set`:
+    `channel` (public, approved — channel arguments and members' published
+    comments), `translator` (one edition's notes; `src` required; public-domain
+    editions only, like text), `personal` (the key owner's own comments incl.
+    drafts, `state` `private`/`published`, plus their private notes in a
+    `notes` array; `Cache-Control: no-store, private`). Default: `channel`,
+    plus `translator` when `src` is given. Each comment carries `kind`; one
+    comment, one appearance; cap 20 refs and 200 comments (`truncated`).
+    The `comments=` sidecar on the passage routes (§3.4, §3.5) is NOT built —
+    a client makes the second call.
+  - `GET /channels` — the voices with public comments (`knownVoices`).
+  - `GET /crossrefs/{book}/{chapter}/{verse}` — §3.8 for one verse, `refs` array.
+  - §3.9 Strong's: `GET /texts/{token}/{ref}/words`, `GET /strongs/{id}`,
+    `GET /strongs/{id}/occurrences?src=`. Word routes are gated like text and
+    404 `no_word_layer` without a layer; CC BY attribution in every payload
+    (strongs-design.md "Attribution"). The public `/lexicon/**` tooltip routes
+    stay as they are for the reader's own script.
+  - **Write routes — the first in the API**, for the key owner's own rows only
+    (`ApiAuthoringController`): `POST /comments` (`refs[]`, `body`, optional
+    `public`, `src`; 201), `PUT /comments/{id}` (`body` and/or `public`; an
+    absent field is unchanged), `DELETE /comments/{id}` (204),
+    `PUT /notes/{ref}` and `DELETE /notes/{ref}` (one verse; delete is
+    idempotent). Ownership is by public id AND the key's account: someone
+    else's id is 404 `no_such_comment`, never 403. Publishing needs the
+    contributor role (403 `publish_not_permitted`, nothing saved); text is
+    capped at 10,000 characters and a comment at 50 verses. Counted against the
+    request counter; `Cache-Control: no-store, private`. The ACL-gated shared
+    editing of other accounts' comments is NOT exposed.
+  - **Dictation** (`ApiDictationController`, `service.dictation`): spoken
+    notes become text in two steps, and the phone does the first when it can.
+    `POST /dictation/tidy` (`text`, optional `lang`) cleans a device-made
+    transcript; `POST /dictation/transcribe` (multipart `audio` ≤ 10 MB,
+    optional `lang`, `tidy=false`) is the fallback that also transcribes.
+    Nothing is stored; the client saves the accepted text through the write
+    routes. Tidying is the Claude API (`ClaudeTranscriptTidier`: transcript as
+    data inside tags, instructions in the system prompt; a refusal or empty
+    answer returns the transcript unchanged with `tidied:false`). Transcription
+    is any `POST {base}/audio/transcriptions` service
+    (`OpenAiCompatibleSpeechTranscriber`) — the prod box is 4 GB and cannot run
+    a speech model itself. Both are OFF until configured
+    (`ANTHROPIC_API_KEY`; `DICTATION_SPEECH_URL`/`_KEY`/`_MODEL`) and answer
+    503 meanwhile. Because each call costs money, `DictationAllowance` caps
+    calls per ACCOUNT per UTC day (`DICTATION_CALLS_PER_DAY`, default 50; in
+    memory, so a restart resets it) on top of the request counter.
+    Default tidy model: Claude Haiku 5.5 (`DICTATION_TIDY_MODEL`).
+    **Dictated marker (V25):** `comments.dictated` / `personal_notes.dictated`,
+    set by `"dictated": true` on the write routes and returned only on the
+    author's own rows (`kinds=personal`), never on the public view of a
+    comment. The recording stays on the device — decided 2026-11-13: no audio
+    is stored server-side, and voice scrambling was rejected as too weak to
+    change that. `PUT /notes/{ref}` replaces the marker with the text; the
+    site's own editor (which passes none) leaves it alone.
+    **Open:** which speech provider; the privacy copy on the site must say
+    that dictated text goes to a model provider before this is switched on.
 - **Not yet built:** plain-text display
-  modes (501 today), comments
-  and the About copy flip. Licensed editions are still served by the read
-  routes; per the 2026-09-06 decision (the API is not a reading surface) they
-  will 403 like downloads when phase 2 lands.
+  modes (501 today), the `comments=` sidecar
+  and the About copy flip. Licensed editions 403 on the read routes, per the
+  2026-09-06 decision (the API is not a reading surface), except to the
+  first-party phone app — internal, see `docs/notes/phone-app.md`.
 
 ## 1. The surface at a glance
 
@@ -81,6 +144,15 @@ Everything lives under `/api/v1`. ⚖ Versioned from the first public call.
 | `GET /api/v1/passages` | key | requests | Scattered verses/ranges across books, one edition |
 | `GET /api/v1/comments` | key | requests | Comments by reference, no scripture — the embed payoff |
 | `GET /api/v1/crossrefs/{book}/{chapter}` | key | requests | Verse-to-verse cross-references for a chapter (§3.8) |
+| `GET /api/v1/crossrefs/{book}/{chapter}/{verse}` | key | requests | The same for one verse (§0) |
+| `GET /api/v1/channels` | key | requests | Voices that have public comments (§0) |
+| `GET /api/v1/texts/{src}/{ref}/words` | key | requests | A passage word by word with Strong's numbers (§0) |
+| `GET /api/v1/strongs/{id}` | key | requests | A Strong's lexicon entry (§0) |
+| `GET /api/v1/strongs/{id}/occurrences` | key | requests | Where an edition uses a number (§0) |
+| `POST /api/v1/comments`, `PUT`/`DELETE /api/v1/comments/{id}` | key | requests | Write, change, delete one's own comment (§0) |
+| `PUT`/`DELETE /api/v1/notes/{ref}` | key | requests | Write or remove one's private note on a verse (§0) |
+| `POST /api/v1/dictation/tidy` | key | requests + daily dictation cap | Clean up a transcript the device made (§0) |
+| `POST /api/v1/dictation/transcribe` | key | requests + daily dictation cap | Transcribe (and tidy) an uploaded recording — the fallback (§0) |
 | `POST /api/v1/verify` | open? (§10) | per-IP | Check content claimed to be from here (§3.7) |
 
 Nine routes. Anything not needed by the first consumer (§10.7) is left out on
@@ -132,6 +204,33 @@ Mechanics, following the "cheap now, painful later" list:
 Spring-side: one `OncePerRequestFilter` on `/api/**` resolving the key to the
 account before the controller runs, so controllers see a normal authenticated
 principal and the ladder applies as it does everywhere else.
+
+### 2.1 Guest keys (2026-11-18, V26)
+
+The phone app has to read before anyone signs up, so the "needs an account" rule
+above has one exception: **`POST /api/v1/guest-keys`**, which needs no key and
+answers `201 {"key": "crk_…", "keyId": "…", "readOnly": true}`.
+
+- **A guest key has no account** (`api_keys.user_id` is NULL). Same format,
+  hashing and revocation as any key; label `guest`.
+- **It reads only.** The filter refuses it everything except `GET`/`HEAD` and
+  `POST /api/v1/verify` with `403 sign_in_required`. Two reads are refused as
+  well: `/texts/{src}/download` (one fresh guest key per download would get
+  around the byte allowance) and `/dictation` (it costs per minute).
+- **One per install, not one per app.** A key baked into the APK could be
+  lifted and spent for everyone, would share one burst limit among all readers,
+  and could not be revoked without breaking every install. Per install, each
+  reader has their own quota and a bad key is revoked alone.
+- **Minting is limited in the app:** 5 an hour per address and 300 an hour in
+  total (`api.guest.per-address-per-hour`, `api.guest.per-hour`), in memory.
+  The address is Caddy's last `X-Forwarded-For` entry, trusted only when the
+  connection comes from a private or loopback address.
+- **The app heals itself:** if the server answers `invalid_key` to a guest key
+  (revoked, or a database reset), the app drops it and asks for a new one. A
+  reader who pastes their own key uses that instead; disconnecting it goes back
+  to the guest key.
+- **Not yet done:** pruning guest keys that have not been used in months, and
+  signing in with email and password instead of pasting a key.
 
 ## 3. Endpoints
 
@@ -309,6 +408,16 @@ Response shape (JSON only, per the §10 recommendation):
   ],
   "truncated": false
 }
+```
+
+**`view=counts`** (2026-11-18) answers how many public comments each verse has,
+with no bodies, so a chapter with more than the 200-comment cap can still
+mark every verse (John 3 has hundreds). Channel comments, plus translator notes
+when `src` names an edition; never personal. A comment citing several verses
+counts on each, so the counts do not add up to a number of comments.
+
+```json
+{ "refs": ["JHN.3"], "counts": { "JHN.3.1": 13, "JHN.3.2": 5 } }
 ```
 
 ### 3.8 `GET /api/v1/crossrefs/{book}/{chapter}`

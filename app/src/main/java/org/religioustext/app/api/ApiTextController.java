@@ -8,6 +8,7 @@ import org.religioustext.app.service.ApiKeyService.ResolvedKey;
 import org.religioustext.app.service.ApiQuotaService;
 import org.religioustext.app.service.AttestationService;
 import org.religioustext.app.service.AttestationService.Attestation;
+import org.religioustext.app.service.AudioIndexService;
 import org.religioustext.app.ui.views.ReaderLink;
 import org.religioustext.app.ui.views.reader.SourceRow;
 import org.religioustext.app.web.CorpusDownloadController;
@@ -66,13 +67,27 @@ public class ApiTextController {
     private final ApiCorpusService   corpus;
     private final AttestationService attest;
     private final ApiQuotaService    quota;
+    private final AppReadPolicy reads;
+    private final AudioIndexService  audio;
 
+    /**
+     * @param anApiCorpusService   the corpus reads
+     * @param anAttestationService mints the attestation on every passage
+     * @param anApiQuotaService    meters downloads
+     * @param anAudioIndexService  which chapters have narrated audio; the same
+     *                             index the web reader's player asks, so the API
+     *                             offers exactly the files that exist
+     */
     public ApiTextController(final ApiCorpusService anApiCorpusService,
                              final AttestationService anAttestationService,
-                             final ApiQuotaService anApiQuotaService) {
+                             final ApiQuotaService anApiQuotaService,
+                             final AudioIndexService anAudioIndexService,
+                             final AppReadPolicy anAppReadPolicy) {
         this.corpus = anApiCorpusService;
         this.attest = anAttestationService;
         this.quota  = anApiQuotaService;
+        this.audio  = anAudioIndexService;
+        this.reads  = anAppReadPolicy;
     }
 
     // ── /texts/{src}/download ────────────────────────────────────────────
@@ -154,7 +169,7 @@ public class ApiTextController {
     public ResponseEntity<Object> texts() {
         final List<Map<String, Object>> out = new ArrayList<>();
         for (final String[] raw : corpus.catalog().rows()) {
-            out.add(describe(SourceRow.of(raw)));
+            out.add(withAudio(SourceRow.of(raw)));
         }
         final Map<String, Object> body = new LinkedHashMap<>();
         body.put("count", out.size());
@@ -176,7 +191,7 @@ public class ApiTextController {
         if (row == null) return unknownSource(aSrc);
         return ResponseEntity.ok()
             .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
-            .body(describe(row));
+            .body(withAudio(row));
     }
 
     /**
@@ -185,19 +200,29 @@ public class ApiTextController {
      * numbers actually present, so a consumer can form references that exist
      * instead of guessing. A literal segment, so it wins over {@code {ref}}.
      *
-     * @param aSrc the source token or document id
+     * <p>With {@code lang} (a BCP 47 tag, {@code fi}, {@code zh-Hant}) each
+     * book also carries {@code localName}, its name in that language from the
+     * reader's own book-name bundles, so an app can label books in its UI
+     * language whatever the edition's. A language without a bundle falls back
+     * to English, never to the server's own locale.
+     *
+     * @param aSrc  the source token or document id
+     * @param aLang optional UI language for {@code localName}
      * @return the books in canonical order
      */
     @GetMapping(value = "/texts/{src}/books", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> books(@PathVariable("src") final String aSrc) {
+    public ResponseEntity<Object> books(@PathVariable("src") final String aSrc,
+                                        @RequestParam(value = "lang", required = false) final String aLang) {
         final SourceRow row = corpus.resolve(aSrc);
         if (row == null) return unknownSource(aSrc);
+        final java.util.ResourceBundle local = bookNames(aLang);
         final List<Map<String, Object>> books = new ArrayList<>();
         for (final ApiCorpusService.Book b : corpus.books(row.id())) {
             final Map<String, Object> m = new LinkedHashMap<>();
             m.put("code", b.code());
             m.put("name", b.name());
             if (b.nativeName() != null) m.put("nativeName", b.nativeName());
+            if (local != null && local.containsKey(b.code())) m.put("localName", local.getString(b.code()));
             m.put("chapters", b.chapters());
             books.add(m);
         }
@@ -221,16 +246,21 @@ public class ApiTextController {
      * @param aRef    a link-format reference within one chapter
      * @param aFormat {@code json} (default), {@code xml}, or {@code text} (501 for now)
      * @param anAccept the Accept header, honoured when {@code format} is absent
+     * @param aRequest names the phone app, which reads licensed editions too ({@link AppReadPolicy})
      * @return the passage in the requested format
      */
     @GetMapping("/texts/{src}/{ref}")
     public ResponseEntity<Object> chapter(@PathVariable("src") final String aSrc,
                                           @PathVariable("ref") final String aRef,
                                           @RequestParam(value = "format", required = false) final String aFormat,
-                                          @RequestHeader(value = "Accept", required = false) final String anAccept) {
+                                          @RequestHeader(value = "Accept", required = false) final String anAccept,
+                                          final HttpServletRequest aRequest) {
         final SourceRow row = corpus.resolve(aSrc);
         if (row == null) return unknownSource(aSrc);
-        if (!redistributable(row)) return notRedistributable(row);
+        final AppReadPolicy.Access access = reads.access(row, aRequest);
+        if (access == AppReadPolicy.Access.REFUSED || access == AppReadPolicy.Access.SPENT) {
+            return reads.refusal(row, access);
+        }
 
         final String format = negotiate(aFormat, anAccept);
         if ("text".equals(format)) return notYet("Plain text arrives with the reader's display modes (spec §3.4).");
@@ -255,7 +285,7 @@ public class ApiTextController {
                 span.format() + " is not in " + row.abbreviation() + ".", "refs");
             final HttpHeaders headers = new HttpHeaders();
             headers.setContentType(new MediaType(MediaType.APPLICATION_XML, StandardCharsets.UTF_8));
-            headers.setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic());
+            headers.setCacheControl(AppReadPolicy.cacheFor(row, 1, TimeUnit.HOURS));
             headers.set(ATTEST_HEADER, tag.headerValue());
             // Self-validating: the attestation rides inside the document as a
             // processing instruction, so a saved file still carries its proof.
@@ -266,10 +296,12 @@ public class ApiTextController {
         body.put("text", token(row));                       // the edition's permanent address; details at /texts/{src}
         body.put("direction", direction(row));              // JSON always states direction — plain text cannot
         body.putAll(passage(span, verses));
+        final Map<String, Object> narration = narration(row, span);
+        if (narration != null) body.put("audio", narration);
         body.put("attestation", attestationJson(tag));
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_JSON)
-            .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
+            .cacheControl(AppReadPolicy.cacheFor(row, 1, TimeUnit.HOURS))
             .header(ATTEST_HEADER, tag.headerValue())
             .body(body);
     }
@@ -292,12 +324,14 @@ public class ApiTextController {
      * @param aSrc    default edition(s), comma-separated; optional when every ref is prefixed
      * @param aRefs   comma-separated {@code [edition:]ref}, at most {@value #MAX_REFS}
      * @param aFormat must be absent or {@code json}
+     * @param aRequest names the phone app, which reads licensed editions too ({@link AppReadPolicy})
      * @return the passages
      */
     @GetMapping(value = "/passages", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> passages(@RequestParam(value = "src", required = false) final String aSrc,
                                            @RequestParam("refs") final String aRefs,
-                                           @RequestParam(value = "format", required = false) final String aFormat) {
+                                           @RequestParam(value = "format", required = false) final String aFormat,
+                                           final HttpServletRequest aRequest) {
         if (aFormat != null && !"json".equalsIgnoreCase(aFormat)) {
             return badRequest("bad_format", "Scattered passages are JSON only; fetch chapters "
                 + "individually for XML.", "formats");
@@ -310,7 +344,10 @@ public class ApiTextController {
             for (final String s : aSrc.split(",")) {
                 final SourceRow row = corpus.resolve(s.trim());
                 if (row == null) return unknownSource(s.trim());
-                if (!redistributable(row)) return notRedistributable(row);
+                final AppReadPolicy.Access access = reads.access(row, aRequest);
+                if (access == AppReadPolicy.Access.REFUSED || access == AppReadPolicy.Access.SPENT) {
+                    return reads.refusal(row, access);
+                }
                 defaults.add(row);
             }
         }
@@ -324,7 +361,10 @@ public class ApiTextController {
             if (colon > 0) {
                 final SourceRow row = corpus.resolve(token.substring(0, colon).trim());
                 if (row == null) return unknownSource(token.substring(0, colon).trim());
-                if (!redistributable(row)) return notRedistributable(row);
+                final AppReadPolicy.Access access = reads.access(row, aRequest);
+                if (access == AppReadPolicy.Access.REFUSED || access == AppReadPolicy.Access.SPENT) {
+                    return reads.refusal(row, access);
+                }
                 final Span span = Span.of(token.substring(colon + 1).trim());
                 if (span == null || span.crossesChapters()) return badRef(token);
                 rows.add(row);
@@ -365,8 +405,12 @@ public class ApiTextController {
         // in this order, each with its edition) — the bundle verifies as one object.
         final Attestation tag = bundle.isEmpty() ? null : attest.mintBundle(bundle);
         if (tag != null) body.put("attestation", attestationJson(tag));
+        // a licensed edition among them makes the whole bundle the app's alone
+        final boolean open = rows.stream().allMatch(ApiTextController::redistributable)
+            && defaults.stream().allMatch(ApiTextController::redistributable);
+        final CacheControl fiveMinutes = CacheControl.maxAge(5, TimeUnit.MINUTES);
         final ResponseEntity.BodyBuilder ok = ResponseEntity.ok()
-            .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES).cachePublic());
+            .cacheControl(open ? fiveMinutes.cachePublic() : fiveMinutes.cachePrivate());
         if (tag != null) ok.header(ATTEST_HEADER, tag.headerValue());
         return ok.body(body);
     }
@@ -408,6 +452,60 @@ public class ApiTextController {
         m.put("year", aRow.year());
         m.put("license", aRow.license());
         m.put("downloadable", CorpusDownloadController.isPublicDomain(aRow.license()));
+        return m;
+    }
+
+    /**
+     * The reader's book-name bundle for a UI language, or null when none was
+     * asked for. No fallback to the JVM's default locale: a server running in
+     * Finnish must not answer Finnish to a caller who asked for Klingon.
+     *
+     * @param aLang a BCP 47 tag, or null
+     * @return the bundle, or null
+     */
+    private static java.util.ResourceBundle bookNames(final String aLang) {
+        if (aLang == null || aLang.isBlank()) return null;
+        try {
+            return java.util.ResourceBundle.getBundle("i18n/booknames", Locale.forLanguageTag(aLang),
+                java.util.ResourceBundle.Control.getNoFallbackControl(
+                    java.util.ResourceBundle.Control.FORMAT_PROPERTIES));
+        } catch (final java.util.MissingResourceException e) {
+            return null;
+        }
+    }
+
+    /**
+     * The edition record plus {@code audio}: whether any of its chapters has
+     * narrated audio, so a reader can offer listening before opening one.
+     *
+     * @param aRow the catalogue row
+     * @return the record
+     */
+    private Map<String, Object> withAudio(final SourceRow aRow) {
+        final Map<String, Object> m = describe(aRow);
+        m.put("audio", audio.hasAudio(aRow.id()));
+        return m;
+    }
+
+    /**
+     * Where to listen to the chapter a passage is in: the mp3 and the JSON of
+     * the millisecond each verse starts at, both as site paths under
+     * {@code /audio/} (served without a key, with range requests). The whole
+     * chapter is narrated as one file, so a verse span gets the same pair and
+     * the player starts at the span's first verse. Both files or neither: a
+     * player without the offsets cannot follow along, so none is offered.
+     *
+     * @param aRow  the edition
+     * @param aSpan the passage
+     * @return {@code {mp3, offsets}}, or null when the chapter has no audio
+     */
+    private Map<String, Object> narration(final SourceRow aRow, final Span aSpan) {
+        final java.util.Optional<String> mp3 = audio.mp3Url(aRow.id(), aSpan.bookCode, aSpan.chapter);
+        final java.util.Optional<String> offsets = audio.offsetsUrl(aRow.id(), aSpan.bookCode, aSpan.chapter);
+        if (mp3.isEmpty() || offsets.isEmpty()) return null;
+        final Map<String, Object> m = new LinkedHashMap<>();
+        m.put("mp3", mp3.get());
+        m.put("offsets", offsets.get());
         return m;
     }
 
@@ -490,6 +588,7 @@ public class ApiTextController {
     static boolean redistributable(final SourceRow aRow) {
         return CorpusDownloadController.isPublicDomain(aRow.license());
     }
+
 
     private static ResponseEntity<Object> notRedistributable(final SourceRow aRow) {
         return ResponseEntity.status(403).contentType(MediaType.APPLICATION_JSON)

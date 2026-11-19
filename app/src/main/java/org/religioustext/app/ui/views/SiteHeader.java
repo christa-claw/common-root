@@ -6,6 +6,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import org.religioustext.app.i18n.LocaleUtil;
 import org.religioustext.app.ui.components.LanguageSelect;
 
 import java.util.Locale;
@@ -13,8 +14,8 @@ import java.util.function.Function;
 
 /**
  * The site header every content page carries: wordmark, version pill and
- * environment chip, language selector, and whatever trailing links the page
- * wants.
+ * environment chip, language selector, the link to the Android app
+ * ({@link AppDownloadView}), and whatever trailing links the page wants.
  *
  * <p><b>Why this exists.</b> Four views had grown their own nav bar —
  * {@link ReaderView}, {@link AboutView}, {@link LandingPageView} and
@@ -62,6 +63,7 @@ public class SiteHeader extends Div {
                       , final Component... theTrailing) {
         getStyle()
             .set("display", "flex").set("align-items", "center").set("gap", "12px")
+            .set("flex-wrap", "wrap").set("row-gap", "6px")
             .set("padding", "12px 32px")
             .set("background", "var(--lumo-base-color)")
             .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
@@ -86,6 +88,7 @@ public class SiteHeader extends Div {
         final LanguageSelect langSelect = new LanguageSelect(aLanguageTarget);
         langSelect.getStyle().set("margin-right", "4px");
         add(langSelect);
+        add(AppLink.nav(getTranslation("app.nav", LocaleUtil.currentLocale())));
 
         for (final Component c : theTrailing) {
             if (c != null) add(c);

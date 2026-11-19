@@ -131,6 +131,139 @@ public class CommentAuthorService {
         em.remove(comment);
     }
 
+    // ---- The owner's comments by PUBLIC id (the API's write routes) ----------
+
+    /**
+     * One of the caller's own comments as the API reports it after a write.
+     *
+     * @param publicId  the stable {@code cmt_…} id
+     * @param content   the text
+     * @param published whether it is publicly visible (public and approved)
+     * @param dictated  whether the author spoke it
+     * @param refs      every verse it cites, in position order
+     */
+    public record Authored(String publicId, String content, boolean published, boolean dictated,
+                           List<CommentQueryService.VerseComment.Ref> refs) { }
+
+    /**
+     * Which of these comments the caller dictated — the marker is the author's own business,
+     * so only their own comments are ever looked at.
+     *
+     * @param anEmail      the author's email ({@code null}/blank → empty set)
+     * @param thePublicIds the comments' public ids
+     * @return the public ids, among those given, of the caller's dictated comments
+     */
+    @Transactional(readOnly = true)
+    public java.util.Set<String> dictatedAmong(final String anEmail,
+                                               final java.util.Collection<String> thePublicIds) {
+        if (anEmail == null || anEmail.isBlank() || thePublicIds == null || thePublicIds.isEmpty())
+            return java.util.Set.of();
+        return new java.util.HashSet<>(em.createQuery(
+                "SELECT c.publicId FROM Comment c WHERE c.user.email = :email "
+              + "AND c.dictated = true AND c.publicId IN :ids", String.class)
+            .setParameter("email", anEmail).setParameter("ids", thePublicIds).getResultList());
+    }
+
+    /**
+     * Create the caller's comment on one or more verses, in one transaction.
+     *
+     * @param anEmail     the author's email
+     * @param aSourceId   optional provenance (the edition open when it was written)
+     * @param theRefs     the verses it cites; at least one
+     * @param aContent    the text (blank is rejected)
+     * @param aMakePublic whether to publish it
+     * @param aDictated   whether the text was spoken
+     * @return the comment as stored
+     * @throws IllegalArgumentException if {@code aContent} is blank or {@code theRefs} is empty
+     * @throws IllegalStateException    if the account is unknown, or publishing was asked for
+     *                                  without the contributor role
+     */
+    @Transactional
+    public Authored createOwn(final String anEmail, final String aSourceId,
+                              final List<CommentQueryService.VerseComment.Ref> theRefs,
+                              final String aContent, final boolean aMakePublic,
+                              final boolean aDictated) {
+        if (theRefs == null || theRefs.isEmpty()) throw new IllegalArgumentException("No reference");
+        final var first = theRefs.get(0);
+        final String id = create(anEmail, aSourceId, first.bookCode(), first.chapter(), first.verse(),
+                                 aContent, aMakePublic);
+        final Comment c = em.find(Comment.class, id);
+        c.setDictated(aDictated);
+        final java.util.Set<String> present = new java.util.HashSet<>();
+        present.add(first.bookCode() + ":" + first.chapter() + ":" + first.verse());
+        int position = 0;
+        for (final var ref : theRefs.subList(1, theRefs.size())) {
+            if (!present.add(ref.bookCode() + ":" + ref.chapter() + ":" + ref.verse())) continue;
+            em.persist(CommentReference.internal(c, ++position, aSourceId,
+                                                 ref.bookCode(), ref.chapter(), ref.verse()));
+        }
+        em.flush();
+        em.refresh(c);          // reload the references just persisted beside it
+        return authored(c);
+    }
+
+    /**
+     * Update the caller's OWN comment, found by its public id. A {@code null} argument leaves
+     * that aspect as it is.
+     *
+     * @param anEmail     the author's email
+     * @param aPublicId   the comment's {@code cmt_…} id
+     * @param aContent    the new text, or {@code null} to keep it (blank is rejected)
+     * @param aMakePublic publish ({@code true}), retract ({@code false}) or keep ({@code null})
+     * @param aDictated   set or clear the dictated marker, or keep it ({@code null})
+     * @return the comment as stored, or empty when there is none of the caller's with this id
+     * @throws IllegalArgumentException if {@code aContent} is blank
+     * @throws IllegalStateException    if publishing was asked for without the contributor role
+     */
+    @Transactional
+    public Optional<Authored> updateOwn(final String anEmail, final String aPublicId,
+                                        final String aContent, final Boolean aMakePublic,
+                                        final Boolean aDictated) {
+        final Comment c = ownedByPublicId(anEmail, aPublicId);
+        if (c == null) return Optional.empty();
+        if (aDictated != null) c.setDictated(aDictated);
+        update(anEmail, c.getId(), aContent == null ? c.getContent() : aContent,
+               aMakePublic == null ? c.isPublic() : aMakePublic);
+        return Optional.of(authored(c));
+    }
+
+    /**
+     * Delete the caller's OWN comment, found by its public id.
+     *
+     * @param anEmail   the author's email
+     * @param aPublicId the comment's {@code cmt_…} id
+     * @return {@code false} when there is none of the caller's with this id
+     */
+    @Transactional
+    public boolean deleteOwn(final String anEmail, final String aPublicId) {
+        final Comment c = ownedByPublicId(anEmail, aPublicId);
+        if (c == null) return false;
+        delete(anEmail, c.getId());
+        return true;
+    }
+
+    private Comment ownedByPublicId(final String anEmail, final String aPublicId) {
+        if (anEmail == null || anEmail.isBlank() || aPublicId == null || aPublicId.isBlank()) return null;
+        return em.createQuery(
+                "SELECT c FROM Comment c WHERE c.publicId = :p AND c.user.email = :email", Comment.class)
+            .setParameter("p", aPublicId).setParameter("email", anEmail)
+            .setMaxResults(1).getResultList().stream().findFirst().orElse(null);
+    }
+
+    private static Authored authored(final Comment aComment) {
+        final List<CommentQueryService.VerseComment.Ref> refs = new java.util.ArrayList<>();
+        for (final CommentReference r : aComment.getReferences()) {
+            if (r.getRefType() == CommentReference.RefType.internal
+                    && r.getBookCode() != null && r.getChapter() != null && r.getVerse() != null) {
+                refs.add(new CommentQueryService.VerseComment.Ref(
+                    r.getBookCode().chars().allMatch(Character::isDigit),
+                    r.getBookCode(), r.getChapter(), r.getVerse()));
+            }
+        }
+        return new Authored(aComment.getPublicId(), aComment.getContent(),
+                            aComment.isVisiblePublicly(), aComment.isDictated(), refs);
+    }
+
     // ---- ACL-gated shared editing (docs/access-control.md §2) ----------------
 
     /**

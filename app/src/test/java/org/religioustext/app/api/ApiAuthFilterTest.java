@@ -154,4 +154,60 @@ class ApiAuthFilterTest {
         request.addHeader("Authorization", "bearer   " + VALID + "  ");
         assertThat(ApiAuthFilter.bearerToken(request)).isEqualTo(VALID);
     }
+
+    private ResolvedKey guest() {
+        final ApiKey key = mock(ApiKey.class);
+        when(key.getId()).thenReturn("key-guest");
+        when(key.isGuest()).thenReturn(true);
+        return new ResolvedKey(key, null);
+    }
+
+    private MockHttpServletResponse asGuest(final String aMethod, final String aPath,
+                                            final FilterChain aChain) throws Exception {
+        final ResolvedKey resolved = guest();
+        when(keys.resolve(VALID)).thenReturn(Optional.of(resolved));
+        when(quota.countRequest("key-guest")).thenReturn(new Decision(true, 20000, 19999, 1_760_000_000L, 0));
+        final MockHttpServletRequest request = new MockHttpServletRequest(aMethod, aPath);
+        request.setRequestURI(aPath);
+        request.addHeader("Authorization", "Bearer " + VALID);
+        final MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(request, response, aChain);
+        return response;
+    }
+
+    // G4 — the guest-key endpoint is reachable without a key
+    @Test
+    void guestKeyEndpointNeedsNoKey() {
+        assertThat(filter.shouldNotFilter(request("/api/v1/guest-keys"))).isTrue();
+    }
+
+    // G5 — a guest key reads
+    @Test
+    void guestKeyMayRead() throws Exception {
+        for (final String path : new String[] {"/api/v1/texts", "/api/v1/texts/kjv/JHN.3.16", "/api/v1/comments"}) {
+            final FilterChain chain = mock(FilterChain.class);
+            asGuest("GET", path, chain);
+            verify(chain).doFilter(any(), any());
+        }
+        final FilterChain chain = mock(FilterChain.class);
+        asGuest("POST", "/api/v1/verify", chain);
+        verify(chain).doFilter(any(), any());
+    }
+
+    // G6 — a guest key never writes, dictates or downloads a whole text
+    @Test
+    void guestKeyIsRefusedEverythingElse() throws Exception {
+        final String[][] refused = {
+            {"POST", "/api/v1/comments"}, {"PUT", "/api/v1/notes/JHN.3.16"},
+            {"DELETE", "/api/v1/comments/cmt_1"}, {"POST", "/api/v1/dictation"},
+            {"GET", "/api/v1/texts/kjv/download"},
+        };
+        for (final String[] call : refused) {
+            final FilterChain chain = mock(FilterChain.class);
+            final MockHttpServletResponse response = asGuest(call[0], call[1], chain);
+            assertThat(response.getStatus()).as(call[0] + " " + call[1]).isEqualTo(403);
+            assertThat(response.getContentAsString()).contains("sign_in_required");
+            verify(chain, never()).doFilter(any(), any());
+        }
+    }
 }

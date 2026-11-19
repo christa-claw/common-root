@@ -18,6 +18,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -104,6 +105,31 @@ public class ApiKeyService {
         return new CreatedKey(plaintext, saved);
     }
 
+    /** The label every guest key carries, so the rows read plainly in the table. */
+    public static final String GUEST_LABEL = "guest";
+
+    /**
+     * Issue a guest key: a read-only credential with no account behind it, for
+     * the phone app's first launch (V26, docs/api-spec.md §2.1). The returned
+     * plaintext is the only copy; the caller hands it to the app and keeps none.
+     *
+     * <p>How often one address may ask is the caller's business
+     * ({@code ApiGuestKeyController}); this method only mints.
+     *
+     * @return the plaintext credential and its stored row
+     */
+    @Transactional
+    public CreatedKey createGuest() {
+        final String plaintext = generate();
+        final ApiKey row = new ApiKey();
+        row.setKeyId(plaintext.substring(PREFIX.length(), PREFIX.length() + KEY_ID_LENGTH));
+        row.setKeyHash(sha256Hex(plaintext));
+        row.setLabel(GUEST_LABEL);
+        final ApiKey saved = apiKeys.save(row);
+        log.info("Issued guest API key {}", saved.getKeyId());
+        return new CreatedKey(plaintext, saved);
+    }
+
     /**
      * Revoke one of an account's keys. Idempotent; the row stays for audit and
      * the account listing, but the key never authenticates again.
@@ -116,7 +142,8 @@ public class ApiKeyService {
     @Transactional
     public boolean revoke(final String aUserId, final String aKeyRowId) {
         final Optional<ApiKey> row = apiKeys.findById(aKeyRowId);
-        if (row.isEmpty() || !row.get().getUserId().equals(aUserId)) return false;
+        // a guest key has no owner, so no account can revoke it here
+        if (row.isEmpty() || !Objects.equals(row.get().getUserId(), aUserId)) return false;
         if (row.get().isRevoked()) return false;
         row.get().setRevokedAt(LocalDateTime.now());
         apiKeys.save(row.get());
@@ -141,7 +168,7 @@ public class ApiKeyService {
      * distinctions are logged, not returned).
      *
      * @param aPresentedKey the raw credential from the Authorization header
-     * @return the key row and its active owner, or empty
+     * @return the key row and its active owner (none for a guest key), or empty
      */
     @Transactional
     public Optional<ResolvedKey> resolve(final String aPresentedKey) {
@@ -151,6 +178,11 @@ public class ApiKeyService {
         if (row.get().isRevoked()) {
             log.info("Rejected revoked API key {}", row.get().getKeyId());
             return Optional.empty();
+        }
+        if (row.get().isGuest()) {
+            row.get().setLastUsedAt(LocalDateTime.now());
+            apiKeys.save(row.get());
+            return Optional.of(new ResolvedKey(row.get(), null));
         }
         final Optional<User> owner = users.findById(row.get().getUserId());
         if (owner.isEmpty() || !owner.get().isActive()) {
@@ -162,8 +194,17 @@ public class ApiKeyService {
         return Optional.of(new ResolvedKey(row.get(), owner.get()));
     }
 
-    /** A successfully authenticated key and its owning account. */
-    public record ResolvedKey(ApiKey key, User owner) { }
+    /**
+     * A successfully authenticated key and its owning account.
+     *
+     * @param key   the key row
+     * @param owner the active account that owns it, or {@code null} for a guest key
+     */
+    public record ResolvedKey(ApiKey key, User owner) {
+
+        /** @return {@code true} when the key is a guest key, which may only read */
+        public boolean isGuest() { return key.isGuest(); }
+    }
 
     /**
      * Whether a string has the shape of a credential — the cheap pre-hash gate.

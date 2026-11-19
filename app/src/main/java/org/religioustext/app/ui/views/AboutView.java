@@ -214,7 +214,7 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
                 .set("text-decoration", "none").set("margin-right", "16px").set("white-space", "nowrap");
             nav.add(signIn, createAccount);
         }
-        nav.add(donateLink, readerLink);
+        nav.add(AppLink.nav(t("app.nav")), donateLink, readerLink);
         return nav;
     }
 
@@ -257,9 +257,9 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
         final com.vaadin.flow.component.Component heroListen = listenControl("hero", "white");
         if (heroListen != null) {
             heroListen.getElement().getStyle().set("margin-top", "14px").set("display", "block");
-            hero.add(logo, title, sub, openReader, heroListen);
+            hero.add(logo, title, sub, openReader, AppLink.hero(t("app.cta")), heroListen);
         } else {
-            hero.add(logo, title, sub, openReader);
+            hero.add(logo, title, sub, openReader, AppLink.hero(t("app.cta")));
         }
         return hero;
     }
@@ -687,10 +687,21 @@ public class AboutView extends VerticalLayout implements BeforeEnterObserver {
             .set("margin", "0 0 16px 0").set("max-width", "760px")
             .set("overflow-x", "auto");
         for (final String chain : new String[] {
-                "WEB \u2192 ASV \u2192 RV \u2192 KJV \u2192 GNV \u2192 \u2248 WLC / \u2248 TR",
-                "DRA \u2192 VUL",
+                // Every line runs whole, down to the witness floor, so each
+                // reads on its own without referring to another. Re-synced with patch_lineage.py --list on
+                // 2026-11-17: TYN, LXX and the six single-rung editions had
+                // been added there since 2026-09-29 without reaching this list.
+                "WEB \u2192 ASV \u2192 RV \u2192 KJV \u2192 GNV \u2192 TYN "
+                    + "\u2192 \u2248 WLC / \u2248 TR",
+                "CUV \u2192 RV \u2192 KJV \u2192 GNV \u2192 TYN \u2192 \u2248 WLC / \u2248 TR",
+                "DRA \u2192 VUL \u2192 LXX \u2192 \u2248 WLC / \u2248 TR",
+                "VULC \u2192 VUL \u2192 LXX \u2192 \u2248 WLC / \u2248 TR",
+                "LXXE \u2192 LXX \u2192 \u2248 WLC / \u2248 TR",
+                "SYN \u2192 LXX \u2192 \u2248 WLC / \u2248 TR",
                 "KR3338 \u2192 FB1776 \u2192 FB1642 \u2192 AGR1548 \u2192 "
-                    + "LUT1545 \u2192 \u2248 TR / \u2248 WLC" }) {
+                    + "LUT1545 \u2192 \u2248 TR / \u2248 WLC",
+                "AGR1548 \u2192 VUL \u2192 LXX \u2192 \u2248 WLC / \u2248 TR",
+                "LUT1912 \u2192 LUT1545 \u2192 \u2248 TR / \u2248 WLC" }) {
             final Div row = new Div();
             row.setText(chain);
             chains.add(row);

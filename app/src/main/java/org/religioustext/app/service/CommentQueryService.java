@@ -199,6 +199,57 @@ public class CommentQueryService {
     }
 
     /**
+     * The translator notes of ONE edition for (bookCode, chapter), keyed by verse number —
+     * and nothing else. {@link #forChapter} mixes these into the public comments of the
+     * column being rendered; a consumer that must tell a translator's gloss from a channel's
+     * argument (the API's {@code kinds} filter) needs them on their own.
+     *
+     * <p>A translator note is a comment seeded from a {@code notes-%} ledger and bound to the
+     * edition it annotates: only references whose {@code sourceId} is {@code aSourceId} match.
+     *
+     * @param aBookCode the USFM book code (or surah number)
+     * @param aChapter  the chapter number
+     * @param aSourceId the corpus source id of the edition ({@code null}/blank → empty map)
+     * @return the edition's notes per verse; never {@code null}
+     */
+    @Transactional(readOnly = true)
+    public Map<String, List<VerseComment>> translatorNotesForChapter(final String aBookCode,
+                                                                     final int aChapter,
+                                                                     final String aSourceId) {
+        if (aBookCode == null || aBookCode.isBlank() || aSourceId == null || aSourceId.isBlank())
+            return Map.of();
+        final List<CommentReference> rows = em.createQuery(
+                "SELECT r FROM CommentReference r JOIN FETCH r.comment c LEFT JOIN FETCH c.user "
+              + "WHERE r.refType = :rt AND r.bookCode = :code AND r.chapter = :ch "
+              + "AND c.isPublic = true AND c.moderationStatus = :ms "
+              + "AND c.seedLedger LIKE 'notes-%' AND r.sourceId = :src "
+              + "ORDER BY c.createdAt", CommentReference.class)
+            .setParameter("rt", CommentReference.RefType.internal)
+            .setParameter("code", aBookCode)
+            .setParameter("ch", aChapter)
+            .setParameter("ms", Comment.ModerationStatus.approved)
+            .setParameter("src", aSourceId)
+            .getResultList();
+        final Map<String, List<VerseComment>> byVerse = new HashMap<>();
+        for (final CommentReference row : rows) {
+            if (row.getVerse() == null) continue;
+            final Comment c = row.getComment();
+            final List<VerseComment.Ref> refs = new ArrayList<>();
+            for (final CommentReference r : c.getReferences()) {   // lazy — inside tx
+                if (r.getRefType() == CommentReference.RefType.internal
+                        && r.getBookCode() != null && r.getChapter() != null && r.getVerse() != null) {
+                    refs.add(new VerseComment.Ref(
+                        isSurahCode(r.getBookCode()), r.getBookCode(), r.getChapter(), r.getVerse()));
+                }
+            }
+            byVerse.computeIfAbsent(String.valueOf(row.getVerse()), k -> new ArrayList<>())
+                .add(new VerseComment(c.getPublicId(), c.getContent(), null,
+                                      null, null, null, refs, false, false, null));
+        }
+        return byVerse;
+    }
+
+    /**
      * The CALLER'S OWN comments citing verses of (bookCode, chapter) — INCLUDING private
      * drafts and pending/rejected ones — keyed by verse number. The reading view overlays
      * these on the public map so an author always sees their own annotations under every

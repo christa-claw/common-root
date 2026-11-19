@@ -47,6 +47,10 @@ public class PersonalNote {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    /** Whether the author spoke this note (V25). The recording stays on their device. */
+    @Column(nullable = false)
+    private boolean dictated = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -69,6 +73,7 @@ public class PersonalNote {
     public int           getChapter()   { return chapter; }
     public int           getVerse()     { return verse; }
     public String        getContent()   { return content; }
+    public boolean       isDictated()   { return dictated; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
@@ -78,4 +83,5 @@ public class PersonalNote {
     public void setChapter(final int aChapter)     { this.chapter = aChapter; }
     public void setVerse(final int aVerse)       { this.verse = aVerse; }
     public void setContent(final String aContent)  { this.content = aContent; }
+    public void setDictated(final boolean theDictatedFlag) { this.dictated = theDictatedFlag; }
 }

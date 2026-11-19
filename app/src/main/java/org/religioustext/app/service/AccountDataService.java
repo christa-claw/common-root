@@ -74,7 +74,7 @@ public class AccountDataService {
             + "resume_enabled AS resumeEnabled, ui_language AS uiLanguage FROM user_preferences "
             + "WHERE user_id = :id", id));
         doc.put("notes", rows("SELECT book_code AS bookCode, chapter, verse, content, source_id AS sourceId, "
-            + "created_at AS createdAt, updated_at AS updatedAt FROM personal_notes WHERE user_id = :id "
+            + "dictated, created_at AS createdAt, updated_at AS updatedAt FROM personal_notes WHERE user_id = :id "
             + "ORDER BY book_code, chapter, verse", id));
         doc.put("highlights", rows("SELECT book_code AS bookCode, chapter, verse, colour, "
             + "created_at AS createdAt FROM highlights WHERE user_id = :id "
@@ -83,7 +83,7 @@ public class AccountDataService {
             + "FROM saved_searches WHERE user_id = :id ORDER BY created_at", id));
 
         final List<Map<String, Object>> comments = rows("SELECT id, public_id AS publicId, content, "
-            + "is_public AS isPublic, moderation_status AS moderationStatus, created_at AS createdAt, "
+            + "is_public AS isPublic, moderation_status AS moderationStatus, dictated, created_at AS createdAt, "
             + "updated_at AS updatedAt FROM comments WHERE user_id = :id ORDER BY created_at", id);
         for (final Map<String, Object> c : comments) {
             c.put("references", rows("SELECT ref_type AS type, source_id AS sourceId, book_code AS bookCode, "

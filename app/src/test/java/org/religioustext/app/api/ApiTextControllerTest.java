@@ -10,6 +10,7 @@ import org.religioustext.app.service.ApiQuotaService;
 import org.religioustext.app.model.user.ApiKey;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.religioustext.app.service.AttestationService;
+import org.religioustext.app.service.AudioIndexService;
 import org.religioustext.app.ui.views.reader.SourceRow;
 import org.springframework.http.ResponseEntity;
 
@@ -100,7 +101,7 @@ class ApiTextControllerTest {
     void licensedEditionsAreNotServedByTheTextRoutes() {
         final ApiCorpusService corpus = mock(ApiCorpusService.class);
         final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
-        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class));
+        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class), mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
         // listSources() row layout: id | translation | abbreviation | direction | license | source | type | lang
         final SourceRow niv = SourceRow.of(new String[] {
             "bible-niv", "New International Version", "NIV", "ltr", "Licensed", "", "bible", "en" });
@@ -113,13 +114,13 @@ class ApiTextControllerTest {
         assertThat(ApiTextController.redistributable(kjv)).isTrue();
 
         // chapter route
-        final ResponseEntity<Object> chapter = controller.chapter("niv", "JHN.3.16", null, null);
+        final ResponseEntity<Object> chapter = controller.chapter("niv", "JHN.3.16", null, null, null);
         assertThat(chapter.getStatusCode().value()).isEqualTo(403);
         assertThat(((ApiError) chapter.getBody()).error()).isEqualTo("not_redistributable");
         verify(corpus, never()).chapter(anyString(), anyString(), anyInt());
 
         // scattered passages: one licensed reference poisons the whole call — nothing served
-        final ResponseEntity<Object> passages = controller.passages(null, "kjv:JHN.3.16,niv:JHN.3.16", null);
+        final ResponseEntity<Object> passages = controller.passages(null, "kjv:JHN.3.16,niv:JHN.3.16", null, null);
         assertThat(passages.getStatusCode().value()).isEqualTo(403);
         verify(corpus, never()).chapter(anyString(), anyString(), anyInt());
 
@@ -127,6 +128,35 @@ class ApiTextControllerTest {
         final ResponseEntity<Object> record = controller.text("niv");
         assertThat(record.getStatusCode().value()).isEqualTo(200);
         assertThat(((Map<String, Object>) record.getBody())).containsEntry("downloadable", false);
+    }
+
+    @Test
+    void thePhoneAppReadsLicensedEditionsAChapterAtATimeButNeverDownloadsThem() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class), mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
+        final SourceRow niv = SourceRow.of(new String[] {
+            "bible-niv", "New International Version", "NIV", "ltr", "Licensed", "", "bible", "en" });
+        when(corpus.resolve("niv")).thenReturn(niv);
+        when(corpus.chapter("bible-niv", "JHN", 3)).thenReturn(java.util.List.of(
+            org.religioustext.app.model.VerseRef.builder().sourceId("bible-niv").bookCode("JHN")
+                .bookName("John").chapterNumber(3).verseNumber(16).content("For God so loved").build()));
+        final MockHttpServletRequest app = keyed("key-1");
+        app.addHeader(AppReadPolicy.CLIENT_HEADER, AppReadPolicy.APP_CLIENT);
+
+        final ResponseEntity<Object> chapter = controller.chapter("niv", "JHN.3", null, null, app);
+        assertThat(chapter.getStatusCode().value()).isEqualTo(200);
+        // served to the app alone: no shared cache may keep it for someone else
+        assertThat(chapter.getHeaders().getCacheControl()).contains("private").doesNotContain("public");
+
+        final ResponseEntity<Object> passages = controller.passages(null, "niv:JHN.3.16", null, app);
+        assertThat(passages.getStatusCode().value()).isEqualTo(200);
+        assertThat(passages.getHeaders().getCacheControl()).contains("private");
+
+        // the whole edition stays public domain only, whoever asks
+        assertThat(controller.download("niv", null, null, app).getStatusCode().value()).isEqualTo(403);
+        // and without the app's header the chapter is refused as before
+        assertThat(controller.chapter("niv", "JHN.3", null, null, keyed("key-1")).getStatusCode().value()).isEqualTo(403);
     }
 
     // ── /texts/{token}/download (issue #1): whole edition behind the key ──
@@ -149,7 +179,7 @@ class ApiTextControllerTest {
         final ApiCorpusService corpus = mock(ApiCorpusService.class);
         final ApiQuotaService quota = mock(ApiQuotaService.class);
         final AttestationService attest = new AttestationService("k1", "s", "", "corpus-7", "t", java.time.Clock.systemUTC());
-        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota, mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
         when(corpus.resolve("kjv")).thenReturn(kjvRow());
         when(corpus.document("bible-kjv-1611")).thenReturn("<text id=\"bible-kjv-1611\"/>");
         when(quota.wouldExceedBytes(anyString(), anyLong()))
@@ -170,7 +200,7 @@ class ApiTextControllerTest {
         final ApiCorpusService corpus = mock(ApiCorpusService.class);
         final ApiQuotaService quota = mock(ApiQuotaService.class);
         final AttestationService attest = new AttestationService("k1", "s", "", "corpus-7", "t", java.time.Clock.systemUTC());
-        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota, mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
         when(corpus.resolve("kjv")).thenReturn(kjvRow());
 
         final ResponseEntity<Object> r = controller.download("kjv", null, "\"bible-kjv-1611@corpus-7\"", keyed("key-1"));
@@ -185,7 +215,7 @@ class ApiTextControllerTest {
         final ApiCorpusService corpus = mock(ApiCorpusService.class);
         final ApiQuotaService quota = mock(ApiQuotaService.class);
         final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
-        final ApiTextController controller = new ApiTextController(corpus, attest, quota);
+        final ApiTextController controller = new ApiTextController(corpus, attest, quota, mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
         when(corpus.resolve("kjv")).thenReturn(kjvRow());
         when(corpus.resolve("niv")).thenReturn(SourceRow.of(new String[] {
             "bible-niv", "New International Version", "NIV", "ltr", "Licensed", "", "bible", "en" }));
@@ -207,5 +237,37 @@ class ApiTextControllerTest {
         assertThat(((ApiError) full.getBody()).error()).isEqualTo("bytes_quota_exceeded");
         assertThat(full.getHeaders().getFirst("Retry-After")).isEqualTo("3600");
         verify(quota, never()).countBytes(anyString(), anyLong());
+    }
+
+    // ── audio (mobile app's Listen): the API points at files the audio index knows ──
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void chapterAndRecordSayWhereToListenOnlyWhenTheIndexHasBothFiles() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final AudioIndexService audio = mock(AudioIndexService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class), audio, new AppReadPolicy(java.time.Clock.systemUTC(), 300));
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+        final java.util.List<org.religioustext.app.model.VerseRef> john3 = java.util.List.of(
+            org.religioustext.app.model.VerseRef.builder().sourceId("bible-kjv-1611").bookCode("JHN")
+                .bookName("John").chapterNumber(3).verseNumber(16).content("For God so loved").build());
+        when(corpus.chapter("bible-kjv-1611", "JHN", 3)).thenReturn(john3);
+        when(corpus.chapter("bible-kjv-1611", "JHN", 4)).thenReturn(john3);
+        when(audio.hasAudio("bible-kjv-1611")).thenReturn(true);
+        when(audio.mp3Url("bible-kjv-1611", "JHN", 3)).thenReturn(java.util.Optional.of("/audio/k/v/43_JHN/003_JHN.mp3"));
+        when(audio.offsetsUrl("bible-kjv-1611", "JHN", 3)).thenReturn(java.util.Optional.of("/audio/k/v/43_JHN/003_JHN.json"));
+        when(audio.mp3Url("bible-kjv-1611", "JHN", 4)).thenReturn(java.util.Optional.empty());
+        when(audio.offsetsUrl("bible-kjv-1611", "JHN", 4)).thenReturn(java.util.Optional.empty());
+
+        final Map<String, Object> narrated = (Map<String, Object>) controller.chapter("kjv", "JHN.3.16", null, null, null).getBody();
+        assertThat((Map<String, Object>) narrated.get("audio"))
+            .containsEntry("mp3", "/audio/k/v/43_JHN/003_JHN.mp3")
+            .containsEntry("offsets", "/audio/k/v/43_JHN/003_JHN.json");
+
+        final Map<String, Object> silent = (Map<String, Object>) controller.chapter("kjv", "JHN.4", null, null, null).getBody();
+        assertThat(silent).doesNotContainKey("audio");
+
+        assertThat((Map<String, Object>) controller.text("kjv").getBody()).containsEntry("audio", true);
     }
 }

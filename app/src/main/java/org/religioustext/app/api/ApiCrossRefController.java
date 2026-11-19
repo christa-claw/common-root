@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * {@code GET /api/v1/crossrefs/{book}/{chapter}} — the verse-to-verse
- * cross-references of one chapter (docs/api-spec.md §3.8).
+ * cross-references of one chapter (docs/api-spec.md §3.8) — and
+ * {@code GET /api/v1/crossrefs/{book}/{chapter}/{verse}}, the same for one verse.
  *
  * <p>Vocabulary is the reader's: {@code {book}} is a USFM code
  * ({@code JHN}) and every reference in the payload is link-format
@@ -73,6 +74,41 @@ public class ApiCrossRefController {
         body.put("chapter", aChapter);
         body.put("numbering", "KJV");
         body.put("verses", verses);
+        body.put("attribution", ATTRIBUTION);
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
+            .body(body);
+    }
+
+    /**
+     * {@code GET /api/v1/crossrefs/{book}/{chapter}/{verse}} — the references of one verse,
+     * for a client that opens them on a tap and has no use for the rest of the chapter.
+     *
+     * @param aBook    USFM code, any case
+     * @param aChapter chapter number, 1 or more
+     * @param aVerse   verse number, 1 or more
+     * @return the verse's references, most-voted first; a verse without any is 200 with an
+     *         empty {@code refs}
+     */
+    @GetMapping(value = "/crossrefs/{book}/{chapter}/{verse}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> verse(@PathVariable("book") final String aBook,
+                                        @PathVariable("chapter") final int aChapter,
+                                        @PathVariable("verse") final int aVerse) {
+        final String book = aBook.toUpperCase(Locale.ROOT);
+        if (!XrefSeeder.isBookCode(book)) return error(404, "no_such_book",
+            "No cross-references for '" + aBook + "'. Use a Protestant-canon USFM code such as GEN or 1CO.");
+        if (aChapter < 1 || aVerse < 1) return error(400, "bad_ref", "Chapter and verse must be 1 or more.");
+
+        final List<Map<String, Object>> refs = new ArrayList<>();
+        for (final XRef x : xrefs.forChapter(book, aChapter).getOrDefault(aVerse, List.of())) refs.add(entry(x));
+
+        final Map<String, Object> body = new LinkedHashMap<>();
+        body.put("book", book);
+        body.put("chapter", aChapter);
+        body.put("verse", aVerse);
+        body.put("ref", book + "." + aChapter + "." + aVerse);
+        body.put("numbering", "KJV");
+        body.put("refs", refs);
         body.put("attribution", ATTRIBUTION);
         return ResponseEntity.ok()
             .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())

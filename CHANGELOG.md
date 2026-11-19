@@ -72,6 +72,57 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [0.12.9] — 2026-11-19
+
+### Added
+- **API: comments, verse cross-references and Strong's numbers** — what a separate client (a
+  phone app) needs beyond the text.
+  - `GET /api/v1/comments?ref=…&kinds=channel,translator,personal&src=…` — comments by
+    reference, one appearance each with all their references. `channel` is the public comments
+    with channel and video link; `translator` is one edition's translator notes (needs `src`,
+    public-domain editions only); `personal` is the key owner's own comments, drafts included,
+    plus their private notes, never cached.
+  - `GET /api/v1/channels` — the voices that have public comments.
+  - `GET /api/v1/crossrefs/{book}/{chapter}/{verse}` — one verse's cross-references.
+  - `GET /api/v1/texts/{token}/{ref}/words` — a passage word by word with Strong's numbers;
+    `GET /api/v1/strongs/{id}` — the lexicon entry (`?lang=`);
+    `GET /api/v1/strongs/{id}/occurrences?src=…` — where an edition uses a number.
+  - Writing, for the key owner's own rows only: `POST /api/v1/comments`,
+    `PUT`/`DELETE /api/v1/comments/{id}`, `PUT`/`DELETE /api/v1/notes/{ref}`. A comment is a
+    private draft unless `"public": true`, which needs the contributor role as on the site.
+  - Dictation, for spoken notes and comments: `POST /api/v1/dictation/tidy` cleans up a
+    transcript the phone made; `POST /api/v1/dictation/transcribe` takes a recording when the
+    phone cannot transcribe. Nothing is stored. Both call outside services and are off until
+    configured (`ANTHROPIC_API_KEY` for tidying, `DICTATION_SPEECH_URL` for transcription),
+    with a per-account daily cap (`DICTATION_CALLS_PER_DAY`, default 50). Tidying uses Claude
+    Haiku 5.5 by default (`DICTATION_TIDY_MODEL`).
+  - A `dictated` marker on notes and comments (migration V25), set through the write routes and
+    shown only to the author, so the device holding the recording can offer playback. The
+    recording itself is never stored. Included in the account data export.
+  All behind the key and the request counter like the rest of `/api/v1`.
+- **The Android app, 1.0.0, on the site** — `/app` offers the APK of the Common Root? phone
+  app with its size, minimum Android version (7.0) and SHA-256, the steps past Android's
+  "unknown apps" prompt, how updates work and what the app collects, in all 14 languages.
+  Linked from the home page header and hero and from the shared page header. The APK is
+  served by Caddy off disk at `/downloads/android/`, not from the image;
+  `android-release.properties` names the current file. It is not on Google Play yet.
+- **Guest keys** — `POST /api/v1/guest-keys` gives a read-only key without an account
+  (migration V26), limited to 5 an hour per address and 300 an hour in all. Guest keys read;
+  they do not write, download whole editions or dictate.
+- **The phone app reads every edition**, licensed ones included, a passage at a time, as the
+  website does: up to 300 passages of licensed text per key per UTC day
+  (`api.app.licensed-reads-per-day`), then 429 until midnight UTC. Licensed text is sent
+  `Cache-Control: private`. Whole-edition downloads stay public domain only, for everyone.
+- API additions for the app: chapter audio (`audio {mp3, offsets}`) on chapters and editions;
+  `?lang=` on `/texts/{src}/books` (local book names) and on `/words` (lexicon glosses);
+  `GET /comments?view=counts` (per-verse public comment counts); `/audio/*` answers CORS.
+- Edition info pages for JFB, LXXE, VULC and LSG in all 14 locales.
+
+### Fixed
+- The About page's lineage chains list every recorded parent again (DRA down to its witness,
+  TYN, CUV, VULC, LXXE, SYN, LUT1912, AGR1548's Vulgate branch).
+- The shared page header wraps on a phone instead of cutting off its last links.
+
 ## [0.12.8] — 2026-11-11
 
 ### Added

@@ -21,9 +21,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Authenticates and meters every {@code /api/**} request (docs/api-spec.md §2, §5).
  *
- * <p>Order of checks, cheapest first: path scope → the health exemption → the
- * query-string rejection → Bearer parse → key resolution → burst and monthly
- * quota. On success the resolved key and account ride the request as
+ * <p>Order of checks, cheapest first: path scope → the health, docs and
+ * guest-key exemptions → the query-string rejection → Bearer parse → key
+ * resolution → burst and monthly quota → the guest key's read-only rule. On success the resolved key and account ride the request as
  * attributes ({@link #ATTR_KEY}) for the controllers, and every response —
  * success or refusal — carries the rate-limit headers, because a client that
  * cannot see its ceiling retries in a loop and creates the load the quota
@@ -42,6 +42,9 @@ import java.nio.charset.StandardCharsets;
  */
 @Component
 public class ApiAuthFilter extends OncePerRequestFilter {
+
+    /** Where the phone app gets a guest key; it is the one write that needs no key. */
+    static final String GUEST_KEYS_PATH = "/api/v1/guest-keys";
 
     /** Request attribute carrying the authenticated {@link ResolvedKey}. */
     public static final String ATTR_KEY = "org.religioustext.api.resolvedKey";
@@ -68,7 +71,8 @@ public class ApiAuthFilter extends OncePerRequestFilter {
         final String path = aRequest.getRequestURI();
         if (!path.startsWith("/api/")) return true;
         return path.equals("/api/v1/health")    // no auth, no quota — the uptime signal
-            || path.equals("/api/docs");        // the documentation must be readable without a key
+            || path.equals("/api/docs")         // the documentation must be readable without a key
+            || path.equals(GUEST_KEYS_PATH);    // where a key comes from cannot need one
     }
 
     @Override
@@ -113,8 +117,33 @@ public class ApiAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (resolved.isGuest() && !guestMay(aRequest)) {
+            refuse(aResponse, 403, "sign_in_required",
+                "A guest key reads only. Sign in and use your own key to write notes and "
+                + "comments, dictate, or download whole texts.", "auth");
+            return;
+        }
+
         aRequest.setAttribute(ATTR_KEY, resolved);
         aChain.doFilter(aRequest, aResponse);
+    }
+
+    /**
+     * What a guest key may do: read. Writes have no account to write as, and two
+     * reads are kept back as well — dictation, which costs per minute, and whole-text
+     * downloads, which a new guest key per download would let anyone take without limit.
+     * Checking an attestation is a POST but only reads, so it is allowed.
+     *
+     * @param aRequest the request
+     * @return {@code true} if a guest key may make it
+     */
+    static boolean guestMay(final HttpServletRequest aRequest) {
+        final String path = aRequest.getRequestURI();
+        return switch (aRequest.getMethod()) {
+            case "GET", "HEAD" -> !path.endsWith("/download") && !path.startsWith("/api/v1/dictation");
+            case "POST"        -> path.equals("/api/v1/verify");
+            default            -> false;
+        };
     }
 
     /**

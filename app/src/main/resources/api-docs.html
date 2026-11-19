@@ -24,10 +24,10 @@
 <body>
 
 <h1>Common Root? — API v1</h1>
-<p class="muted">Read-only access to the corpus: editions, their contents, passages, and a way to prove a quote came from here. Base URL <code>/api/v1</code>. Everything is JSON unless you ask for XML.</p>
+<p class="muted">Access to the corpus — editions, their contents, passages, and a way to prove a quote came from here — plus the comments on it and your own notes. Base URL <code>/api/v1</code>. Everything is JSON unless you ask for XML.</p>
 
 <nav>
-  <a href="#start">Start here</a><a href="#auth">Keys</a><a href="#texts">Editions</a><a href="#refs">References</a><a href="#passages">Passages</a><a href="#formats">Formats</a><a href="#downloads">Downloads</a><a href="#attest">Attestation</a><a href="#verify">Verify</a><a href="#quotas">Quotas</a><a href="#errors">Errors</a>
+  <a href="#start">Start here</a><a href="#auth">Keys</a><a href="#texts">Editions</a><a href="#refs">References</a><a href="#passages">Passages</a><a href="#crossrefs">Cross-references</a><a href="#strongs">Strong's numbers</a><a href="#comments">Comments</a><a href="#dictation">Dictation</a><a href="#formats">Formats</a><a href="#downloads">Downloads</a><a href="#attest">Attestation</a><a href="#verify">Verify</a><a href="#quotas">Quotas</a><a href="#errors">Errors</a>
 </nav>
 
 <h2 id="start">Start here: following a token</h2>
@@ -100,6 +100,82 @@ GET /passages?src=kjv,web&amp;refs=GEN.1.1,GEN.1.2</code></pre>
   "verses": { "16": [ { "id": "xrf-…", "ref": "ROM.5.8", "votes": 984 }, … ] },
   "attribution": { "source": "OpenBible.info", "licence": "CC BY 4.0", … } }</code></pre>
 <p>The data is from <a href="https://www.openbible.info/labs/cross-references/">OpenBible.info</a>, licensed CC BY 4.0, and the attribution object is in every response: if you store or republish the references, keep the credit with them.</p>
+
+<h3><code>GET /crossrefs/{book}/{chapter}/{verse}</code></h3>
+<p>The same for one verse — what a reader opens on a tap. The references are a plain <code>refs</code> array; a verse with none is an empty array. To show the text behind them, pass the <code>ref</code> values to <code>/passages</code>.</p>
+<pre><code>{ "book": "JHN", "chapter": 3, "verse": 16, "ref": "JHN.3.16", "numbering": "KJV",
+  "refs": [ { "id": "xrf-…", "ref": "ROM.5.8", "votes": 984 }, … ],
+  "attribution": { … } }</code></pre>
+
+<h2 id="strongs">Strong's numbers</h2>
+<p>The original-language editions that carry a word layer (the Hebrew Bible and the Greek New Testament) can be read word by word, each word with its Strong's number. Words are text, so these routes follow the same licence rule as passages; an edition without a word layer answers 404 <code>no_word_layer</code>.</p>
+<h3><code>GET /texts/{token}/{ref}/words</code></h3>
+<p>The words of a chapter, verse or span within one chapter. <code>after</code> is what is printed after the word (a space, a maqqef, punctuation), so joining <code>text</code> + <code>after</code> rebuilds the verse. A word the source gives no number has no <code>strongs</code>; <code>sense</code> is the letter that distinguishes homonyms (<code>H1254</code> + <code>a</code>). Only verses whose words rebuild the edition's own text are served, so a verse can be missing here although the passage route has it.</p>
+<pre><code>{ "text": "wlc", "direction": "rtl", "ref": "GEN.1.1", "book": "GEN", "chapter": 1,
+  "verses": [ { "number": 1, "words": [
+      { "id": "01xeN", "text": "בְּרֵאשִׁית", "strongs": "H7225", "after": " " },
+      { "id": "01Nvk", "text": "בָּרָא", "strongs": "H1254", "sense": "a", "after": " " }, … ] } ],
+  "attribution": { "source": "Open Scriptures Hebrew Bible Project", "licence": "CC BY 4.0", … } }</code></pre>
+<h3><code>GET /strongs/{id}</code></h3>
+<p>The lexicon entry of a number: <code>H430</code>, <code>G2424</code> (any case). <code>?lang=fi</code> asks for the gloss and definition in another language; where a translation exists it is machine-made and <code>machineTranslated</code> is true, otherwise you get English and <code>"language": "en"</code>. An unknown number is 404 <code>no_such_entry</code>.</p>
+<pre><code>{ "strongs": "H1254", "lemma": "בָּרָא", "lemmaLanguage": "he", "lemmaDirection": "rtl",
+  "transliteration": "bârâʼ", "gloss": "to create", "definition": "…",
+  "language": "en", "machineTranslated": false,
+  "attribution": { "source": "Open Scriptures Hebrew Lexicon", "licence": "CC BY 4.0", … } }</code></pre>
+<h3><code>GET /strongs/{id}/occurrences?src={token}</code></h3>
+<p>Where one edition uses a number, in canonical order, with the word as written there. <code>src</code> is required; <code>limit</code> is 1–1000 (default 100). <code>total</code> is the edition's full count, and <code>truncated</code> says whether the list stops short of it.</p>
+<pre><code>{ "strongs": "H1254", "text": "wlc", "total": 54,
+  "occurrences": [ { "ref": "GEN.1.1", "word": "בָּרָא" }, … ],
+  "truncated": false, "attribution": { … } }</code></pre>
+<p>The word data and both lexicons are licensed CC BY 4.0 and the attribution object is in every response: keep the credit with the data if you store or republish it.</p>
+
+<h2 id="comments">Comments</h2>
+<h3><code>GET /comments?ref=…</code></h3>
+<p>What has been said about a passage, without the scripture. <code>ref</code> takes up to 20 comma-separated references, each within one chapter. <code>kinds</code> chooses what you get, comma-separated:</p>
+<table>
+<tr><th>Kind</th><th>What it is</th><th>Needs</th></tr>
+<tr><td><code>channel</code></td><td>Public, approved comments: arguments from channels, with the channel name and a link to the video (timecoded to the verse where one is known), and comments members have published.</td><td>—</td></tr>
+<tr><td><code>translator</code></td><td>The translator's own notes of one edition.</td><td><code>src={token}</code>; the edition must be public domain, as for its text</td></tr>
+<tr><td><code>personal</code></td><td>Your own comments, drafts included (<code>state</code>: <code>private</code> or <code>published</code>), and your private study notes in a separate <code>notes</code> array.</td><td>the key of the account they belong to</td></tr>
+</table>
+<p>Without <code>kinds</code> you get <code>channel</code>, plus <code>translator</code> when <code>src</code> is given. A comment appears once however many of the verses you asked for it cites, and its <code>refs</code> list every verse it cites — including ones outside your request. Comments are edition-independent (canonical numbering); only translator notes belong to an edition. At most 200 comments per response; <code>truncated</code> says when there were more.</p>
+<pre><code>{ "refs": ["JHN.1.1"], "kinds": ["channel", "translator"], "text": "lut1912",
+  "comments": [
+    { "id": "cmt_8kq2…", "kind": "channel",
+      "url": "https://common-root.org/reader?comment=cmt_8kq2…",
+      "channel": "Theological Apologia", "video": "https://youtube.com/watch?v=…&amp;t=754",
+      "videoTitle": "…", "refs": ["JHN.1.1", "ROM.9.5"], "body": "…" },
+    { "id": "cmt_…", "kind": "translator", "url": "…", "refs": ["JHN.1.1"], "body": "…" } ],
+  "truncated": false }</code></pre>
+<p>Nobody else's drafts or notes are ever reachable: <code>personal</code> is bound to the account behind the key, and a response that includes it is sent <code>Cache-Control: no-store, private</code>. Other responses may be cached for a minute.</p>
+<h3 id="writing">Writing your own comments and notes</h3>
+<p>The only routes that change anything, and they change only what belongs to the account behind the key. Bodies are JSON (<code>Content-Type: application/json</code>), at most 10,000 characters of text; responses are never cacheable. A comment id that is not yours answers 404 <code>no_such_comment</code>, the same as one that does not exist.</p>
+<table>
+<tr><th>Call</th><th>Body</th><th>Result</th></tr>
+<tr><td><code>POST /comments</code></td><td><code>{ "refs": ["JHN.3.16-17", "ROM.5.8"], "body": "…", "public": false, "src": "kjv", "dictated": true }</code></td><td>201 with the comment. <code>refs</code> are verses or ranges within one chapter, at most 50 verses in all. <code>public</code>, <code>src</code> and <code>dictated</code> are optional.</td></tr>
+<tr><td><code>PUT /comments/{id}</code></td><td><code>{ "body": "…", "public": true, "dictated": false }</code> — any of them</td><td>the comment; a field you leave out is not changed</td></tr>
+<tr><td><code>DELETE /comments/{id}</code></td><td>—</td><td>204</td></tr>
+<tr><td><code>PUT /notes/{ref}</code></td><td><code>{ "body": "…", "src": "kjv", "dictated": true }</code></td><td>the note. One private note per verse, shown in every edition; writing again replaces it, marker included.</td></tr>
+<tr><td><code>DELETE /notes/{ref}</code></td><td>—</td><td>204, also when there was no note</td></tr>
+</table>
+<p>A comment is private unless you send <code>"public": true</code>, and publishing needs the contributor role, as on the site: without it the answer is 403 <code>publish_not_permitted</code> and nothing is saved — send it again without <code>public</code> to keep it as a draft. <code>src</code> only records which edition you had open. <code>"dictated": true</code> marks text its author spoke: the recording is never sent here, and the marker is what lets the device that holds it offer playback beside the text. It is shown only to the author — on <code>kinds=personal</code> comments and notes — never on a published comment as others see it. Read your comments and notes back with <code>GET /comments?ref=…&amp;kinds=personal</code>.</p>
+<pre><code>{ "id": "cmt-01a1…", "kind": "personal", "url": "https://common-root.org/reader?comment=cmt-01a1…",
+  "refs": ["JHN.3.16", "JHN.3.17", "ROM.5.8"], "state": "private", "dictated": true, "body": "…" }</code></pre>
+
+<h3 id="dictation">Dictation: spoken notes</h3>
+<p>For a client that lets its user speak a note or comment. Neither route stores anything — no audio, no transcript, no result: show the text to the user and save it with the write routes above once they accept it. Each account has a daily allowance of dictation calls (429 <code>dictation_limit</code> when it is used up), and a server where the outside service is not set up answers 503 — in both cases the transcript can still be saved as it is.</p>
+<table>
+<tr><th>Call</th><th>Send</th><th>Result</th></tr>
+<tr><td><code>POST /dictation/tidy</code></td><td>JSON <code>{ "text": "um so john three sixteen …", "lang": "en" }</code> — a transcript the device made, at most 10,000 characters; <code>lang</code> optional</td><td><code>{ "text": "…", "tidied": true }</code></td></tr>
+<tr><td><code>POST /dictation/transcribe</code></td><td><code>multipart/form-data</code>: <code>audio</code> (the recording, at most 10 MB), optional <code>lang</code>, optional <code>tidy=false</code></td><td><code>{ "transcript": "…as heard…", "text": "…", "tidied": true }</code></td></tr>
+</table>
+<p><strong>Transcribe on the device and call <code>/dictation/tidy</code>.</strong> Phones do speech-to-text themselves, and then no recording ever leaves the device. <code>/dictation/transcribe</code> is the fallback for when that is unavailable or fails.</p>
+<p>Tidying removes fillers, false starts and repetitions, restores punctuation and paragraphs and corrects misheard names of books and persons. It does not translate, summarise or add anything. <code>"tidied": false</code> means the text is the transcript unchanged — tidying was switched off, unavailable, or declined — never an error: nothing the user said is lost.</p>
+<p>Privacy: the transcript is sent to a language model service to be tidied, and an uploaded recording to a speech service to be transcribed. Neither is kept by Common Root?.</p>
+
+<h3><code>GET /channels</code></h3>
+<p>Every voice that currently has a public comment — channels and members who publish under a display name — as the strings <code>channel</code> carries in <code>/comments</code>. Use it to offer a filter.</p>
+<pre><code>{ "count": 2, "channels": ["Elijah Johnson Apologetics", "Theological Apologia"] }</code></pre>
 
 <h2 id="formats">Formats</h2>
 <p><code>?format=json</code> (default) or <code>?format=xml</code>; the query parameter wins, otherwise an <code>Accept: application/xml</code> header is honoured. XML is the corpus's own <code>&lt;chapter&gt;</code> element under <code>http://religioustext.org/schema/1.0</code> — a valid subtree of <code>religious-text.xsd</code>, the same bytes you would cut out of the bulk download, with this site's reading-order attributes removed. It is available for single passages only; <code>/passages</code> and <code>/texts</code> are JSON. The attestation rides inside the document as a processing instruction before the element — <code>&lt;?common-root-attestation alg="…" kid="…" canon="…" corpus="…" minted="…" app="…" tag="…"?&gt;</code> — so a saved file is self-validating; validators ignore it and the element stays a pure schema subtree. Plain text answers 501 until the display modes ship.</p>

@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.religioustext</groupId>
         <artifactId>religious-texts-parent</artifactId>
-        <version>0.12.8</version>
+        <version>0.12.9</version>
     </parent>
 
     <artifactId>app</artifactId>
@@ -96,6 +96,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Claude API: tidies dictated notes (ClaudeTranscriptTidier). Only called when
+             dictation.tidy.api-key is set. -->
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>3.3.0</version>
+        </dependency>
     </dependencies>
 
     <build>

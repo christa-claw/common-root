@@ -4,8 +4,8 @@
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 0.12.8 |
-| Generated | 2026-11-11 |
+| Version | 0.12.9 |
+| Generated | 2026-11-19 |
 <!-- /AUTOGEN:meta -->
 
 > **Naming note.** The user-facing application is **Common Root?**. Internal

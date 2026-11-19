@@ -192,23 +192,6 @@ def gen_translations():
     return "\n".join(out) + "\n"
 
 
-def _chapter_ranges(numbers):
-    """[1,2,3,5,9,10] -> "1-3, 5, 9-10". Chapters are made a few a night, so a
-       book's list is long, mostly contiguous, and unreadable spelled out."""
-    runs, start, prev = [], None, None
-    for n in numbers:
-        if start is None:
-            start = prev = n
-        elif n == prev + 1:
-            prev = n
-        else:
-            runs.append((start, prev))
-            start = prev = n
-    if start is not None:
-        runs.append((start, prev))
-    return ", ".join(str(a) if a == b else f"{a}\u2013{b}" for a, b in runs)
-
-
 def _listening_time(ms):
     """Milliseconds -> "1 h 43 min" / "34 min" / "48 s"."""
     total = int(round((ms or 0) / 1000.0))
@@ -243,25 +226,31 @@ def gen_audio():
         text = texts[text_id] or {}
         voice = text.get("voice") or "?"
         books = text.get("books") or {}
-        for book in sorted(books):
+        # One row per edition: a row per book ran to ~800 lines and buried the
+        # document. Books and chapters are counted, not listed.
+        book_count, chapter_count, duration = 0, 0, 0
+        for book in books:
             entry = books[book] or {}
-            numbers = sorted(int(c) for c in (entry.get("chapters") or {})
-                             if str(c).isdigit())
+            numbers = [c for c in (entry.get("chapters") or {})
+                       if str(c).isdigit()]
             if not numbers:
                 continue
-            duration = entry.get("durationMs") or 0
-            rows.append(f"| `{text_id}` | {voice} | {book} | "
-                        f"{_chapter_ranges(numbers)} ({len(numbers)}) | "
-                        f"{_listening_time(duration)} |")
-            chapters_total += len(numbers)
-            ms_total += duration
+            book_count += 1
+            chapter_count += len(numbers)
+            duration += entry.get("durationMs") or 0
+        if not book_count:
+            continue
+        rows.append(f"| `{text_id}` | {voice} | {book_count} | "
+                    f"{chapter_count} | {_listening_time(duration)} |")
+        chapters_total += chapter_count
+        ms_total += duration
 
     if not rows:
         return "_No chapter audio has been generated yet._\n"
 
-    out = ["| Edition | Voice | Book | Chapters with audio | Listening time |",
+    out = ["| Edition | Voice | Books | Chapters with audio | Listening time |",
            "|---|---|---|---|---|"] + rows + [""]
-    editions = len(texts)
+    editions = len(rows)
     out.append(f"_{chapters_total} chapters across {editions} "
                f"edition{'' if editions == 1 else 's'}, "
                f"{_listening_time(ms_total)} of audio. Manifest generated "

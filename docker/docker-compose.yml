@@ -79,23 +79,42 @@ services:
       - religioustext-net
 
   # Umami analytics — local trial instance (dashboard at http://localhost:3000,
-  # default login admin/umami — change it). Shares the MySQL container via its
-  # own `umami` database (created by mysql-init/20-umami.sql on a FRESH volume;
-  # on an existing local volume run the statements from that file manually once).
+  # default login admin/umami — change it). Umami 3 runs on PostgreSQL only, so it
+  # has its own small database container, as on prod.
   # The local app does NOT inject the tracking script (properties unset), so
   # this is for exploring the dashboard, not for tracking local dev.
+  umami-db:
+    image: postgres:17-alpine
+    container_name: religioustext-umami-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=umami
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=umami-local-dev
+      - TZ=UTC
+      - PGTZ=UTC
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - religioustext-net
+
   umami:
-    image: ghcr.io/umami-software/umami:mysql-latest
+    image: ghcr.io/umami-software/umami:3.5.0
     container_name: religioustext-umami
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=mysql://umami:umamipassword@mysql:3306/umami
+      - DATABASE_URL=postgresql://umami:umami-local-dev@umami-db:5432/umami
       - APP_SECRET=local-dev-secret-change-me
       - DISABLE_TELEMETRY=1
     depends_on:
-      mysql:
+      umami-db:
         condition: service_healthy
     networks:
       - religioustext-net
@@ -107,4 +126,5 @@ networks:
 volumes:
   basex-data:
   mysql-data:
+  umami-db-data:
   meili-data:

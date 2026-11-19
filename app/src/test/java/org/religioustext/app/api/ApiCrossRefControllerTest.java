@@ -47,6 +47,19 @@ class ApiCrossRefControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void oneVerseServesOnlyItsOwnReferences() {
+        final var c = controller(Map.of(16, List.of(new XRef("xrf-1", "ROM", 5, 8, null, null, 984)),
+                                        17, List.of(new XRef("xrf-9", "LUK", 9, 56, null, null, 12))));
+        final Map<String, Object> body = (Map<String, Object>) c.verse("jhn", 3, 16).getBody();
+        assertThat(body).containsEntry("ref", "JHN.3.16").containsEntry("verse", 16).containsKey("attribution");
+        assertThat((List<Map<String, Object>>) body.get("refs")).extracting(m -> m.get("ref")).containsExactly("ROM.5.8");
+        assertThat((List<?>) ((Map<String, Object>) c.verse("JHN", 3, 99).getBody()).get("refs")).isEmpty();
+        assertThat(c.verse("QUR", 1, 1).getStatusCode().value()).isEqualTo(404);
+        assertThat(c.verse("JHN", 3, 0).getStatusCode().value()).isEqualTo(400);
+    }
+
+    @Test
     void unknownBookIs404AndBadChapterIs400() {
         assertThat(controller(Map.of()).chapter("QUR", 1).getStatusCode().value()).isEqualTo(404);
         assertThat(controller(Map.of()).chapter("GEN", 0).getStatusCode().value()).isEqualTo(400);
