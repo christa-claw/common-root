@@ -15,7 +15,20 @@ described below).
   PATCH (`x` in `0.x.y` after the dot we don't have yet) ⇒ bug fix on top of
   the current beta.
 - **`1.0.0` — first stable.** From there, standard SemVer: MAJOR (breaking),
-  MINOR (feature), PATCH (fix).
+  MINOR (feature), PATCH (fix). The website went to 1.0.0 with the public
+  launch of the phone app (the release after 0.12.9).
+
+### The phone app's version (adopted 2026-11-19)
+
+The app (`mobile/`, versioned in `app.json` and `package.json`) shares the
+website's MAJOR.MINOR and keeps its own PATCH: **an app build takes the
+MAJOR.MINOR of the website release it was built and tested against, and the
+next PATCH not yet used for that MAJOR.MINOR.** App 1.0.1 was built against
+website 1.0.0; if the website is at 1.3 when the app next ships, that build is
+app 1.3.0. The app does not release just because the website did, so its
+number jumps when it next ships, and its MAJOR.MINOR always says which website
+it was tested with. Android orders builds by the separate `versionCode`, which
+EAS increments (`appVersionSource: remote`), so the jumps never matter there.
 
 ### SNAPSHOT semantics
 
@@ -71,6 +84,43 @@ in the reader toolbar and About-page nav.
 ---
 
 ## [Unreleased]
+
+## [1.0.0] — 2026-11-19
+
+The first stable release, with the phone app's public launch.
+
+### Added
+- **Phone app 1.0.1 on `/app`** — the build with sign-in and shared settings.
+  1.0.0 cannot sign in (the browser and crypto modules it needs are native), so
+  readers update by installing 1.0.1 over it.
+- **The phone app signs in through the website.** Settings → Sign in opens the
+  site's own login page; the app gets a key of its own (PKCE, `/app/sign-in`,
+  `POST /api/v1/auth/token`), listed under API keys and revoked by Sign out. No
+  more pasting keys; the password never reaches the app.
+- **Shared settings.** `GET`/`PUT /api/v1/me/preferences`: language, default
+  edition, comment and cross-reference markers, muted voices and the resume
+  position are the same in the app and on the website. `GET /api/v1/me` names
+  the account.
+- **The app's Settings edits the account's own settings:** the display name
+  (`PUT /api/v1/me`), "Continue where I left off", and the muted commenters,
+  plus a "Manage account on the website" link for password, email, API keys and
+  deleting the account.
+
+### Changed
+- The app's Server field shows only in the test build.
+
+### Security
+- **Java4Shell (CVE-2026-114938) workaround.** The app's JVM starts with
+  `-XX:-UseBASE64Intrinsics`, which turns off the x86-64 Base64 decoder intrinsic
+  that a crafted Base64 string can make corrupt memory on AVX-512 VBMI CPUs. No
+  fixed Temurin 21 image (21.0.13.1) existed yet; drop the flag once the image has one.
+
+### Fixed
+- Resuming where you left off no longer overwrites the saved place. Opening a saved
+  position or a shared link saved Genesis 1 first (each column passes through its
+  edition's start on the way), and the save of the chapter actually shown was then
+  dropped by the five-second throttle. In a narrow column, whose controls wrap into
+  a tall bar, the reader also took the chapter before the one shown as the one being read.
 
 ## [0.12.9] — 2026-11-19
 

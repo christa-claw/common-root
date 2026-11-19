@@ -175,4 +175,42 @@ class ApiKeyServiceTest {
         assertThat(service.revoke("usr-1", "key-guest")).isFalse();
         assertThat(live.isRevoked()).isFalse();
     }
+
+    // A new phone at the cap replaces the app key least recently used; hand-made keys are never touched.
+    @Test
+    void anAppSignInAtTheCapReplacesTheStalestAppKey() throws Exception {
+        final ApiKey laptop = key("key-laptop", "laptop", LocalDateTime.of(2026, 1, 1, 0, 0));
+        final ApiKey oldPhone = key("key-old", ApiKeyService.APP_LABEL, LocalDateTime.of(2026, 3, 1, 0, 0));
+        final ApiKey newPhone = key("key-new", ApiKeyService.APP_LABEL, LocalDateTime.of(2026, 11, 1, 0, 0));
+        when(apiKeys.countByUserIdAndRevokedAtIsNull("usr-1")).thenReturn(5L, 4L);
+        when(apiKeys.findByUserIdOrderByCreatedAtDesc("usr-1")).thenReturn(java.util.List.of(newPhone, oldPhone, laptop));
+        when(apiKeys.findById("key-old")).thenReturn(Optional.of(oldPhone));
+        when(apiKeys.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        final ApiKeyService.CreatedKey created = service.createForApp("usr-1");
+
+        assertThat(oldPhone.isRevoked()).isTrue();
+        assertThat(newPhone.isRevoked()).isFalse();
+        assertThat(laptop.isRevoked()).isFalse();
+        assertThat(created.record().getLabel()).isEqualTo(ApiKeyService.APP_LABEL);
+    }
+
+    @Test
+    void anAppSignInAtTheCapWithNoAppKeyIsRefused() throws Exception {
+        when(apiKeys.countByUserIdAndRevokedAtIsNull("usr-1")).thenReturn(5L);
+        when(apiKeys.findByUserIdOrderByCreatedAtDesc("usr-1"))
+            .thenReturn(java.util.List.of(key("key-laptop", "laptop", null)));
+        assertThatThrownBy(() -> service.createForApp("usr-1")).isInstanceOf(IllegalStateException.class);
+    }
+
+    private static ApiKey key(final String anId, final String aLabel, final LocalDateTime aLastUse) throws Exception {
+        final ApiKey k = new ApiKey();
+        final java.lang.reflect.Field id = ApiKey.class.getDeclaredField("id");
+        id.setAccessible(true);
+        id.set(k, anId);
+        k.setUserId("usr-1");
+        k.setLabel(aLabel);
+        k.setLastUsedAt(aLastUse);
+        return k;
+    }
 }

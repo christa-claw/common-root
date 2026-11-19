@@ -46,6 +46,16 @@ updates the app — it does NOT carry scripture or arguments. Check each at depl
   is what makes newly shipped chapters visible.
 
 ## PENDING (as of 2026-10-06)
+- [x] ~~Prod's compose flag~~ — done 2026-11-19 18:50 (backup
+  `docker-compose.prod.yml.bak-java4shell-20261119`); prod's CPU has all four
+  affected features, so it was exposed until then. Flag verified `false`.
+- [ ] **Java4Shell (CVE-2026-114938), 2026-11-19.** Until the next app image (whose
+  Dockerfile ENTRYPOINT carries the flag) is live, prod's own compose file needs
+  `JAVA_TOOL_OPTIONS=-Xmx3g -XX:-UseBASE64Intrinsics`, edited in place on the box,
+  then `docker compose -f docker-compose.prod.yml up -d app`. Check it took:
+  `docker exec religioustext-app java -XX:+PrintFlagsFinal -version | grep UseBASE64Intrinsics`
+  reads `false`. Later: when `eclipse-temurin:21-jre-jammy` reaches 21.0.13.1+,
+  rebuild and remove the flag from both places.
 - [x] ~~YTC Turkish Bible — pull to prod on the next app push.~~ Done: confirmed
   live and selectable with text in the 0.9.3 deploy (2026-10-06).
 - [ ] YTC licence is **CC BY-ND 4.0** — confirm side-by-side display is

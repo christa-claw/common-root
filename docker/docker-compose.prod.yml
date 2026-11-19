@@ -99,7 +99,10 @@ services:
     ports:
       - "127.0.0.1:8090:8090"      # localhost-only; public access is via Caddy on 443
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx3g    # cap app heap on the 4 GB box; raise if needed
+      # -Xmx3g caps the heap on the 4 GB box. -XX:-UseBASE64Intrinsics is the
+      # Java4Shell (CVE-2026-114938) workaround for images built before the app
+      # Dockerfile carried it; harmless twice. Drop it with the Dockerfile's.
+      - JAVA_TOOL_OPTIONS=-Xmx3g -XX:-UseBASE64Intrinsics
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/religioustext?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC
       - DB_PASSWORD=${DB_PASSWORD}
       - BASEX_PASSWORD=${BASEX_PASSWORD}

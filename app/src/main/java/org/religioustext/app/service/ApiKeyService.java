@@ -105,6 +105,32 @@ public class ApiKeyService {
         return new CreatedKey(plaintext, saved);
     }
 
+    /** The label of a key the phone app got by signing in ({@link AppSignInService}). */
+    public static final String APP_LABEL = "Phone app";
+
+    /**
+     * Issue a key for the phone app after a sign-in. A reader who signs in on a new phone,
+     * or again after reinstalling, should not be stopped by the {@value #MAX_LIVE_KEYS}-key
+     * cap because of phones they no longer have: at the cap, the app key least recently
+     * used is revoked to make room. Keys the reader made by hand are never touched.
+     *
+     * @param aUserId the reader's {@code usr-} id
+     * @return the plaintext credential and its stored row
+     * @throws IllegalStateException if the account is at the cap with no app key to replace
+     */
+    @Transactional
+    public CreatedKey createForApp(final String aUserId) {
+        if (apiKeys.countByUserIdAndRevokedAtIsNull(aUserId) >= MAX_LIVE_KEYS) {
+            listFor(aUserId).stream()
+                .filter(k -> !k.isRevoked() && APP_LABEL.equals(k.getLabel()))
+                .min(java.util.Comparator.comparing(
+                    (ApiKey k) -> k.getLastUsedAt() != null ? k.getLastUsedAt() : k.getCreatedAt(),
+                    java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+                .ifPresent(oldest -> revoke(aUserId, oldest.getId()));
+        }
+        return create(aUserId, APP_LABEL);
+    }
+
     /** The label every guest key carries, so the rows read plainly in the table. */
     public static final String GUEST_LABEL = "guest";
 

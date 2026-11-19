@@ -181,6 +181,12 @@ class ApiAuthFilterTest {
         assertThat(filter.shouldNotFilter(request("/api/v1/guest-keys"))).isTrue();
     }
 
+    @Test
+    void signInExchangeNeedsNoKey() {
+        assertThat(filter.shouldNotFilter(request("/api/v1/auth/token"))).isTrue();
+        assertThat(filter.shouldNotFilter(request("/api/v1/auth/key"))).isFalse();
+    }
+
     // G5 — a guest key reads
     @Test
     void guestKeyMayRead() throws Exception {

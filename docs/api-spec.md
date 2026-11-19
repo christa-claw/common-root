@@ -232,6 +232,53 @@ answers `201 {"key": "crk_…", "keyId": "…", "readOnly": true}`.
 - **Not yet done:** pruning guest keys that have not been used in months, and
   signing in with email and password instead of pasting a key.
 
+### 2.2 Signing the app in through the website (2026-11-19)
+
+The app never asks for a password. It gets a key of the reader's own by the
+OAuth "authorization code with PKCE" shape (RFC 7636), cut down to one client
+(`AppSignInService`, `AppSignInView`, `ApiAccountController`):
+
+1. The app makes a secret `code_verifier` and opens
+   `/app/sign-in?code_challenge=BASE64URL(SHA-256(verifier))&code_challenge_method=S256&state=…&redirect_uri=commonroot://auth`
+   in a browser tab. A signed-out reader meets the site's own login page first
+   (and its register and password-reset pages), then comes back.
+2. The page names the account and asks once. **Continue** is a plain link to
+   `redirect_uri?code=…&state=…`; **Cancel** to `redirect_uri?error=access_denied&state=…`.
+3. The app posts `{"code","codeVerifier","redirectUri"}` to
+   **`POST /api/v1/auth/token`** (no key needed) and gets
+   `201 {"key": "crk_…", "keyId": "…"}`, a key labelled `Phone app`.
+
+- **Redirects are an exact allow-list:** `commonroot://auth` (the app),
+  `commonroot-test://auth` (the test build), plus `app.sign-in.dev-redirects`
+  on a developer's machine (the web build's `http://localhost:8082/auth`).
+- **Codes** are 32 random bytes, live 5 minutes, in memory, used once — a wrong
+  verifier spends the code too — and bound to their challenge and redirect.
+- **At the 5-key cap** the least recently used `Phone app` key is revoked to
+  make room, so a reader with a new phone is not stuck; hand-made keys are never
+  touched, and with no app key to replace the exchange answers `409 too_many_keys`.
+- **`DELETE /api/v1/auth/key`** revokes the key the request was made with (the
+  app's Sign out). The key also shows under API keys on the profile page.
+- **`GET /api/v1/me`** → `{"name": …, "displayName": …}`: `name` is the display
+  name or, when there is none, the email address; `displayName` is the name as
+  set (`""` when the email address shows). A guest key gets `403 sign_in_required`.
+- **`PUT /api/v1/me`** `{"displayName": …}` changes the display name, as the
+  profile page does: trimmed, at most 100 characters, `""` removes it (the email
+  address then shows). Answers as `GET`; `400 invalid_name` otherwise.
+
+### 2.3 Preferences shared with the website (2026-11-19)
+
+**`GET`/`PUT /api/v1/me/preferences`** show and change the part of
+`user_preferences` that means the same in the app and on the website:
+`uiLanguage`, `defaultSource`, `commentMarkers`, `xrefMarkers`, `mutedVoices`,
+`resume` and `position` (`{"src","ref"}` — the first column of the stored
+reader link), plus `updatedAt`. A `PUT` changes only the fields it carries; an
+empty string clears a text field; `resume:false` forgets the position, as the
+Preferences page does. `updatedAt` is `null` for a reader who never saved any.
+
+The app compares only the website's `updatedAt` with the one it last saw: when
+it differs, the website was used meanwhile and its values are taken. The
+reader's look (style, accent) and the column layout stay web-only.
+
 ## 3. Endpoints
 
 ### 3.1 `GET /api/v1/health`

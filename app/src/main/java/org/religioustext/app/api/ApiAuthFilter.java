@@ -46,6 +46,9 @@ public class ApiAuthFilter extends OncePerRequestFilter {
     /** Where the phone app gets a guest key; it is the one write that needs no key. */
     static final String GUEST_KEYS_PATH = "/api/v1/guest-keys";
 
+    /** Where the app trades a sign-in code for its key ({@link ApiAccountController#token}). */
+    static final String AUTH_TOKEN_PATH = "/api/v1/auth/token";
+
     /** Request attribute carrying the authenticated {@link ResolvedKey}. */
     public static final String ATTR_KEY = "org.religioustext.api.resolvedKey";
 
@@ -72,7 +75,8 @@ public class ApiAuthFilter extends OncePerRequestFilter {
         if (!path.startsWith("/api/")) return true;
         return path.equals("/api/v1/health")    // no auth, no quota — the uptime signal
             || path.equals("/api/docs")         // the documentation must be readable without a key
-            || path.equals(GUEST_KEYS_PATH);    // where a key comes from cannot need one
+            || path.equals(GUEST_KEYS_PATH)     // where a key comes from cannot need one
+            || path.equals(AUTH_TOKEN_PATH);    // nor the sign-in exchange: the code is the credential
     }
 
     @Override

@@ -354,7 +354,7 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
      *  an account preference, and an anonymous visitor sees every voice. */
     private java.util.Set<String> mutedVoices = java.util.Set.of();
     private boolean         prefsLoaded;
-    private long            lastPositionSaveMs;
+    private final PositionSaver positionSaver = new PositionSaver(System::currentTimeMillis);
 
     // Per-column reader state (book list, companion pairing, verse-window
     // bounds, controls, attribution) extracted to ColState.java (same package).
@@ -1288,22 +1288,29 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
     /** Persist the current position (the Copy-link query string) for "continue
      *  where I left off". Rate-limited; runs for every signed-in reader except
      *  one who has switched resume off (a reader with no preferences row yet
-     *  gets one, see UserPreferencesService.savePosition). */
+     *  gets one, see UserPreferencesService.savePosition). {@link PositionSaver}
+     *  decides when: never mid-{@link #applyLink}, never twice the same. */
     private void maybeSavePosition() {
         if (!authContext.isAuthenticated()) return;
         if (prefs != null && !prefs.isResumeEnabled()) return;
-        final long now = System.currentTimeMillis();
-        if (now - lastPositionSaveMs < 5000) return;
         final String path = buildCurrentLinkPath();
-        if (path == null) return;
-        lastPositionSaveMs = now;
-        final int q = path.indexOf('?');
-        prefsService.savePosition(authContext.getPrincipalName().orElse(""),
-            q >= 0 ? path.substring(q + 1) : path);
+        final String query = path == null ? null : path.substring(path.indexOf('?') + 1);
+        if (positionSaver.shouldSave(query))
+            prefsService.savePosition(authContext.getPrincipalName().orElse(""), query);
     }
 
-    /** Rebuild the columns from a parsed link and open each at its reference. */
+    /** Rebuild the columns from a parsed link and open each at its reference, saving
+     *  the position only once they show it: on the way, each column passes through its
+     *  edition's start (see {@link PositionSaver}).
+     *  @param aParsed the link (a shared one, or the saved position on resume) */
     private void applyLink(final ReaderLink.Parsed aParsed) {
+        positionSaver.hold();
+        try { rebuildFromLink(aParsed); } finally { positionSaver.release(); }
+        maybeSavePosition();
+    }
+
+    /** {@link #applyLink}'s work, with saving held. */
+    private void rebuildFromLink(final ReaderLink.Parsed aParsed) {
         for (final ColState s : new ArrayList<>(states)) removeColumn(s);
         currentSeq = -1; currentBook = null; currentChapter = 1;
 

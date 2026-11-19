@@ -127,8 +127,15 @@ final class ReaderScrollController {
                 sentinel.observe(bot);
 
                 const HEADER_OFFSET = 96;
+                // The line a chapter must reach to count as the one being read: the
+                // sticky bar's foot, where the jumps above park it. A bar that wraps
+                // (narrow column) is taller than HEADER_OFFSET; a fixed 96 there
+                // reported the chapter before the one shown, and saved that as the
+                // reader's position. The +2 absorbs sub-pixel rounding.
                 const topVisibleChapter = () => {
-                    const limit = root.getBoundingClientRect().top + HEADER_OFFSET;
+                    const bar = root.firstElementChild;
+                    const limit = root.getBoundingClientRect().top
+                                + Math.max(HEADER_OFFSET, (bar ? bar.offsetHeight : 0) + 2);
                     let best = null, bestTop = -Infinity, first = null;
                     root.querySelectorAll('[data-chapter]').forEach(el => {
                         if (!first) first = el;

@@ -53,4 +53,11 @@ USER appuser
 
 EXPOSE 8090
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# -XX:-UseBASE64Intrinsics: Java4Shell (CVE-2026-114938) workaround. The x86-64
+# HotSpot Base64 decoder intrinsic corrupts memory on AVX-512 VBMI CPUs, and
+# Tomcat/Spring decode request Base64 (Basic-auth headers) before any login.
+# Turning the intrinsic off makes Java use its plain decoder; the cost is
+# negligible here. In the ENTRYPOINT rather than JAVA_TOOL_OPTIONS so a compose
+# file that sets its own options cannot drop it. Remove once the base image is
+# on a fixed JDK (21.0.13.1 or later) — check `java -version` in the image.
+ENTRYPOINT ["java", "-XX:-UseBASE64Intrinsics", "-jar", "app.jar"]
