@@ -85,6 +85,13 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-11-20
+
+### Added
+- **`/app` shows a QR code to visitors who are not on an Android phone**, beside
+  the advice to open the page there. It leads to `/app` itself, not the APK, so the
+  phone gets the install steps too and the code never goes stale.
+
 ## [1.0.0] — 2026-11-19
 
 The first stable release, with the phone app's public launch.

@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.html.OrderedList;
 import com.vaadin.flow.component.html.Paragraph;
@@ -35,7 +36,7 @@ import java.util.Optional;
  * laptop is no use to anyone.
  *
  * @author Christa Claw
- * @version 0.12.9-SNAPSHOT
+ * @version 1.0.1-SNAPSHOT
  * @since 0.12.9
  */
 @Route("app")
@@ -92,15 +93,7 @@ public class AppDownloadView extends VerticalLayout implements HasDynamicTitle {
             .set("max-width", "640px").set("margin", "0 auto 28px").set("line-height", "1.6");
         hero.add(title, lead);
 
-        if (!onAndroid()) {
-            final Paragraph elsewhere = new Paragraph(t("app.notAndroid", SHORT_URL));
-            elsewhere.getStyle()
-                .set("color", "white").set("background", "rgba(255,255,255,0.12)")
-                .set("border", "1px solid rgba(255,255,255,0.25)").set("border-radius", "8px")
-                .set("padding", "12px 18px").set("max-width", "560px")
-                .set("margin", "0 auto 24px").set("font-size", "15px");
-            hero.add(elsewhere);
-        }
+        if (!onAndroid()) hero.add(elsewhere());
 
         if (aRelease.isPresent()) {
             final AndroidRelease r = aRelease.get();
@@ -123,6 +116,41 @@ public class AppDownloadView extends VerticalLayout implements HasDynamicTitle {
             hero.add(soon);
         }
         return hero;
+    }
+
+    /**
+     * For a visitor on a computer (or an iPhone): open this page on an Android phone, by
+     * typing {@value #SHORT_URL} or scanning the QR code beside it. The code leads to this
+     * page, not to the APK, so the phone also gets the install steps, and it never goes
+     * stale when a new version is released ({@code /images/app-qr.svg}, made with the
+     * app's own {@code toqr}).
+     *
+     * @return the box
+     */
+    private Div elsewhere() {
+        final Paragraph text = new Paragraph(t("app.notAndroid", SHORT_URL));
+        text.getStyle().set("margin", "0 0 6px 0");
+        final Span hint = new Span(t("app.qr.hint"));
+        hint.getStyle().set("font-size", "13px").set("color", "rgba(255,255,255,0.8)");
+        final Div words = new Div(text, hint);
+        words.getStyle().set("flex", "1 1 220px").set("text-align", "left");
+
+        final Image code = new Image("images/app-qr.svg", t("app.qr.alt", SHORT_URL));
+        code.setWidth("132px");
+        code.setHeight("132px");
+        code.getStyle()
+            .set("flex", "0 0 auto").set("background", "white").set("padding", "6px")
+            .set("border-radius", "6px").set("box-sizing", "content-box");
+
+        final Div box = new Div(words, code);
+        box.getStyle()
+            .set("display", "flex").set("flex-wrap", "wrap").set("align-items", "center")
+            .set("justify-content", "center").set("gap", "18px")
+            .set("color", "white").set("background", "rgba(255,255,255,0.12)")
+            .set("border", "1px solid rgba(255,255,255,0.25)").set("border-radius", "8px")
+            .set("padding", "14px 18px").set("max-width", "560px")
+            .set("margin", "0 auto 24px").set("font-size", "15px").set("box-sizing", "border-box");
+        return box;
     }
 
     // ── Body: install, updates, checksum, privacy ─────────────────────

@@ -6,8 +6,8 @@ _Estudia los textos que dan forma a nuestro mundo._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.0.0 |
-| Generated | 2026-11-19 |
+| Version | 1.0.1 |
+| Generated | 2026-11-20 |
 <!-- /AUTOGEN:meta -->
 
 ## Qué es
