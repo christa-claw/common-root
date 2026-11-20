@@ -85,6 +85,18 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-11-20
+
+### Added
+- **Edition descriptions in the phone app.** The edition picker has an "About
+  KJV" button (for whichever edition is open) that shows the same description
+  as the website's info page for it: who made it, when, from what, and the
+  facts. It comes in the app's language where the page is translated, else in
+  English with a note saying so. Served by a new
+  `GET /api/v1/texts/{token}/about`; edition records carry `about` so the app
+  offers it only where a page exists (75 of 91 texts today; both halves of a
+  hadith pair share the collection's page).
+
 ## [1.0.1] — 2026-11-20
 
 ### Added

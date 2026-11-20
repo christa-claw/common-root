@@ -36,6 +36,15 @@ the served page `GET /api/docs` (source: `app/src/main/resources/api-docs.html`)
   have it. `/books?lang=fi` adds `localName` per book from the reader's
   book-name bundles (English when the language has none) — for an app
   labelling books in its UI language.
+- **Descriptions (2026-11-20, 1.0.2):** `GET /texts/{token}/about?lang=fi`
+  is the edition's info page from the site (`/edition/{ABBR}`) as JSON:
+  `{text, lang, heading, summary, paragraphs[], facts[{label, value}],
+  thanks?, page}`. Same prose as the site, read from `i18n/editions`, no
+  second copy. A language without a page gets English, and `lang` says which
+  came back. Links to other editions in the prose and facts are site
+  markup and are dropped to their display text. 404 `no_description` for an edition without
+  a page; edition records carry `about: true|false` so a client offers it
+  only where one exists.
 - **Audio (2026-11-18, for the phone's Listen):** edition records carry
   `audio: true|false` (any narrated chapter). A chapter or verse-span response
   carries `audio: {mp3, offsets}` when that chapter is narrated — site paths

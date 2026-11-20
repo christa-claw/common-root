@@ -476,7 +476,8 @@ public class ApiTextController {
 
     /**
      * The edition record plus {@code audio}: whether any of its chapters has
-     * narrated audio, so a reader can offer listening before opening one.
+     * narrated audio, so a reader can offer listening before opening one; and
+     * {@code about}: whether it has a description ({@code /texts/{src}/about}).
      *
      * @param aRow the catalogue row
      * @return the record
@@ -484,6 +485,7 @@ public class ApiTextController {
     private Map<String, Object> withAudio(final SourceRow aRow) {
         final Map<String, Object> m = describe(aRow);
         m.put("audio", audio.hasAudio(aRow.id()));
+        m.put("about", ApiEditionInfoController.hasPage(aRow.abbreviation()));
         return m;
     }
 

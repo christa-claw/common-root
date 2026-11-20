@@ -6,7 +6,7 @@ _Study the texts that shape our world._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.0.1 |
+| Version | 1.0.2 |
 | Generated | 2026-11-20 |
 <!-- /AUTOGEN:meta -->
 
