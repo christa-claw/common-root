@@ -58,10 +58,13 @@ CHANNELS_FILE = os.path.join(PROJECT_ROOT, "channels.properties")
 
 # Chapter-audio manifest. Written by scripts/audio/tts_build.py and kept OUTSIDE
 # the repo on purpose (audio is ~1.7 GB per edition and the weekly crons abort on
-# a dirty tree), so this is an absolute path rather than a repo-relative one, and
-# overridable for a machine that mounts the volume elsewhere.
+# a dirty tree): it sits in an `audio` folder BESIDE the repo, not inside it, and
+# is overridable for a machine that keeps it elsewhere. Worked out from the repo's
+# own location rather than written as an absolute path, so no machine's layout is
+# baked into the code (and the public mirror's leak sweep has nothing to flag).
 AUDIO_INDEX = os.environ.get(
-    "COMMONROOT_AUDIO_INDEX", "audio/index.json")
+    "COMMONROOT_AUDIO_INDEX",
+    os.path.join(os.path.dirname(PROJECT_ROOT), "audio", "index.json"))
 
 APP_NAME = "Common Root?"
 

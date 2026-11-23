@@ -6,7 +6,7 @@ _ادرس النصوص التي تشكّل عالمنا._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.0.3 |
+| Version | 1.0.4 |
 | Generated | 2026-11-23 |
 <!-- /AUTOGEN:meta -->
 
@@ -144,7 +144,7 @@ Standard Version، وهذه مراجعةٌ لترجمة Revised Version، وهذ
 ## النصوص المتاحة حاليًا
 
 <!-- AUTOGEN:translations -->
-_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
+_BaseX query skipped (install `requests` to enable live ingestion stats)._
 <!-- /AUTOGEN:translations -->
 
 يجري باستمرار إضافة المزيد من الترجمات والتقاليد — بما في ذلك القرآن ومجموعات
@@ -157,7 +157,23 @@ _BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984
 ويبقى بالإمكان الربط إلى آية بعينها. التغطية الحالية:
 
 <!-- AUTOGEN:audio -->
-_No audio manifest at `audio/index.json`; coverage table not refreshed. Set `COMMONROOT_AUDIO_INDEX` to point at it._
+| Edition | Voice | Books | Chapters with audio | Listening time |
+|---|---|---|---|---|
+| `bible-ar-vandyck` | ar-SA-HamedNeural | 66 | 1189 | 64 h 15 min |
+| `bible-fi-1776` | fi-FI-HarriNeural | 11 | 287 | 21 h 38 min |
+| `bible-fi-1933` | fi-FI-HarriNeural | 78 | 1336 | 86 h 46 min |
+| `bible-fr-darby` | fr-FR-AlainNeural | 66 | 1189 | 64 h 21 min |
+| `bible-he-delitzsch` | he-IL-AvriNeural | 66 | 1189 | 48 h 59 min |
+| `bible-it-diodati` | it-IT-BenignoNeural | 66 | 1189 | 68 h 50 min |
+| `bible-ja-freedom-2026` | ja-JP-KeitaNeural | 66 | 1189 | 81 h 09 min |
+| `bible-lsv` | en-GB-AlfieNeural | 66 | 1189 | 65 h 13 min |
+| `bible-lut1912-1912` | de-DE-ChristophNeural | 66 | 1189 | 69 h 57 min |
+| `bible-ru-synodal` | ru-RU-DmitryNeural | 66 | 1189 | 63 h 32 min |
+| `bible-rvr09-1909` | es-ES-AlvaroNeural | 66 | 1189 | 88 h 34 min |
+| `bible-sv-1917` | sv-SE-MattiasNeural | 78 | 1337 | 94 h 49 min |
+| `bible-zh-cuv` | zh-CN-YunxiNeural | 66 | 1189 | 59 h 20 min |
+
+_14850 chapters across 13 editions, 877 h 28 min of audio. Manifest generated 2026-10-25T04:05:10._
 <!-- /AUTOGEN:audio -->
 
 هذا جهد قدر المستطاع لإتاحة نصوص الملك العام في صورة صوتية أصلًا، لا كتابًا مقدسًا

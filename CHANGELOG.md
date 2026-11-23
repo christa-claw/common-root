@@ -85,6 +85,29 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-11-23
+
+### Fixed
+- **The phone app's statistics were never sent.** The builds lacked the Umami
+  website id, so the app's anonymous screen counts went nowhere. Umami now has
+  its own "Common Root? app" website, and phone app 1.0.3 (versionCode 5),
+  offered on `/app`, is the first build that reports to it. Settings still
+  switches it off.
+
+### Added
+- **Screenshots on `/app`.** A cover-flow carousel of five pictures from a
+  real phone sits beside the install steps (under them on a phone): a chapter
+  with the Greek beneath each verse, a verse compared across editions, its
+  cross-references, its comments, and a private note. The picture in focus
+  stands in front at full size, the others smaller and behind it on either
+  side; it wraps round. Tap a side picture, swipe, use the arrow keys or the
+  ‹ › buttons and dots to move; tap the middle one to open it full size. The
+  caption under it is in all 14 site languages. About 180 KB in all.
+- **Info pages for three more editions** — the Italian Diodati 1885
+  (DIO1885) and Riveduta 1927 (RIV1927), and the German Textbibel 1906 (TKW) —
+  in all 14 languages, on
+  the site and behind "About" in the phone app's edition picker.
+
 ## [1.0.3] — 2026-11-23
 
 ### Changed
