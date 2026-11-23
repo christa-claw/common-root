@@ -6,8 +6,8 @@ _ادرس النصوص التي تشكّل عالمنا._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.0.2 |
-| Generated | 2026-11-20 |
+| Version | 1.0.3 |
+| Generated | 2026-11-23 |
 <!-- /AUTOGEN:meta -->
 
 ## ما هو
@@ -144,7 +144,7 @@ Standard Version، وهذه مراجعةٌ لترجمة Revised Version، وهذ
 ## النصوص المتاحة حاليًا
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+_BaseX unreachable at build time (HTTPConnectionPool(host='localhost', port=8984): Read timed out. (read timeout=10)); ingestion table not refreshed._
 <!-- /AUTOGEN:translations -->
 
 يجري باستمرار إضافة المزيد من الترجمات والتقاليد — بما في ذلك القرآن ومجموعات

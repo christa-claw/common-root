@@ -85,6 +85,12 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-11-23
+
+### Changed
+- **`/app` offers the phone app 1.0.2** (versionCode 4), the first APK with the
+  edition descriptions from 1.0.2: "About {abbr}" in the edition picker.
+
 ## [1.0.2] — 2026-11-20
 
 ### Added
