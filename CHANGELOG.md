@@ -85,6 +85,24 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.0.5] — 2026-11-23
+
+### Fixed
+- **Phone app: the player's buttons were under Android's own bar.** The app
+  is drawn edge to edge, and nothing kept room for the gesture line or the
+  three navigation buttons, so the listen bar's stop button sat behind them.
+  The player now rises above that bar, and every screen's last item (the
+  reader's next-chapter button, Sign out in Settings, the end of a picker or
+  the View sheet) scrolls clear of it. In phone app 1.0.4,
+  which `/app` now offers (versionCode 6).
+
+### Changed
+- **Phone app: the `listen` statistic says what was played.** Besides the
+  edition it now carries the book, the chapter and the passage (`JHN.3`), so
+  Umami can show which chapters are listened to. The Qur'an counts as book `Q`
+  with the surah as its chapter. In phone app 1.0.4,
+  which `/app` now offers (versionCode 6).
+
 ## [1.0.4] — 2026-11-23
 
 ### Fixed
