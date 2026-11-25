@@ -25,6 +25,7 @@ public final class VerseRef {
     private final Integer globalNarrativeSeq;
     private final String  note;
     private final String  bookCode;
+    private final String  commentaryXml;
 
     private VerseRef(final Builder aBuilder) {
         this.sourceId               = aBuilder.sourceId;
@@ -40,6 +41,7 @@ public final class VerseRef {
         this.globalNarrativeSeq     = aBuilder.globalNarrativeSeq;
         this.note                   = aBuilder.note;
         this.bookCode               = aBuilder.bookCode;
+        this.commentaryXml          = aBuilder.commentaryXml;
     }
 
     // ── Getters ───────────────────────────────────────────────────────
@@ -57,6 +59,19 @@ public final class VerseRef {
     public Integer getGlobalNarrativeSeq()     { return globalNarrativeSeq; }
     public String  getNote()                   { return note; }
     public String  getBookCode()               { return bookCode; }
+
+    /**
+     * The structured body of a commentary verse (schema v1.5): the serialized
+     * {@code <comment>} elements anchored here, preceded by the book's and the
+     * chapter's {@code <intro>} elements when this is the first commented verse
+     * of either. {@code null} for every Bible, Qur'an and hadith verse.
+     *
+     * @return the concatenated XML fragments, or {@code null}
+     */
+    public String  getCommentaryXml()          { return commentaryXml; }
+
+    /** @return {@code true} when this verse carries commentary rather than scripture text */
+    public boolean isCommentary()              { return commentaryXml != null && !commentaryXml.isBlank(); }
 
     /**
      * Returns the display content, uppercased if allCaps is set.
@@ -162,6 +177,7 @@ public final class VerseRef {
         private Integer globalNarrativeSeq;
         private String  note;
         private String  bookCode;
+        private String  commentaryXml;
 
         public Builder sourceId(final String aSourceId) {
             this.sourceId = aSourceId;
@@ -225,6 +241,11 @@ public final class VerseRef {
 
         public Builder bookCode(final String aBookCode) {
             this.bookCode = aBookCode;
+            return this;
+        }
+
+        public Builder commentaryXml(final String aCommentaryXml) {
+            this.commentaryXml = aCommentaryXml;
             return this;
         }
 

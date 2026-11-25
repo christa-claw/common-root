@@ -239,6 +239,79 @@ class ApiTextControllerTest {
         verify(quota, never()).countBytes(anyString(), anyLong());
     }
 
+    // ── reading orders (the phone app's Reading order): books and chapters as the reader orders them ──
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aBibleListsItsBooksInTheAskedOrderAndChronoAddsTheChapterSequence() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final ApiTextController controller = new ApiTextController(corpus,
+            new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC()),
+            mock(ApiQuotaService.class), mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+        final java.util.List<ApiCorpusService.Book> chrono = java.util.List.of(
+            new ApiCorpusService.Book("GEN", "Genesis", null, java.util.List.of(1, 2)),
+            new ApiCorpusService.Book("JOB", "Job", null, java.util.List.of(1)));
+        when(corpus.books("bible-kjv-1611", org.religioustext.app.model.DisplayOptions.OrderMode.CHRONOLOGICAL))
+            .thenReturn(chrono);
+        when(corpus.chronologicalChapters("bible-kjv-1611", chrono))
+            .thenReturn(java.util.List.of("GEN.1", "JOB.1", "GEN.2"));
+        when(corpus.books("bible-kjv-1611", org.religioustext.app.model.DisplayOptions.OrderMode.TANAKH))
+            .thenReturn(chrono);
+
+        final Map<String, Object> body = (Map<String, Object>) controller.books("kjv", null, "chrono").getBody();
+        assertThat(body.get("order")).isEqualTo("chrono");
+        assertThat(body.get("sequence")).isEqualTo(java.util.List.of("GEN.1", "JOB.1", "GEN.2"));
+        assertThat((java.util.List<Map<String, Object>>) body.get("books"))
+            .extracting(b -> b.get("code")).containsExactly("GEN", "JOB");
+
+        // the other orders only reorder whole books, so they need no sequence
+        final Map<String, Object> tanakh = (Map<String, Object>) controller.books("kjv", null, "tanakh").getBody();
+        assertThat(tanakh.get("order")).isEqualTo("tanakh");
+        assertThat(tanakh).doesNotContainKey("sequence");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void anOrderIsForBiblesAndAnUnknownOneIsCanonical() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final ApiTextController controller = new ApiTextController(corpus,
+            new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC()),
+            mock(ApiQuotaService.class), mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
+        when(corpus.resolve("q-en")).thenReturn(SourceRow.of(new String[] {
+            "quran-pickthall", "The Meaning of the Glorious Koran", "Q-EN", "ltr", "Public Domain", "", "quran", "en" }));
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+
+        final Map<String, Object> quran = (Map<String, Object>) controller.books("q-en", null, "chrono").getBody();
+        assertThat(quran.get("order")).isEqualTo("canon");
+        assertThat(quran).doesNotContainKey("sequence");
+        verify(corpus).books("quran-pickthall", org.religioustext.app.model.DisplayOptions.OrderMode.CANONICAL);
+
+        final Map<String, Object> odd = (Map<String, Object>) controller.books("kjv", null, "backwards").getBody();
+        assertThat(odd.get("order")).isEqualTo("canon");
+    }
+
+    // ── section titles (the reader's Titles mode) ──
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aVerseNamesTheSectionItSitsUnderOnlyWhenItHasOne() {
+        final ApiCorpusService corpus = mock(ApiCorpusService.class);
+        final AttestationService attest = new AttestationService("k1", "s", "", "c", "t", java.time.Clock.systemUTC());
+        final ApiTextController controller = new ApiTextController(corpus, attest, mock(ApiQuotaService.class), mock(AudioIndexService.class), new AppReadPolicy(java.time.Clock.systemUTC(), 300));
+        when(corpus.resolve("kjv")).thenReturn(kjvRow());
+        when(corpus.chapter("bible-kjv-1611", "JHN", 3)).thenReturn(java.util.List.of(
+            org.religioustext.app.model.VerseRef.builder().sourceId("bible-kjv-1611").bookCode("JHN").bookName("John")
+                .chapterNumber(3).verseNumber(1).chapterTitle("Jesus Teaches Nicodemus").content("There was a man").build(),
+            org.religioustext.app.model.VerseRef.builder().sourceId("bible-kjv-1611").bookCode("JHN").bookName("John")
+                .chapterNumber(3).verseNumber(2).content("The same came").build()));
+
+        final Map<String, Object> body = (Map<String, Object>) controller.chapter("kjv", "JHN.3", null, null, null).getBody();
+        final java.util.List<Map<String, Object>> verses = (java.util.List<Map<String, Object>>) body.get("verses");
+        assertThat(verses.get(0)).containsEntry("title", "Jesus Teaches Nicodemus");
+        assertThat(verses.get(1)).doesNotContainKey("title");
+    }
+
     // ── audio (mobile app's Listen): the API points at files the audio index knows ──
 
     @Test

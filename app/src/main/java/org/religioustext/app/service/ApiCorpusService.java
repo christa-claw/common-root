@@ -127,9 +127,22 @@ public class ApiCorpusService {
      * @return the books in canonical order, empty when the edition has none
      */
     public List<Book> books(final String aSourceId) {
+        return books(aSourceId, DisplayOptions.OrderMode.CANONICAL);
+    }
+
+    /**
+     * An edition's table of contents in one of the reader's orders: the books
+     * sorted as the site's sidebar sorts them in that mode. A book the order
+     * does not cover (an apocryphal one, an unstamped edition) keeps its
+     * canonical place, as on the site.
+     *
+     * @param aSourceId  the edition document id
+     * @param anOrder    the reading order
+     * @return the books in that order, empty when the edition has none
+     */
+    public List<Book> books(final String aSourceId, final DisplayOptions.OrderMode anOrder) {
         final List<Book> out = new ArrayList<>();
-        for (final String[] row : texts.listBooksWithChapterCounts(
-                aSourceId, DisplayOptions.OrderMode.CANONICAL)) {
+        for (final String[] row : texts.listBooksWithChapterCounts(aSourceId, anOrder)) {
             // row: name | chapterCount | arabicName | code | "1,2,3,…"
             if (row.length < 5) continue;
             final List<Integer> chapters = new ArrayList<>();
@@ -138,6 +151,29 @@ public class ApiCorpusService {
                 catch (final NumberFormatException ignored) { /* a malformed number is not a chapter */ }
             }
             out.add(new Book(row[3], row[0], row[2] == null || row[2].isBlank() ? null : row[2], chapters));
+        }
+        return out;
+    }
+
+    /**
+     * The chapters in the order chronological reading reaches them, as
+     * {@code CODE.N} references: a book may come back more than once (Genesis
+     * 1–11, then Job, then Genesis 12–50). A chapter the plan splits sits where
+     * the reading first reaches it. The query names books by {@code @name};
+     * the edition's own table of contents turns that into its code.
+     *
+     * @param aSourceId the edition document id
+     * @param theBooks  the edition's books, any order, to map names to codes
+     * @return the chapters in reading order, without any the books do not know
+     */
+    public List<String> chronologicalChapters(final String aSourceId, final List<Book> theBooks) {
+        final java.util.Map<String, String> codes = new java.util.HashMap<>();
+        for (final Book b : theBooks) codes.put(b.name(), b.code());
+        final List<String> out = new ArrayList<>();
+        for (final String[] row : texts.listChronologicalChunks(aSourceId)) {
+            if (row.length < 2) continue;
+            final String code = codes.get(row[0]);
+            if (code != null && !row[1].isBlank()) out.add(code + "." + row[1].trim());
         }
         return out;
     }
@@ -208,6 +244,58 @@ public class ApiCorpusService {
         if (aSourceId == null || !SAFE_KEY.matcher(aSourceId).matches()) return null;
         final String xml = fetch(CorpusDownloadController.authenticCopyQuery(baseX.database(), aSourceId));
         return xml == null || xml.isBlank() ? null : xml;
+    }
+
+    /**
+     * Every commentary's comments on one verse, as one XML document for
+     * {@code org.religioustext.app.api.CommentaryJson} to read. A comment
+     * covers the verse when it starts there or is a range that reaches it
+     * ({@code @toVerse}, and {@code @toChapter} across a chapter end), so a
+     * comment on John 3:14–17 answers for 3:16. On the first verse of a chapter
+     * the chapter's introductions come too, and on 1:1 the book's.
+     *
+     * {@snippet lang="xml" :
+     * <r>
+     *   <t id="commentary-mhc-en" author="Matthew Henry">
+     *     <i>(an rt:intro)</i>
+     *     <c ch="3" v="14">(an rt:comment)</c>
+     *   </t>
+     * </r>
+     * }
+     *
+     * <p>Serialized unindented: comment text is mixed content, and indenting it
+     * would put spaces inside words next to inline elements.
+     *
+     * @param aBookCode the USFM book code
+     * @param aChapter  the chapter, 1 or more
+     * @param aVerse    the verse, 1 or more
+     * @return the document; {@code <r/>} when nothing comments on the verse, {@code null} on a failed query
+     */
+    public String commentariesOn(final String aBookCode, final int aChapter, final int aVerse) {
+        if (aBookCode == null || !SAFE_KEY.matcher(aBookCode).matches() || aChapter < 1 || aVerse < 1) return null;
+        final String xquery = NS_DECL
+            + "declare option output:omit-xml-declaration 'yes'; "
+            + "declare option output:indent 'no'; "
+            + "let $code := '" + aBookCode + "' let $c := " + aChapter + " let $v := " + aVerse + " "
+            + "return <r>{ "
+            + "for $t in db:open('" + baseX.database() + "')/rt:text[@type='commentary'] "
+            + "let $b := $t/rt:book[@code=$code] "
+            + "let $intros := if ($v ne 1) then () else ( "
+            + "  if ($c eq 1) then $b/rt:intro else (), $b/rt:chapter[@number=string($c)]/rt:intro) "
+            + "let $hits := "
+            + "  for $ch in $b/rt:chapter[xs:integer(@number) le $c] "
+            + "  let $n := xs:integer($ch/@number) "
+            + "  for $vv in $ch/rt:verse[$n lt $c or xs:integer(@number) le $v] "
+            + "  let $vn := xs:integer($vv/@number) "
+            + "  for $cm in $vv/rt:comment "
+            + "  let $tc := if ($cm/@toChapter) then xs:integer($cm/@toChapter) else $n "
+            + "  let $tv := if ($cm/@toVerse) then xs:integer($cm/@toVerse) else if ($tc gt $n) then 9999 else $vn "
+            + "  where $tc gt $c or ($tc eq $c and $tv ge $v) "
+            + "  return <c ch='{$n}' v='{$vn}'>{$cm}</c> "
+            + "where exists($hits) or exists($intros) "
+            + "return <t id='{$t/@id}' author='{$t/@author}'>{ $intros ! <i>{.}</i>, $hits }</t> "
+            + "}</r>";
+        return fetch(xquery);
     }
 
     private String fetch(final String anXquery) {

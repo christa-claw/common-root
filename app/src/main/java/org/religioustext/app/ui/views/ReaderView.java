@@ -519,6 +519,13 @@ public class ReaderView extends VerticalLayout implements BeforeEnterObserver {
                 @Override public String annotateHint() {
                     return ReaderView.this.t("reader.annotate.hint");
                 }
+                @Override public String commentaryIntroLabel() {
+                    return ReaderView.this.t("reader.commentary.intro");
+                }
+                @Override public void openPassage(final ColState aState, final String aTarget) {
+                    final XRef ref = CommentaryRenderer.toXRef(aTarget);
+                    if (ref != null) afterRoundTrip(() -> openXrefInNewColumn(ref, aState));
+                }
                 @Override public String lineageWitnessHint() {
                     return ReaderView.this.t("reader.lineage.witness");
                 }

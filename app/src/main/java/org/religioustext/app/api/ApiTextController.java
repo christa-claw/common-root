@@ -206,18 +206,34 @@ public class ApiTextController {
      * language whatever the edition's. A language without a bundle falls back
      * to English, never to the server's own locale.
      *
-     * @param aSrc  the source token or document id
-     * @param aLang optional UI language for {@code localName}
-     * @return the books in canonical order
+     * <p>With {@code order} — the reader's own tokens, as in a reader link:
+     * {@code canon} (the default), {@code chrono}, {@code tanakh},
+     * {@code writing} — the books come in that reading order, and the body
+     * says which in {@code order}. Chronological reading also moves between
+     * books chapter by chapter, so for {@code chrono} the body adds
+     * {@code sequence}: every chapter as {@code CODE.N} in the order the
+     * reading reaches it. For the other orders the sequence is simply the
+     * books' chapters one book after another. An order only means something
+     * for a Bible; other editions answer in their own order.
+     *
+     * @param aSrc   the source token or document id
+     * @param aLang  optional UI language for {@code localName}
+     * @param anOrder optional reading order token; canonical when absent or unknown
+     * @return the books in that order
      */
     @GetMapping(value = "/texts/{src}/books", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> books(@PathVariable("src") final String aSrc,
-                                        @RequestParam(value = "lang", required = false) final String aLang) {
+                                        @RequestParam(value = "lang", required = false) final String aLang,
+                                        @RequestParam(value = "order", required = false) final String anOrder) {
         final SourceRow row = corpus.resolve(aSrc);
         if (row == null) return unknownSource(aSrc);
         final java.util.ResourceBundle local = bookNames(aLang);
+        final org.religioustext.app.model.DisplayOptions.OrderMode order = "bible".equals(row.type())
+            ? ReaderLink.orderFromToken(anOrder)
+            : org.religioustext.app.model.DisplayOptions.OrderMode.CANONICAL;
+        final List<ApiCorpusService.Book> ordered = corpus.books(row.id(), order);
         final List<Map<String, Object>> books = new ArrayList<>();
-        for (final ApiCorpusService.Book b : corpus.books(row.id())) {
+        for (final ApiCorpusService.Book b : ordered) {
             final Map<String, Object> m = new LinkedHashMap<>();
             m.put("code", b.code());
             m.put("name", b.name());
@@ -229,8 +245,12 @@ public class ApiTextController {
         final Map<String, Object> body = new LinkedHashMap<>();
         body.put("text", token(row));
         body.put("type", row.type());
+        body.put("order", ReaderLink.orderToken(order));
         body.put("count", books.size());
         body.put("books", books);
+        if (order == org.religioustext.app.model.DisplayOptions.OrderMode.CHRONOLOGICAL) {
+            body.put("sequence", corpus.chronologicalChapters(row.id(), ordered));
+        }
         return ResponseEntity.ok()
             .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
             .body(body);
@@ -525,6 +545,9 @@ public class ApiTextController {
             vm.put("number", v.getVerseNumber());
             vm.put("text", VerseRef.clean(v.getContent()));   // the reader's display text: no ¶/§, no stray footnotes
             if (v.getNote() != null && !v.getNote().isBlank()) vm.put("note", v.getNote());
+            // the section heading this verse sits under (NIV, NASB…), for the reader's Titles mode;
+            // every verse of a section carries it, so a reader shows it where it changes
+            if (v.getChapterTitle() != null && !v.getChapterTitle().isBlank()) vm.put("title", v.getChapterTitle());
             verses.add(vm);
         }
         m.put("verses", verses);

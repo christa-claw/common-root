@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 Christa Claw
 """
+SUPERSEDED 2026-11-24 by 03_ingest_commentary.py (schema v1.5, all three source
+formats; see docs/commentary-pipeline.md). Kept for the record of the v1.4 shape.
+
 02_convert_sefaria_commentary.py — turn a Sefaria v3 JSON drop (as fetched by the
 weekly corpus-fetch task into sources/commentaries/) into ONE religious-text.xsd
 <text> document per language, and optionally PUT it into BaseX.

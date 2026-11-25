@@ -36,6 +36,24 @@ the served page `GET /api/docs` (source: `app/src/main/resources/api-docs.html`)
   have it. `/books?lang=fi` adds `localName` per book from the reader's
   book-name bundles (English when the language has none) — for an app
   labelling books in its UI language.
+- **Commentaries (2026-11-25, 1.1.0):** `GET /commentaries/{book}/{chapter}/{verse}`
+  answers with every commentary that says something about the verse (§3.10).
+  Commentaries are also listed by `/texts` with `type: "commentary"`; the app
+  keeps them out of its edition picker and reads them through this route.
+- **Section titles (2026-11-25, 1.1.0):** a verse in a chapter or passage
+  answer carries `title` when the edition gives its section a heading (NIV,
+  NASB, NBLA; a few LXX verses). Every verse of the section carries the same
+  title, so a reader shows it where it changes — the reader's Titles mode.
+  Today's data has at most one title per chapter (NIV 953 chapters, NASB
+  1188, NBLA 1176), so it changes only at a chapter. Absent when there is none.
+- **Reading orders (2026-11-24, 1.1.0):** `/books?order=chrono` (also
+  `canon`, the default, `tanakh`, `writing` — the reader-link tokens) lists
+  the books in that order, as the site's sidebar does, and the body says which
+  in `order`. Chronological reading moves between books chapter by chapter,
+  so `chrono` adds `sequence`: every chapter as `CODE.N` in reading order
+  (Genesis 11 → Job 1 → … → Genesis 12); a chapter the plan splits sits where
+  reading first reaches it. Bibles only: other editions answer `canon`. An
+  unknown token is `canon`.
 - **Descriptions (2026-11-20, 1.0.2):** `GET /texts/{token}/about?lang=fi`
   is the edition's info page from the site (`/edition/{ABBR}`) as JSON:
   `{text, lang, heading, summary, paragraphs[], facts[{label, value}],
@@ -596,6 +614,42 @@ One sentence in the docs reserving the possibility; nothing built.
 
 A verify endpoint is a promise that someone's "verified" badge keeps working —
 it sits behind the same health/uptime gate as everything else (§9).
+
+### 3.10 `GET /api/v1/commentaries/{book}/{chapter}/{verse}` {#commentaries}
+
+What every commentary in the corpus says about one verse — the phone app's
+Commentary tab. Addressed like the cross-references (a USFM book code, then
+numbers), because a commentary is read beside whichever Bible is open. Only
+openly licensed commentaries are served: public domain or CC0, every part of a
+combined licence.
+
+```json
+{ "ref": "JHN.3.16", "count": 12,
+  "commentaries": [
+    { "text": "mhc", "abbreviation": "MHC", "title": "Matthew Henry's Complete Commentary",
+      "author": "Matthew Henry", "language": "en", "direction": "ltr", "licence": "Public Domain",
+      "intros": [ { "heading": "…", "paragraphs": [ [ {"text": "…"} ] ] } ],
+      "comments": [
+        { "from": "JHN.3.1", "to": "JHN.3.21", "heading": "…", "source": "…",
+          "paragraphs": [ [ {"text": "As "}, {"text": "Numbers 21:9", "ref": "NUM.21.9"},
+                            {"text": "so must", "em": true}, {"text": "a note", "note": true} ] ] } ] } ] }
+```
+
+- **Coverage.** A comment stored on a range (`from`/`to`) answers for every
+  verse in it, across a chapter end too. `to` is absent for a single verse.
+- **Introductions.** On a chapter's first verse the chapter's `intros` come too,
+  and on 1:1 the book's; absent otherwise.
+- **Markup** is never sent. A paragraph is a list of runs: `text`, plus `em`,
+  `strong`, `note` (a footnote, shown small) and `ref` (a link-format target)
+  where they apply. Nesting is flattened (`em` inside a note has both).
+- **Order** is by title; a client sorts by language itself.
+- **Numbering** is each commentary's own: KJV for the Christian works, the
+  Hebrew Bible's for the Jewish ones. Where they differ, a verse finds what is
+  stored under its number in each.
+- **Errors.** 400 `bad_ref` for a chapter or verse below 1; 404
+  `no_such_book` for a malformed code; 503 `corpus_unavailable` when BaseX
+  cannot be read. A verse nothing comments on is 200 with an empty list.
+- Publicly cacheable for an hour.
 
 ## 4. Formats, summarised
 

@@ -4,7 +4,18 @@
            xmlns:rt="http://religioustext.org/schema/1.0"
            elementFormDefault="qualified">
 
-  <!-- Canonical XML Schema for Religious Texts v1.4
+  <!-- Canonical XML Schema for Religious Texts v1.5
+       v1.5 (2026-11-24): commentaries get real structure instead of one joined
+       string per verse. A verse may now hold <comment> children (mixed content,
+       so every existing plain-text Bible verse stays valid); a chapter and a
+       book may open with an <intro>; and a chapter or book may hold an intro
+       and no verses at all (a commentary that discusses a chapter as a whole).
+       A comment is one or more <p>, each mixed text with <em>, <strong>,
+       <ref target="USFM.ch.v"> and <note> (a footnote, rendered inline).
+       comment/@toChapter + @toVerse mark the end of a range the comment
+       covers; it is stored once, at the range's first verse. Written by
+       scripts/commentaries/ (one converter per source format) into the
+       commentary staging database; see docs/commentary-pipeline.md.
        v1.4 (2026-09-13): added the "commentary" text type (verse-anchored
        commentaries projected onto book > chapter > verse, see
        scripts/commentaries/02_convert_sefaria_commentary.py) and declared two
@@ -49,11 +60,14 @@
     <xs:attribute name="license"       type="xs:string"          use="optional"/>
     <xs:attribute name="region"        type="xs:string"          use="optional"/>
     <xs:attribute name="totalVerses"   type="xs:positiveInteger" use="optional"/>
+    <!-- v1.5, commentaries: who wrote it (the translation attribute is the title) -->
+    <xs:attribute name="author"        type="xs:string"          use="optional"/>
   </xs:complexType>
 
   <xs:complexType name="BookType">
     <xs:sequence>
-      <xs:element name="chapter" type="rt:ChapterType" maxOccurs="unbounded"/>
+      <xs:element name="intro"   type="rt:CommentType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="chapter" type="rt:ChapterType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name"               type="xs:string"          use="required"/>
     <xs:attribute name="altName"            type="xs:string"          use="optional"/>
@@ -70,7 +84,8 @@
 
   <xs:complexType name="ChapterType">
     <xs:sequence>
-      <xs:element name="verse" type="rt:VerseType" maxOccurs="unbounded"/>
+      <xs:element name="intro" type="rt:CommentType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="verse" type="rt:VerseType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="number"             type="xs:positiveInteger"     use="required"/>
     <xs:attribute name="title"              type="xs:string"              use="optional"/>
@@ -92,9 +107,11 @@
 
        Global sequence numbers enable full-text streaming sorted by
        any ordering without traversing the tree structure. -->
-  <xs:complexType name="VerseType">
-    <xs:simpleContent>
-      <xs:extension base="xs:string">
+  <xs:complexType name="VerseType" mixed="true">
+    <!-- Bible/Qur'an verses: text only. Commentary verses: <comment> children only. -->
+    <xs:sequence>
+      <xs:element name="comment" type="rt:CommentType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
         <xs:attribute name="number"                 type="xs:positiveInteger" use="required"/>
         <xs:attribute name="bookName"               type="xs:string"          use="optional"/>
         <xs:attribute name="bookAltName"            type="xs:string"          use="optional"/>
@@ -105,6 +122,47 @@
         <xs:attribute name="globalNarrativeSeq"     type="xs:positiveInteger" use="optional"/>
         <xs:attribute name="globalTanakhSeq"        type="xs:positiveInteger" use="optional"/>
         <xs:attribute name="note"                   type="xs:string"          use="optional"/>
+  </xs:complexType>
+
+  <!-- COMMENT (v1.5) — one comment, or one intro, of a commentary.
+       @n         order within its verse (1-based)
+       @heading   a heading the source gives the comment (CCEL section title,
+                  SWORD <title>, Sefaria intro name)
+       @lemma     the words of the verse the comment opens on (Sefaria's
+                  dibbur ha-matchil, a bolded headword in SWORD/CCEL)
+       @toChapter / @toVerse  last verse of the range the comment covers
+       @source    sub-source when one document merges several (e.g. a Sefaria
+                  versionTitle), so the provenance survives the merge -->
+  <xs:complexType name="CommentType">
+    <xs:sequence>
+      <xs:element name="p" type="rt:InlineType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="n"         type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="heading"   type="xs:string"          use="optional"/>
+    <xs:attribute name="lemma"     type="xs:string"          use="optional"/>
+    <xs:attribute name="toChapter" type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="toVerse"   type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="source"    type="xs:string"          use="optional"/>
+  </xs:complexType>
+
+  <!-- Inline markup inside a comment paragraph. Deliberately small: the reader
+       renders exactly these four and nothing else. -->
+  <xs:complexType name="InlineType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="em"     type="rt:InlineType"/>
+      <xs:element name="strong" type="rt:InlineType"/>
+      <xs:element name="note"   type="rt:InlineType"/>
+      <xs:element name="ref"    type="rt:RefType"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <!-- A scripture cross-reference. @target is BOOKCODE.chapter[.verse[-verse]]
+       with the USFM book code the reader's links use (docs/link-format.md),
+       e.g. GEN.1.1 or ISA.7.14-16. The element text is what the source printed. -->
+  <xs:complexType name="RefType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="target" type="xs:string" use="optional"/>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>

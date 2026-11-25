@@ -6,8 +6,8 @@ _Estudia los textos que dan forma a nuestro mundo._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.0.5 |
-| Generated | 2026-11-23 |
+| Version | 1.1.0 |
+| Generated | 2026-11-25 |
 <!-- /AUTOGEN:meta -->
 
 ## Qué es
@@ -174,7 +174,173 @@ en otra.
 ## Textos disponibles actualmente
 
 <!-- AUTOGEN:translations -->
-_BaseX query skipped (install `requests` to enable live ingestion stats)._
+| Document | Language | Books | Verses |
+|---|---|---|---|
+| `bible-ar-onav` | ar | 66 | 31103 |
+| `bible-ar-vandyck` | ar | 66 | 31102 |
+| `bible-ar-vd-ebible` | ar | 66 | 31104 |
+| `bible-asv-1901` | en | 66 | 31102 |
+| `bible-bes` | es | 66 | 31103 |
+| `bible-bsb` | en | 66 | 31086 |
+| `bible-byz1904-1904` | grc | 27 | 7958 |
+| `bible-de-1545` | de | 66 | 31170 |
+| `bible-de-elberfelder` | de | 66 | 31102 |
+| `bible-de-textbibel-1906` | de | 66 | 31157 |
+| `bible-diaglott-il-1864` | en | 27 | 7955 |
+| `bible-dra-1899` | en | 72 | 35598 |
+| `bible-en-asv-byzantine` | en | 66 | 31099 |
+| `bible-en-bbe-1949` | en | 66 | 31102 |
+| `bible-en-brenton-lxx-1851` | en | 37 | 22970 |
+| `bible-en-brenton-lxx-updated` | en | 36 | 22603 |
+| `bible-en-darby-1890` | en | 66 | 31099 |
+| `bible-en-leeser-1853` | en | 39 | 23143 |
+| `bible-en-msb` | en | 66 | 31098 |
+| `bible-en-tyndale-1534` | en | 27 | 7954 |
+| `bible-en-webster-1833` | en | 66 | 31102 |
+| `bible-en-ylt-1898` | en | 66 | 31102 |
+| `bible-fbv` | en | 66 | 31104 |
+| `bible-fi-1548` | fi | 71 | 13616 |
+| `bible-fi-1642` | fi | 78 | 35545 |
+| `bible-fi-1776` | fi | 66 | 31102 |
+| `bible-fi-1933` | fi | 78 | 35438 |
+| `bible-fr-darby` | fr | 66 | 31167 |
+| `bible-fr-ostervald` | fr | 66 | 31107 |
+| `bible-fr-segond-1910` | fr | 66 | 31170 |
+| `bible-gnv-1599` | en | 66 | 31090 |
+| `bible-grc-majority-nt` | grc | 27 | 7953 |
+| `bible-grc-solidrock-nt` | grc | 27 | 7961 |
+| `bible-grc-tischendorf-1872` | grc | 27 | 7939 |
+| `bible-grc-tr` | grc | 27 | 7957 |
+| `bible-he-delitzsch` | he | 66 | 31102 |
+| `bible-he-salkinson-1885` | he | 27 | 7957 |
+| `bible-he-wlc` | he | 39 | 23213 |
+| `bible-hlt-olcim` | hlt | 66 | 31104 |
+| `bible-irvhin-2019` | hi | 66 | 31104 |
+| `bible-it-diodati-1885` | it | 66 | 31095 |
+| `bible-it-diodati` | it | 66 | 31102 |
+| `bible-it-riveduta-1927` | it | 66 | 31102 |
+| `bible-ja-freedom-2026` | ja | 66 | 31098 |
+| `bible-jps1917-1917` | en | 39 | 23145 |
+| `bible-kjv-1611` | en | 80 | 36820 |
+| `bible-la-clementina-1598` | la | 66 | 31434 |
+| `bible-la-vulgate` | la | 73 | 35809 |
+| `bible-lsv` | en | 66 | 31104 |
+| `bible-lut1912-1912` | de | 66 | 31171 |
+| `bible-lxx-1851` | grc | 45 | 26219 |
+| `bible-nasb-2020` | en | 66 | 31073 |
+| `bible-nbla` | es | 66 | 31090 |
+| `bible-niv-2011` | en | 66 | 30752 |
+| `bible-pddpt` | es | 66 | 31078 |
+| `bible-ru-synodal` | ru | 77 | 37027 |
+| `bible-rv-1885` | en | 80 | 36873 |
+| `bible-rvr09-1909` | es | 66 | 31102 |
+| `bible-sv-1917` | sv | 78 | 35350 |
+| `bible-tr-ytc-2023` | tr | 66 | 31059 |
+| `bible-vbl` | es | 66 | 31102 |
+| `bible-web` | en | 80 | 37839 |
+| `bible-zh-cuv1919` | zh | 66 | 31102 |
+| `bible-zh-cuv` | zh | 66 | 31101 |
+| `commentary-abarbanel-tor-en` | en | 5 | 43 |
+| `commentary-abarbanel-tor-he` | he | 5 | 518 |
+| `commentary-alshich-tor-he` | he | 5 | 176 |
+| `commentary-bahya-tor-he` | he | 5 | 2283 |
+| `commentary-barnes-en` | en | 27 | 7431 |
+| `commentary-bekhorshor-tor-en` | en | 5 | 106 |
+| `commentary-bekhorshor-tor-he` | he | 5 | 2179 |
+| `commentary-burkitt-en` | en | 27 | 3276 |
+| `commentary-calvin-en` | en | 48 | 13453 |
+| `commentary-catena-en` | en | 4 | 821 |
+| `commentary-chizkuni-tor-en` | en | 5 | 29 |
+| `commentary-chizkuni-tor-he` | he | 5 | 3342 |
+| `commentary-clarke-en` | en | 66 | 21051 |
+| `commentary-daatzekenim-tor-he` | he | 5 | 915 |
+| `commentary-glossa-la` | la | 73 | 35675 |
+| `commentary-haamekdavar-tor-en` | en | 5 | 177 |
+| `commentary-haamekdavar-tor-he` | he | 5 | 4454 |
+| `commentary-hadarzekenim-tor-he` | he | 5 | 1113 |
+| `commentary-haktav-tor-he` | he | 5 | 2043 |
+| `commentary-harchevdavar-tor-he` | he | 5 | 360 |
+| `commentary-ibn-ezra-isaiah-en` | en | 1 | 1210 |
+| `commentary-ibn-ezra-isaiah-he` | he | 1 | 1212 |
+| `commentary-ie-12-he` | he | 12 | 945 |
+| `commentary-ie-ket-en` | en | 8 | 276 |
+| `commentary-ie-ket-he` | he | 11 | 4927 |
+| `commentary-ie-tor-en` | en | 5 | 132 |
+| `commentary-ie-tor-he` | he | 5 | 3628 |
+| `commentary-jfb-en` | en | 66 | 16893 |
+| `commentary-kanttekeningen-nl` | nl | 66 | 25195 |
+| `commentary-kd-en` | en | 39 | 8805 |
+| `commentary-kliyakar-tor-en` | en | 5 | 82 |
+| `commentary-kliyakar-tor-he` | he | 5 | 839 |
+| `commentary-lightfoot-en` | en | 4 | 849 |
+| `commentary-malbim-ket-en` | en | 6 | 36 |
+| `commentary-malbim-ket-he` | he | 11 | 5584 |
+| `commentary-malbim-nev-en` | en | 12 | 63 |
+| `commentary-malbim-nev-he` | he | 20 | 6142 |
+| `commentary-malbim-tor-en` | en | 4 | 52 |
+| `commentary-malbim-tor-he` | he | 4 | 3284 |
+| `commentary-metzdavid-en` | en | 16 | 226 |
+| `commentary-metzdavid-he` | he | 31 | 14765 |
+| `commentary-metzzion-en` | en | 8 | 69 |
+| `commentary-metzzion-he` | he | 31 | 9211 |
+| `commentary-mhc-en` | en | 66 | 4249 |
+| `commentary-mhcc-en` | en | 66 | 4049 |
+| `commentary-orhachaim-tor-en` | en | 5 | 39 |
+| `commentary-orhachaim-tor-he` | he | 5 | 2015 |
+| `commentary-radak-gen-he` | he | 1 | 1241 |
+| `commentary-radak-psa-en` | en | 1 | 215 |
+| `commentary-radak-psa-he` | he | 1 | 634 |
+| `commentary-radak-zec-en` | en | 1 | 22 |
+| `commentary-ralbag-tor-he` | he | 5 | 119 |
+| `commentary-ramban-tor-en` | en | 5 | 288 |
+| `commentary-ramban-tor-he` | he | 4 | 1362 |
+| `commentary-rashbam-tor-en` | en | 5 | 915 |
+| `commentary-rashbam-tor-he` | he | 5 | 1744 |
+| `commentary-rashi-ket-en` | en | 11 | 82 |
+| `commentary-rashi-ket-he` | he | 13 | 5249 |
+| `commentary-rashi-nev-en` | en | 18 | 260 |
+| `commentary-rashi-nev-he` | he | 21 | 5584 |
+| `commentary-rashi-tor-en` | en | 5 | 3893 |
+| `commentary-rashi-tor-he` | he | 5 | 3900 |
+| `commentary-riva-tor-he` | he | 5 | 741 |
+| `commentary-scofield-en` | en | 66 | 3213 |
+| `commentary-sforno-tor-en` | en | 5 | 306 |
+| `commentary-sforno-tor-he` | he | 5 | 2304 |
+| `commentary-shadal-tor-en` | en | 5 | 54 |
+| `commentary-shadal-tor-he` | he | 5 | 1916 |
+| `commentary-tdavid-en` | en | 1 | 150 |
+| `commentary-tsk-en` | en | 66 | 31087 |
+| `commentary-turhaarokh-tor-he` | he | 5 | 2114 |
+| `commentary-wesley-en` | en | 64 | 16926 |
+| `hadith-abudawud-ar` | ar | 43 | 5274 |
+| `hadith-abudawud-en` | en | 43 | 5274 |
+| `hadith-bukhari-ar` | ar | 98 | 7589 |
+| `hadith-bukhari-en` | en | 98 | 7589 |
+| `hadith-dehlawi-ar` | ar | 1 | 40 |
+| `hadith-dehlawi-en` | en | 1 | 40 |
+| `hadith-ibnmajah-ar` | ar | 38 | 4343 |
+| `hadith-ibnmajah-en` | en | 38 | 4343 |
+| `hadith-malik-ar` | ar | 62 | 1858 |
+| `hadith-malik-en` | en | 62 | 1858 |
+| `hadith-muslim-ar` | ar | 57 | 7563 |
+| `hadith-muslim-en` | en | 57 | 7563 |
+| `hadith-nasai-ar` | ar | 52 | 5765 |
+| `hadith-nasai-en` | en | 52 | 5765 |
+| `hadith-nawawi-ar` | ar | 1 | 42 |
+| `hadith-nawawi-en` | en | 1 | 42 |
+| `hadith-qudsi-ar` | ar | 1 | 40 |
+| `hadith-qudsi-en` | en | 1 | 40 |
+| `hadith-tirmidhi-ar` | ar | 49 | 3998 |
+| `hadith-tirmidhi-en` | en | 49 | 3998 |
+| `lds-book-of-mormon` | en | 15 | 6604 |
+| `lds-doctrine-and-covenants` | en | 1 | 3654 |
+| `lds-pearl-of-great-price` | en | 5 | 635 |
+| `quran-ar-uthmani` | ar | 114 | 6236 |
+| `quran-en-pickthall` | en | 114 | 6236 |
+| `quran-en-yusufali` | en | 114 | 6236 |
+| `quran-ru-sablukov` | ru | 114 | 6236 |
+
+_163 translations, 2,196,490 verses total._
 <!-- /AUTOGEN:translations -->
 
 Se añaden continuamente más traducciones y tradiciones — incluidos el Corán, las

@@ -85,6 +85,83 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+### Added
+- **The printed-page look in the phone app.** The website's "book look" for a
+  signed-in reader comes to the app: EB Garamond (Ezra SIL for Hebrew,
+  Scheherazade New for Arabic), justified and hyphenated at 18 on 1.75, the
+  chapter number as a two-line drop cap in the accent colour, and a book opening
+  with its name between rules and, for English editions, its traditional long
+  title. The View sheet gains Reader look (Book / Classic), the five accents and
+  "Show traditional book titles", in all 14 languages. On once signed in, as on
+  the website; a guest keeps the classic reader unless they choose otherwise.
+
+## [1.1.0] — 2026-11-25
+
+### Added
+- **72 commentaries in the library.** Public-domain and CC0 commentaries in
+  English, Hebrew, Latin and Dutch — Matthew Henry, Adam Clarke, John Calvin,
+  Rashi, Ramban, Ibn Ezra and more — from Sefaria, CrossWire SWORD modules and
+  CCEL, converted to the schema's new v1.5 commentary shape (`<comment>` on a
+  verse or a range, book and chapter introductions, inline emphasis, notes and
+  references). They read through the same API as the phone app's Commentary
+  tab.
+- **Commentary columns in the reader.** A commentary opened beside a Bible
+  shows one block per commented verse, synced to the Bible columns by book,
+  chapter and verse: a range label when a comment covers several verses,
+  collapsible introductions, and references that open where they point.
+- **Edition info pages for Young's Literal Translation and Webster's Bible**,
+  in all 14 languages.
+- **Strong's lexicon glosses** in more of the reader's languages, for further
+  ranges of the Hebrew and Greek entries.
+
+### Fixed
+- **A reader behind a filtering proxy now gets a message instead of a blank
+  page.** When the browser reaches the site but something between the two
+  refuses the JavaScript bundle, the served HTML had nothing visible in it, so
+  the page went white with no notice at all — and the reader could not tell a
+  block from a broken site, nor could we. The HTML now carries a hidden,
+  inline-styled message that reveals itself when a `/VAADIN/` script or
+  stylesheet fails to load, or when nothing has rendered after eight seconds,
+  naming a network filter, firewall or proxy as the usual cause and pointing at
+  info@common-root.org. It references nothing external, because in this failure
+  nothing external loads, and a one-rule `<noscript>` stylesheet un-hides the
+  same element when scripting is off entirely. Served in the request's language
+  (`?lang=` first, then Accept-Language); English, Finnish and Swedish are
+  written and the other eleven locales fall back to English. Reported from
+  behind her institute's proxy by Maria Lehtonen (Kotus), whose description of
+  the symptom is what made it diagnosable.
+
+### Added
+- **Reading orders in the phone app.** The View sheet gains "Reading order"
+  for Bibles: Bible order, chronological (the order the events happened),
+  Tanakh (the Hebrew Bible's order) and as written (the order the books were
+  written), the site's four orders. The book picker lists the books in that
+  order, and Previous / Next, swiping and the narration's page-turn follow it:
+  chronologically, Next after Genesis 11 is Job 1. The app moves a chapter at a
+  time, so a chapter the site's plan splits sits where reading first reaches it.
+- **Reading modes in the phone app.** The View sheet gains "Reading mode", the
+  site's five: Scriptio Continua, Scriptio Continua (simplified), Chapters
+  (1227), Verses (1551) and Titles, with the site's labels and notes in all 14
+  languages. The first three run the chapter on as one paragraph without verse
+  numbers; Titles shows the edition's section title above the text.
+- **Commentaries in the phone app.** A verse gains a Commentary tab: what the
+  library's commentaries say about it, one at a time, opening on the last one
+  read when it has something on this verse, else the first in the app's
+  language. A comment on a range shows on every verse of it, with the range
+  above it; references in it open in the reader; Hebrew commentaries read right
+  to left. Commentaries stay out of the edition picker.
+- **API: `GET /commentaries/{book}/{chapter}/{verse}`**, every openly licensed
+  commentary on a verse, as paragraphs of plain runs rather than markup.
+- **API: verses carry `title`,** the section heading the edition gives them
+  (NIV, NASB, NBLA), for the Titles mode.
+- **API: `/texts/{token}/books?order=`** with the reader-link tokens `canon`,
+  `chrono`, `tanakh`, `writing`, answering with the books in that order and,
+  for `chrono`, `sequence`: every chapter as `CODE.N` in reading order.
+- **Buy Me a Coffee in the phone app**: a "Support the Project" card in
+  Settings, in the site's own words, and a ♥ beside Settings on the reader,
+  like the ♥ in the site's reader toolbar. Both open the page in the phone's
+  browser.
+
 ## [1.0.5] — 2026-11-23
 
 ### Fixed

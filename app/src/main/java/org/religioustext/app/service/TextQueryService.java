@@ -31,8 +31,34 @@ public class TextQueryService {
 
     private static final Logger log = LoggerFactory.getLogger(TextQueryService.class);
 
+    /**
+     * Prolog shared by every query. Besides the namespace it declares the two
+     * functions the verse queries use to stay correct for commentaries (schema
+     * v1.5), whose verses hold {@code <comment>} elements instead of text:
+     * {@code local:txt} is the verse's plain text (paragraphs joined by a space,
+     * so words do not run together) and {@code local:cm} the serialized comments,
+     * plus the book and chapter intros on the first commented verse of each. For a
+     * Bible verse {@code local:txt} is {@code string($v)} and {@code local:cm} is
+     * empty, so the existing row format is unchanged; {@code local:cm} is only an
+     * extra trailing field. The line-per-row protocol needs it free of newlines:
+     * serialization is unindented and any line break left is turned into a space
+     * (written as character references, since raw ones are normalised by the
+     * XQuery parser).
+     */
     private static final String NS_DECL =
-        "declare namespace rt='http://religioustext.org/schema/1.0'; ";
+        "declare namespace rt='http://religioustext.org/schema/1.0'; "
+        + "declare function local:txt($v as element()) as xs:string { "
+        + "  if (exists($v/rt:comment)) then string-join($v//rt:p, ' ') else string($v) }; "
+        + "declare function local:cm($v as element()) as xs:string { "
+        + "  if (empty($v/rt:comment)) then '' else "
+        + "  let $ch := $v/parent::rt:chapter "
+        + "  let $firstInCh := empty($v/preceding-sibling::rt:verse) "
+        + "  let $firstInBook := $firstInCh and empty($ch/preceding-sibling::rt:chapter[rt:verse]) "
+        + "  let $o := map { 'indent': 'no' } "
+        + "  return replace(string-join(( "
+        + "    if ($firstInBook) then $ch/parent::rt:book/rt:intro ! serialize(., $o) else (), "
+        + "    if ($firstInCh) then $ch/rt:intro ! serialize(., $o) else (), "
+        + "    $v/rt:comment ! serialize(., $o)), ''), '[&#13;&#10;]+', ' ') }; ";
 
     private final BaseXProperties baseXProperties;
     private final RestTemplate    restTemplate;
@@ -133,8 +159,8 @@ public class TextQueryService {
             + "string($v/@number),string($v/@bookName),string($v/@bookAltName),"
             + "string($v/@chapterNumber),string($v/@chapterTitle),"
             + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
-            + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
-            + "$code,string($v/@globalWritingSeq)"
+            + "string($v/@globalNarrativeSeq),string($v/@note),local:txt($v),"
+            + "$code,string($v/@globalWritingSeq),local:cm($v)"
             + "),'|||')";
 
         return executeQuery(xquery).stream()
@@ -166,8 +192,8 @@ public class TextQueryService {
             + "string($v/@number),string($v/@bookName),string($v/@bookAltName),"
             + "string($v/@chapterNumber),string($v/@chapterTitle),"
             + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
-            + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
-            + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq)"
+            + "string($v/@globalNarrativeSeq),string($v/@note),local:txt($v),"
+            + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq),local:cm($v)"
             + "),'|||')";
 
         return executeQuery(xquery).stream()
@@ -222,8 +248,8 @@ public class TextQueryService {
         + "string($v/@number),string($v/@bookName),string($v/@bookAltName),"
         + "string($v/@chapterNumber),string($v/@chapterTitle),"
         + "string($v/@globalCanonicalSeq),string($v/@globalChronologicalSeq),"
-        + "string($v/@globalNarrativeSeq),string($v/@note),string($v),"
-        + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq)"
+        + "string($v/@globalNarrativeSeq),string($v/@note),local:txt($v),"
+        + "string($v/ancestor::rt:book/@code),string($v/@globalWritingSeq),local:cm($v)"
         + "),'|||')";
 
     /**
@@ -471,6 +497,7 @@ public class TextQueryService {
             .content(partAt(parts, 9))
             .bookCode(partAt(parts, 10))
             .globalWritingSeq(parseIntegerSafe(parts, 11))
+            .commentaryXml(partAt(parts, 12))
             .build();
     }
 

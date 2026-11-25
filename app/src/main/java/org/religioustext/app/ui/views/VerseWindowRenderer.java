@@ -73,6 +73,11 @@ final class VerseWindowRenderer {
                           int aChapter, String aVerseNo);
         /** Tooltip for the clickable verse number. */
         String annotateHint();
+        /** Summary of a commentary introduction that has no heading of its own. */
+        String commentaryIntroLabel();
+        /** Open a passage ({@code GEN.1.1}, {@code ISA.7.14-16}) cited in a commentary
+         *  in a new column, as a cross-reference does. */
+        void openPassage(ColState aState, String aTarget);
         /** Tooltip for a lineage rung that is an original-language WITNESS
          *  rather than the edition's attested parent. */
         String lineageWitnessHint();
@@ -431,7 +436,10 @@ final class VerseWindowRenderer {
             return div;
         }
 
-        if (opts.isAllCaps()) {
+        // A commentary is prose per verse, not one flowing text: it ignores the
+        // all-caps and continuous modes and renders block by block (below).
+        final boolean commentary = CommentaryRenderer.isCommentary(theVerses);
+        if (opts.isAllCaps() && !commentary) {
             final StringBuilder raw = new StringBuilder();
             // Scriptio continua: uppercase (where the script has case), then
             // strip whitespace and everything that is not a letter or digit.
@@ -450,7 +458,7 @@ final class VerseWindowRenderer {
             return div;
         }
 
-        if (opts.isContinuous()) {
+        if (opts.isContinuous() && !commentary) {
             final StringBuilder prose = new StringBuilder();
             for (final VerseRef v : theVerses)
                 prose.append(v.getDisplayContent(false).strip()).append(' ');
@@ -507,6 +515,11 @@ final class VerseWindowRenderer {
                 bar.add(h, audio);
                 div.add(bar);
             }
+        }
+
+        if (commentary) {
+            for (final VerseRef v : theVerses) div.add(commentaryBlock(aState, v, aChapter));
+            return div;
         }
 
         final Div text = new Div();
@@ -790,6 +803,12 @@ final class VerseWindowRenderer {
         }
     }
 
+    /** One commented verse, see {@link CommentaryRenderer}. */
+    private Div commentaryBlock(final ColState aState, final VerseRef aVerse, final int aChapter) {
+        return CommentaryRenderer.verseBlock(aVerse, aChapter, numeralLocale(aState),
+            host.commentaryIntroLabel(), target -> host.openPassage(aState, target));
+    }
+
     /** Append continuation verses into the LAST rendered chapter group's text
      *  element, so a chapter split across scroll batches stays one inline flow.
      *  Returns false if there is no suitable existing group (caller then builds a
@@ -801,6 +820,13 @@ final class VerseWindowRenderer {
         final com.vaadin.flow.dom.Element groupEl =
             groups.get(groups.size() - 1).getElement();
         if (groupEl.getChildCount() == 0) return false;
+        if (CommentaryRenderer.isCommentary(aGroup)) {   // blocks go into the group itself
+            for (final VerseRef v : aGroup)
+                groupEl.appendChild(commentaryBlock(aState, v, aChapter).getElement());
+            groupEl.setAttribute("data-seq-last",
+                String.valueOf(host.activeSeq(aState, aGroup.get(aGroup.size() - 1))));
+            return true;
+        }
         final com.vaadin.flow.dom.Element textEl =
             groupEl.getChild(groupEl.getChildCount() - 1);
 
