@@ -6,8 +6,8 @@ _研读塑造我们世界的文本。_
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.1.0 |
-| Generated | 2026-11-25 |
+| Version | 1.1.1 |
+| Generated | 2026-11-26 |
 <!-- /AUTOGEN:meta -->
 
 ## 这是什么

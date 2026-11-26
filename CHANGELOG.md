@@ -95,6 +95,19 @@ in the reader toolbar and About-page nav.
   "Show traditional book titles", in all 14 languages. On once signed in, as on
   the website; a guest keeps the classic reader unless they choose otherwise.
 
+## [1.1.1] — 2026-11-26
+
+### Changed
+- **New screenshots on the app page.** `/app` shows eight pictures of the
+  current app instead of five from 1.0.2: the reader, notes, comments, compare,
+  cross-references, and now the Words tab, the View sheet and a chapter with
+  other editions and the Greek under each verse. The three new captions are in
+  all 14 languages.
+
+### Added
+- **12 new arguments** from Elijah Johnson Apologetics, anchored to the verses
+  they discuss.
+
 ## [1.1.0] — 2026-11-25
 
 ### Added

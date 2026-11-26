@@ -190,13 +190,19 @@ public class AppDownloadView extends VerticalLayout implements HasDynamicTitle {
         return s;
     }
 
-    /** The screenshots, in the order a reader meets them: file stem, caption key. */
+    /**
+     * The screenshots, in the order a reader meets them: file stem, caption key.
+     * The number in the stem is that order, so the folder lists them as shown.
+     */
     private static final String[][] SHOTS = {
-        {"reader", "app.shots.reader"},
-        {"verse-compare", "app.shots.compare"},
-        {"verse-cross-ref", "app.shots.crossRef"},
-        {"verse-comments", "app.shots.comments"},
-        {"verse-notes", "app.shots.notes"},
+        {"1-app-reader", "app.shots.reader"},
+        {"2-app-verse-notes", "app.shots.notes"},
+        {"3-app-verse-comments", "app.shots.comments"},
+        {"4-app-verse-compare", "app.shots.compare"},
+        {"5-app-verse-cross-ref", "app.shots.crossRef"},
+        {"6-app-verse-strongs", "app.shots.words"},
+        {"7-app-verse-view", "app.shots.view"},
+        {"8-app-verse-reader", "app.shots.parallel"},
     };
 
     /** Width of the picture in focus, in CSS pixels; the stage leaves room for its neighbours. */
@@ -208,10 +214,10 @@ public class AppDownloadView extends VerticalLayout implements HasDynamicTitle {
 
     /**
      * What the app looks like: screenshots from a real phone
-     * ({@code /images/app/app-*.webp}, 480 px wide, about 180 KB together) in a
+     * ({@code /images/app/<n>-app-*.webp}, 480 px wide, about 280 KB together) in a
      * cover-flow carousel. The picture in focus stands in the middle at full
      * size; the ones beside it sit smaller and behind it, and the outer two
-     * smaller and fainter still, so all five are in view at once and the row
+     * smaller and fainter still, so five are in view at once and the row
      * wraps round. Tapping a side picture brings it to the middle; tapping the
      * middle one opens it full size. Under the stage, the caption of the
      * picture in focus, then ‹ › buttons and dots.
@@ -235,7 +241,7 @@ public class AppDownloadView extends VerticalLayout implements HasDynamicTitle {
             .set("outline-offset", "4px");
         for (int i = 0; i < SHOTS.length; i++) {
             final String[] shot = SHOTS[i];
-            final String src = "images/app/app-" + shot[0] + ".webp";
+            final String src = "images/app/" + shot[0] + ".webp";
             final String caption = t(shot[1]);
             final Image img = new Image(src, caption);
             img.getElement().setAttribute("width", "480");
