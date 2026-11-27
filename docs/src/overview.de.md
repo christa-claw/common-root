@@ -6,7 +6,7 @@ _Studieren Sie die Texte, die unsere Welt prägen._
 | Field | Value |
 |---|---|
 | Application | Common Root? |
-| Version | 1.1.1 |
+| Version | 1.1.2 |
 | Generated | 2026-11-26 |
 <!-- /AUTOGEN:meta -->
 

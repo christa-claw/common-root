@@ -85,9 +85,14 @@ in the reader toolbar and About-page nav.
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-11-26
+
 ### Added
-- **The printed-page look in the phone app.** The website's "book look" for a
-  signed-in reader comes to the app: EB Garamond (Ezra SIL for Hebrew,
+- **The Bible in Basic English has its info page.** `/edition/BBE` tells the
+  story of S. H. Hooke's 1949 translation in Ogden's 1,000-word Basic English,
+  and what our copy holds, in all 14 languages.
+- **App 1.1.1 on `/app`, with the printed-page look.** The website's "book
+  look" for a signed-in reader comes to the phone app: EB Garamond (Ezra SIL for Hebrew,
   Scheherazade New for Arabic), justified and hyphenated at 18 on 1.75, the
   chapter number as a two-line drop cap in the accent colour, and a book opening
   with its name between rules and, for English editions, its traditional long
